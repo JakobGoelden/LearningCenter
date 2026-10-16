@@ -21,6 +21,35 @@ type Phase = 'setup' | 'answer' | 'review' | 'results';
 
 const KIND_LABEL: Record<string, string> = { why: 'Why', 'what-if': 'What if', explain: 'Explain', apply: 'Apply' };
 
+/** Type the answers, or flashcards: think, flip, rate. Remembered per browser. */
+type AnswerMode = 'write' | 'cards';
+const MODE_KEY = 'lc.quiz.mode';
+const loadMode = (): AnswerMode => {
+  try {
+    return localStorage.getItem(MODE_KEY) === 'cards' ? 'cards' : 'write';
+  } catch {
+    return 'write';
+  }
+};
+const RATE_KEYS: Record<string, SelfRating> = { '1': 'right', '2': 'partly', '3': 'wrong' };
+
+function ModeSwitch({ mode, onChange }: { mode: AnswerMode; onChange: (m: AnswerMode) => void }) {
+  return (
+    <div class="segmented mode-switch" role="group" aria-label="How to answer">
+      {(
+        [
+          ['write', '✎ Type answers'],
+          ['cards', '🃏 Flashcards'],
+        ] as [AnswerMode, string][]
+      ).map(([m, label]) => (
+        <button type="button" class={`small${mode === m ? ' primary' : ''}`} aria-pressed={mode === m} onClick={() => onChange(m)}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function sessionId(type: string, subject: string): string {
   return `${nowIso()
     .replace(/[-:]/g, '')
@@ -61,6 +90,9 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
   const [ratings, setRatings] = useState<Map<number, SelfRating>>(new Map());
   /** After the last answer: choose between checking yourself and checking in the chat. */
   const [checkMode, setCheckMode] = useState<'choose' | 'self'>('choose');
+  const [mode, setModeState] = useState<AnswerMode>(loadMode);
+  /** Flashcards: the current card shows its key points. */
+  const [revealed, setRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,6 +105,24 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
     const timers = session.items.map((it, i) => setTimeout(() => setFlipped((f) => new Set(f).add(it.n)), 350 + i * 220));
     return () => timers.forEach(clearTimeout);
   }, [phase]);
+
+  // Flashcards by keyboard: Space or Enter flips, 1 / 2 / 3 rate.
+  useEffect(() => {
+    if (phase !== 'answer' || mode !== 'cards' || session?.adapter !== 'app') return;
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (e.altKey || e.ctrlKey || e.metaKey || (el && /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(el.tagName))) return;
+      if (!revealed && (e.key === ' ' || e.key === 'Enter')) {
+        e.preventDefault();
+        setRevealed(true);
+      } else if (revealed && RATE_KEYS[e.key]) {
+        e.preventDefault();
+        void rateCard(RATE_KEYS[e.key]);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
   const topicById = new Map(s.topics.map((t) => [t.id, t]));
@@ -244,6 +294,38 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
 
   const rate = (n: number, r: SelfRating) => setRatings(new Map(ratings).set(n, r));
 
+  const setMode = (m: AnswerMode) => {
+    setModeState(m);
+    try {
+      localStorage.setItem(MODE_KEY, m);
+    } catch {
+      /* private mode: just not remembered */
+    }
+  };
+
+  /** Flashcards: rate the card, then on to the next one (or to the overview after the last). */
+  const rateCard = (r: SelfRating) =>
+    guard(async () => {
+      if (!session) return;
+      const it = session.items[idx];
+      setRatings(new Map(ratings).set(it.n, r));
+      await log({
+        type: 'quiz.answer',
+        subject: s.id,
+        ref: session.id,
+        data: { n: it.n, topicId: it.topicId ?? null, mode: 'flashcard', rating: r },
+      });
+      if (idx < session.items.length - 1) {
+        setDir('fwd');
+        setIdx(idx + 1);
+        setRevealed(false);
+      } else {
+        await persist({ ...session, finishedAt: nowIso() });
+        setCheckMode('self');
+        setPhase('review');
+      }
+    });
+
   const saveSelf = () => {
     if (!session) return;
     const graded: Session = {
@@ -320,6 +402,9 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
 
   const item = session?.items[idx];
   const N = session?.items.length ?? 0;
+  const cards = mode === 'cards' && local;
+  /** Rated as a flashcard, nothing typed. */
+  const flash = (it: SessionItem) => !it.answer?.trim() && ratings.has(it.n);
 
   return (
     <div class="stack">
@@ -381,6 +466,15 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
                   </li>
                 ))}
               </ul>
+              <div class="row mode-row">
+                <span>Answer by</span>
+                <ModeSwitch mode={mode} onChange={setMode} />
+                <span class="small muted">
+                  {mode === 'cards'
+                    ? 'Read the question, answer in your head, flip the card, rate yourself. No typing.'
+                    : 'Write each answer, then compare it with the key points.'}
+                </span>
+              </div>
               <div class="start-row">
                 <button class="primary" disabled={chosen.length === 0} onClick={start}>
                   Start here · {chosen.length} {chosen.length === 1 ? 'question' : 'questions'}
@@ -413,11 +507,98 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
         </div>
       )}
 
-      {phase === 'answer' && item && session && !busy && (
+      {phase === 'answer' && item && session && !busy && local && (
+        <div class="row mode-row in-quiz">
+          <ModeSwitch mode={mode} onChange={setMode} />
+        </div>
+      )}
+
+      {phase === 'answer' && item && session && !busy && cards && (
+        <div class={`quiz-deck flash-deck left-${Math.min(N - idx - 1, 2)}`} style={{ '--c': s.color }}>
+          <div class="quiz-dots" aria-hidden="true">
+            {session.items.map((it, i) => (
+              <span class={i === idx ? 'now' : it.answer?.trim() || ratings.has(it.n) ? 'done' : ''} />
+            ))}
+          </div>
+          <div
+            key={idx}
+            class={`flip-card flash-card ${dir}${revealed ? ' open' : ''}`}
+            style={{ '--c': s.color }}
+            onClick={() => !revealed && setRevealed(true)}
+          >
+            <span class="flip-inner">
+              <span class="flip-face front panel" aria-hidden={revealed}>
+                <span class="row small">
+                  <span class="qnum">
+                    Card {item.n}/{N}
+                  </span>
+                  {item.topicId && <span class="badge">{topicById.get(item.topicId)?.title}</span>}
+                  {item.kind && <span class="badge">{KIND_LABEL[item.kind] ?? item.kind}</span>}
+                </span>
+                <span class="prompt flash-prompt">
+                  <Markdown text={item.prompt} />
+                </span>
+                <span class="flash-foot">
+                  <span class="small muted">Answer in your head (or out loud), then flip.</span>
+                  <button type="button" class="primary" onClick={() => setRevealed(true)} tabIndex={revealed ? -1 : 0}>
+                    Show answer <kbd>Space</kbd>
+                  </button>
+                </span>
+              </span>
+              <span class="flip-face back panel" aria-hidden={!revealed}>
+                <span class="row small">
+                  <span class="qnum">
+                    Card {item.n}/{N}
+                  </span>
+                  {item.topicId && <span class="badge">{topicById.get(item.topicId)?.title}</span>}
+                </span>
+                <span class="small muted">
+                  <Markdown text={item.prompt} />
+                </span>
+                {item.solution ? (
+                  <span class="key-points">
+                    <strong class="small">Key points</strong>
+                    <Markdown text={item.solution} />
+                  </span>
+                ) : (
+                  <span class="small muted">
+                    No key points for this topic yet. Check it against your script or notes; your AI can add prepared questions with
+                    answers.
+                  </span>
+                )}
+                <span class="small muted">How did you do?</span>
+                <span class="rate" onClick={(e) => e.stopPropagation()}>
+                  {(['right', 'partly', 'wrong'] as SelfRating[]).map((k, i) => (
+                    <button type="button" class={`rate-${k}`} tabIndex={revealed ? 0 : -1} onClick={() => rateCard(k)}>
+                      {k === 'right' ? '✓ Knew it' : k === 'partly' ? '~ Partly' : '✗ Not yet'} <kbd>{i + 1}</kbd>
+                    </button>
+                  ))}
+                </span>
+              </span>
+            </span>
+          </div>
+        </div>
+      )}
+      {phase === 'answer' && item && session && !busy && cards && (
+        <div class="row">
+          <button
+            disabled={idx === 0}
+            onClick={() => {
+              setDir('back');
+              setIdx(idx - 1);
+              setRevealed(false);
+            }}
+          >
+            Back
+          </button>
+        </div>
+      )}
+
+      {phase === 'answer' && item && session && !busy && !cards && (
         <div class={`quiz-deck left-${Math.min(N - idx - 1, 2)}`} style={{ '--c': s.color }}>
           <div class="quiz-dots" aria-hidden="true">
             {session.items.map((it, i) => (
-              <span class={i === idx ? 'now' : it.answer?.trim() ? 'done' : ''} />
+              <span class={i === idx ? 'now' : it.answer?.trim() || ratings.has(it.n) ? 'done' : ''} />
             ))}
           </div>
           <div key={idx} class={`panel stack quiz-card ${dir}`}>
@@ -485,10 +666,16 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
           ) : (
             !settled && (
               <div class="panel small muted">
-                Compare your answers with the key points and rate each one.{' '}
-                <button class="link" onClick={() => setCheckMode('choose')}>
-                  Check in chat instead
-                </button>
+                {session.items.every(flash) ? (
+                  'Your flashcard ratings. Change one if you like, then save.'
+                ) : (
+                  <>
+                    Compare your answers with the key points and rate each one.{' '}
+                    <button class="link" onClick={() => setCheckMode('choose')}>
+                      Check in chat instead
+                    </button>
+                  </>
+                )}
               </div>
             )
           )}
@@ -528,7 +715,7 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
                           {it.topicId && <span class="badge">{topicById.get(it.topicId)?.title}</span>}
                         </span>
                         <Markdown text={it.prompt} />
-                        <span class="small muted answer">{it.answer || '(no answer)'}</span>
+                        {!flash(it) && <span class="small muted answer">{it.answer || '(no answer)'}</span>}
                         <span class="flip-hint small muted">Tap to compare</span>
                       </span>
                       <span class={`flip-face back panel score-face-${r ? SELF_SCORE[r] : 'none'}`}>
@@ -538,7 +725,13 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
                           </span>
                           {it.topicId && <span class="badge">{topicById.get(it.topicId)?.title}</span>}
                         </span>
-                        <span class="small muted answer">You: {it.answer || '(no answer)'}</span>
+                        {flash(it) ? (
+                          <span class="small muted">
+                            <Markdown text={it.prompt} />
+                          </span>
+                        ) : (
+                          <span class="small muted answer">You: {it.answer || '(no answer)'}</span>
+                        )}
                         {it.solution ? (
                           <span class="key-points">
                             <strong class="small">Key points</strong>

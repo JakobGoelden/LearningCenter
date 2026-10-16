@@ -45,7 +45,9 @@ the next reviews.
   **Check myself** (the cards flip over to show the key points and you rate
   each answer right / partly / wrong) or **Check in chat** (copies a prompt;
   your AI goes through the answers with you, grades them 0–5 and records
-  them). With an API key or the
+  them). Don't feel like typing? Switch to **Flashcards**: read the
+  question, answer in your head, flip the card to see the key points and
+  rate yourself (Space flips, 1/2/3 rate). With an API key or the
   file bridge you can also have the AI grade right away or write fresh
   questions. Then spaced repetition takes
   over: topics you know well move on 1 → 3 → 7 → 14 → 21 days, shaky ones

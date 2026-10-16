@@ -77,7 +77,10 @@ The format is fully described in `schema/*.schema.json` (JSON Schema
    turn. `prompt` tests understanding (why, what if, explain, apply), not
    wording; `answer` lists the key points of a good answer (Markdown bullets,
    plus a typical mistake). The learner sees the key points after answering
-   and grades themselves, or lets you grade later. A topic without
+   and grades themselves, or lets you grade later. In flashcard mode the
+   learner answers in their head, flips to the key points and rates
+   right/partly/wrong, so `answer` is what makes a good card: keep it short
+   enough to check at a glance. A topic without
    questions gets a general "explain it" question.
 5. **Exam:** `format` is `written` (written exam), `talk` (presentation/oral),
    `project` or `unknown`. Do not invent a date: if it is unknown, leave out

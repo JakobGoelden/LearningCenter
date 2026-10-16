@@ -977,3 +977,26 @@ button.link { padding: 0; border: 0; background: none; box-shadow: none; color: 
 .sheet-chat-text { display: flex; flex-direction: column; gap: 2px; flex: 1 1 260px; }
 .sheet-chat .chat-start-btn { background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; border: 0; padding: 9px 18px; }
 .sheet-chat .chat-start-btn.done { background: var(--ok-bg); color: var(--ok); }
+
+/* Quiz: type answers or flashcards */
+.mode-row { gap: 8px 12px; flex-wrap: wrap; }
+.mode-row.in-quiz { justify-content: center; }
+.flash-card { cursor: default; }
+.flash-card:not(.open) .front { cursor: pointer; }
+.flash-card:hover .flip-inner { translate: none; }
+.flash-card .flip-face { min-height: 280px; }
+.flash-card.fwd { animation: card-in-right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.flash-card.back { animation: card-in-left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.flash-prompt { font-size: 1.15rem; flex: 1; display: grid; align-content: center; }
+.flash-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.flash-card .rate button { padding: 10px 8px; }
+.flash-card kbd, .mode-row kbd {
+  font: inherit; font-size: 0.72em; font-weight: 600; padding: 1px 5px; margin-left: 4px; border-radius: 5px;
+  border: 1px solid currentColor; opacity: 0.6;
+}
+.flash-card .rate-right:hover { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+.flash-card .rate-partly:hover { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+.flash-card .rate-wrong:hover { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+@media (hover: none) { .flash-card kbd { display: none; } }
+@media (max-width: 520px) { .flash-card kbd { display: none; } }
+.flash-deck::before, .flash-deck::after { display: none; }
