@@ -13,8 +13,11 @@ personal pack: `ls local/*/pack.json`.
   [ONBOARDING.md](ONBOARDING.md) right away, even if they only said "hi",
   "what is this?" or "start the app". You lead: get their scripts, their
   timetable, their exercise sheets and notes into a pack together with them,
-  then build topics and dojos from that material. `packs/demo` is only an
-  example to look at; it is never the result of a setup.
+  then build topics and dojos from that material. For pages behind a login
+  (Moodle, the campus system) use a browser you can control if you have
+  one: the person logs in there, you click and download (ONBOARDING.md,
+  step 3). `packs/demo` is only an example to look at; it is never the
+  result of a setup.
 - **Pack found:** work with it (part A). If `local/<pack>/SETUP.md` still has
   open items (or the pack obviously lacks subjects, timetable, scripts,
   topics or dojos), offer to continue the setup where it stopped before

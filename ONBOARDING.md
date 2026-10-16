@@ -111,10 +111,11 @@ notes. For each item:
 
 1. Ask where it lives (Moodle, campus system, chair website, …), if you do
    not know yet.
-2. Tell them exactly what to click to download it and which folder to save
-   it to (the folder already exists from step 2).
-3. Wait until they say it is there, then list the folder and read the
-   files. If something is missing or the wrong file, say so right away.
+2. Get it into the pack: through the browser if you can (they log in, you
+   click and download, see below), otherwise tell them exactly what to click
+   and which folder to save it to (the folder already exists from step 2).
+3. Check the folder and read the files. If something is missing or the
+   wrong file, say so right away.
 4. Tick it off in `SETUP.md`.
 
 For **every subject** you need:
@@ -130,15 +131,60 @@ If something does not exist or the person cannot get it right now, create an
 open task for it (e.g. "Upload timetable PDF", "Script for DB not published
 yet") instead of leaving it out silently.
 
-Access without touching credentials, for everything in this step:
+Access without touching credentials, for everything in this step. Pick the
+first way that works:
 
-- **Preferred:** the person downloads the files and puts them into the pack
-  folder (paths below). Tell them exactly where to click.
-- You may fetch public pages yourself if you have a web tool.
-- If the person has set up a sync tool (e.g. a Moodle downloader or a synced
-  cloud folder), read from its target folder.
-- **Never** ask for, store or write passwords, tokens or session cookies to
-  files. Logins are the person's job.
+1. **Through a browser you can control (best).** Moodle, ILIAS, the campus
+   system and most course pages need a login, so a plain web fetch does not
+   reach them. If you can drive a real browser, do the clicking yourself
+   while the person only logs in. See "Working through the browser" below.
+2. **The person downloads, you guide.** Tell them exactly where to click and
+   which folder to save into (paths below), then check the folder.
+3. **A sync tool** the person already uses (a Moodle downloader, a synced
+   cloud folder): read from its target folder.
+4. **Public pages** (chair website, course catalogue): fetch them yourself if
+   you have a web tool.
+
+**Never** ask for, type, store or write passwords, one-time codes, tokens or
+session cookies anywhere. Logging in is always the person's job.
+
+### Working through the browser
+
+Check which browser tools you have, for example the **Claude in Chrome**
+extension, a browser built into the AI app the person is using, computer
+use, or a browser automation tool such as a Playwright MCP server.
+
+- **You have one:** explain in one sentence that you will open their
+  university pages in that browser, and that they log in there themselves
+  while you look away from the password field. Then open the login page
+  (Moodle, campus system, …), ask them to log in (including any two-factor
+  step or "register device" prompt) and to say "done". After that you work:
+  open the dashboard, list their courses and match them to the subjects,
+  open each course, and download the script or slides, the exercise sheets
+  and anything else useful (e.g. "Download all files" or per section).
+- **You have none:** say which tool would let you do this for them and ask
+  whether they want to set it up now (for Claude Code: the Claude in Chrome
+  extension; follow that tool's own setup steps, do not guess them). If
+  they do not want to, use way 2.
+
+While you are logged in through their browser:
+
+- **Downloads** usually land in the browser's download folder. Move each
+  file into the pack right away (`material/<subject-id>/`,
+  `material/<subject-id>/sheets/`, `material/timetable.ics`) under a clear
+  name, and tell the person what you moved.
+- **Timetable:** in the campus system, look for the personal timetable and
+  its iCal / .ics export (see 3b).
+- **Registrations:** look for course or exam registration (enrolment keys,
+  tutorial group sign-up, exam registration periods). Do not register the
+  person yourself: tell them what is open and when it closes, and add each
+  deadline as an open task with a due date.
+- **Exam info:** dates, rooms and allowed aids often sit in a course news
+  post or a PDF; put them into `exam` (never guess).
+- Only read what the setup needs, do not submit forms, post messages or
+  change settings on their behalf, and stop when the person says so.
+- Record every course page as a `material` check with its `url`, so the
+  next "What's new?" can open the same page again.
 
 ### 3a. Scripts and slides
 
@@ -321,8 +367,9 @@ get created.
 
 Suggest this routine to the person and carry it out when they ask for it:
 
-- **"What's new?"** (e.g. twice a week): look at the check sources, have new
-  files put into `material/`, compare the script version, create new topics,
+- **"What's new?"** (e.g. twice a week): look at the check sources (through
+  the browser if you have one; the person logs in again if needed), put new
+  files into `material/`, compare the script version, create new topics,
   add new exercise sheets with `file` and `tasks`, update the timetable if it
   changed, set `lastChecked`.
 - **"Check my sheet <n>"**: read `work/<subject>/<sheet>.json` against the
