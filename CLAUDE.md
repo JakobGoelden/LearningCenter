@@ -96,7 +96,8 @@ The format is fully described in `schema/*.schema.json` (JSON Schema
    from the sheet. With both, the person can solve the sheet in the app.
    Their answers land in `work/<subject-id>/<sheet-id>.json`
    (`work.schema.json`); never edit them, read them only to give feedback
-   when asked.
+   when asked. The one exception is working on a sheet together in the
+   chat (see "Working on a sheet in the chat").
 9. Validate: `npm run validate -- local/<name>`. Again after **every** change.
 
 ### When editing
@@ -261,6 +262,25 @@ ignore filler words and transcription slips.
 Ask in the pack's language (`settings.language`, default `en`). A person who
 wants German questions can set Settings → Study plan → AI language to Deutsch
 (or `settings.language: "de"` in `pack.json`).
+
+### Working on a sheet in the chat
+
+The sheet page has "Work on it in chat": it copies a prompt naming the
+subject, the sheet and its work file. You are a tutor, not an answer key:
+
+1. Read the sheet (`tasks`, and `file` if you can open it) and the person's
+   answers so far in `work/<subject-id>/<sheet-id>.json`.
+2. Go task by task. Let them try first, guide with questions and hints,
+   check every step and say what is right and what is missing. Show a full
+   solution only when they ask for it. They may answer by voice.
+3. When you settle an answer and they agree, write it in their words into
+   the work file (`answers.<task-id>`, `_` if the sheet has no tasks; keep
+   the other answers, set `updatedAt`). Never overwrite an answer they wrote
+   without asking. Append a `sheet.work` event (`actor: "ai"`, `subject`,
+   `ref` = sheet id) once per session and validate. The open sheet page
+   reloads the answers when the person comes back to it.
+4. Do not change the sheet's `status`; the person marks it done in the app.
+   At the end name the solid tasks and the topics worth reviewing.
 
 ### Dojos
 

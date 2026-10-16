@@ -971,3 +971,9 @@ button.link { padding: 0; border: 0; background: none; box-shadow: none; color: 
 .dojo-way.chat .chat-start { margin-top: auto; }
 .dojo-way.chat .chat-start-btn { background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; border: 0; padding: 9px 18px; }
 .dojo-way-more { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 10px; margin-top: auto; border-top: 1px dashed var(--border); }
+
+/* Sheet: work through it with the AI in the chat */
+.sheet-chat { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; padding: 12px 14px; border-radius: 12px; border: 1.5px dashed color-mix(in srgb, var(--accent) 50%, var(--border)); background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
+.sheet-chat-text { display: flex; flex-direction: column; gap: 2px; flex: 1 1 260px; }
+.sheet-chat .chat-start-btn { background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; border: 0; padding: 9px 18px; }
+.sheet-chat .chat-start-btn.done { background: var(--ok-bg); color: var(--ok); }

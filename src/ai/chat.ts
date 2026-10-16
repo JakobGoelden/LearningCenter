@@ -2,7 +2,7 @@
 // the person's AI chat (voice input, free talk). The app copies the prompt;
 // the AI follows CLAUDE.md and writes the results back into the pack.
 
-import type { Dojo, Level, Pack, Subject, Topic } from '../model/types';
+import type { Dojo, Level, Pack, Sheet, SheetWork, Subject, Topic } from '../model/types';
 import type { PackFs } from '../storage/fs';
 import { LANGUAGES, LEVEL_LABEL } from './requests';
 
@@ -68,6 +68,48 @@ export function dojoChatPrompt(a: {
       : 'Then sum up what went well and what to practise.',
   ]
     .filter(Boolean)
+    .join('\n');
+}
+
+/** Work through an exercise sheet together in the chat: tutor, not answer key. */
+export function sheetChatPrompt(a: {
+  fs: Pick<PackFs, 'kind' | 'label' | 'sharedWithAi'>;
+  pack: Pack;
+  subject: Subject;
+  sheet: Sheet;
+  work?: SheetWork | null;
+}): string {
+  const files = a.fs.kind !== 'browser';
+  const tasks = a.sheet.tasks ?? [];
+  const where = a.sheet.file ?? a.sheet.url;
+  const workFile = `work/${a.subject.id}/${a.sheet.id}.json`;
+  const answered = Object.keys(a.work?.answers ?? {}).length;
+  const inline = files
+    ? []
+    : tasks.flatMap((t) => [
+        '',
+        `${t.label}${t.points !== undefined ? ` (${t.points} pts)` : ''}:`,
+        t.text,
+        ...(a.work?.answers[t.id] ? [`My answer so far: ${a.work.answers[t.id]}`] : []),
+      ]);
+  return [
+    `Work through the exercise sheet "${a.sheet.label}" (${a.subject.name}) with me here in the chat. ${packWhere(a.fs)}`,
+    files
+      ? `The sheet is \`${a.sheet.id}\` in \`subjects/${a.subject.id}.json\`${tasks.length ? ` (${tasks.length} tasks in \`tasks\`)` : ''}${where ? `, the original is ${where}` : ''}. Follow CLAUDE.md → "Working on a sheet in the chat".`
+      : where
+        ? `The sheet: ${where}`
+        : '',
+    files && answered
+      ? `I already wrote answers to ${answered} ${answered === 1 ? 'task' : 'tasks'} in \`${workFile}\`: start from them.`
+      : '',
+    ...inline,
+    '',
+    `Go task by task in ${lang(a.pack)}. Let me try first: ask what I would do, then guide me with questions and hints instead of handing me the solution. Check each step I make and say clearly what is right and what is missing. Show a full solution only when I ask for it. I may answer by voice, so ignore typos and filler words.`,
+    files
+      ? `When we settle an answer, write it in my words into \`${workFile}\` (only when I agree, never overwrite what I wrote without asking), so it shows up in the app. At the end tell me which tasks are solid and which topics I should review.`
+      : 'At the end list per task what I got right and what to review.',
+  ]
+    .filter((l, i, all) => l !== '' || all[i - 1] !== '')
     .join('\n');
 }
 
