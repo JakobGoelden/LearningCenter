@@ -45,7 +45,7 @@ export function SettingsView() {
 
   return (
     <div class="stack">
-      <div class="page-head subject-head" data-kanji="設">
+      <div class="page-head subject-head">
         <a href={href({ name: 'dashboard' })}>← Dashboard</a>
         <h1>Settings</h1>
       </div>

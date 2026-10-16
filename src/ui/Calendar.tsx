@@ -58,7 +58,7 @@ function TodayPanel({ loaded, today }: { loaded: LoadedPack; today: ISODate }) {
   const empty = !timed.length && !todo.length && !soon.length && !stale.length;
 
   return (
-    <section class="panel cal-today" aria-label="Today" data-kanji="今日">
+    <section class="panel cal-today" aria-label="Today">
       <div class="cal-head today-head">
         <span class="date-leaf" aria-hidden="true">
           <span>{monthOf(today)}</span>
@@ -269,7 +269,7 @@ function LongTermPanel({
   const weeksLeft = sem?.end ? Math.max(0, Math.ceil(diffDays(today, sem.end) / 7)) : null;
 
   return (
-    <section class="panel cal-long" aria-label="Long term" data-kanji="道">
+    <section class="panel cal-long" aria-label="Long term">
       <div class="cal-head">
         <h2>Long term</h2>
         <span class="muted small">

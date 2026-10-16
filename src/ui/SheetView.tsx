@@ -84,7 +84,7 @@ export function SheetView({ subjectId, sheetId }: { subjectId: string; sheetId: 
 
   return (
     <div class="stack">
-      <div class="page-head subject-head" data-kanji="練" style={{ '--c': s.color }}>
+      <div class="page-head subject-head" style={{ '--c': s.color }}>
         <a href={href({ name: 'subject', subject: s.id })}>← {s.name}</a>
         <h1>{sheet.label}</h1>
         {sheet.due && (
