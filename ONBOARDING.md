@@ -88,20 +88,22 @@ and write `local/<pack>/SETUP.md` with one line per item, for example:
 
 - [x] Installed, tests pass
 - [x] Semester, subjects and exams collected
-- [ ] Timetable (.ics export from the campus system)
 - [ ] DB: script / slides
 - [ ] DB: exercise sheets with tasks
 - [ ] DB: own notes
+- [ ] DB: old exams (if any)
 - [ ] Theo: script / slides
 - [ ] …
+- [ ] Timetable (.ics export from the campus system)
 - [ ] Topics per subject from the scripts
 - [ ] Dojos with drills for every procedure
-- [ ] Pack valid, app started with the pack, first quiz done
+- [ ] Pack valid, app started with the pack and checked
+- [ ] First Study round done
 ```
 
 `SETUP.md` is for you and the person; the app ignores it.
 
-## 3. Collect timetable, scripts, sheets and notes
+## 3. Collect scripts, timetable, sheets and notes
 
 This step is the core of the setup. The app is only as good as what you put
 into the pack here, so do not skip parts of it. Go through it **together
@@ -111,10 +113,11 @@ notes. For each item:
 
 1. Ask where it lives (Moodle, campus system, chair website, …), if you do
    not know yet.
-2. Tell them exactly what to click to download it and which folder to save
-   it to (the folder already exists from step 2).
-3. Wait until they say it is there, then list the folder and read the
-   files. If something is missing or the wrong file, say so right away.
+2. Get it into the pack: through the browser if you can (they log in, you
+   click and download, see below), otherwise tell them exactly what to click
+   and which folder to save it to (the folder already exists from step 2).
+3. Check the folder and read the files. If something is missing or the
+   wrong file, say so right away.
 4. Tick it off in `SETUP.md`.
 
 For **every subject** you need:
@@ -125,20 +128,66 @@ For **every subject** you need:
 | Current script or slides | `material/<subject-id>/` + a `script` check | topics, quiz questions |
 | Exercise sheets | `material/<subject-id>/sheets/` + `sheets[]` with `file` and `tasks` | solving sheets in the app |
 | Own notes | `notes/<subject-id>/` + a `notes` check | comparing notes with the script |
+| Old exams, exam prep (if available) | `material/<subject-id>/exams/` | exam-level drills, exam format |
 
 If something does not exist or the person cannot get it right now, create an
 open task for it (e.g. "Upload timetable PDF", "Script for DB not published
 yet") instead of leaving it out silently.
 
-Access without touching credentials, for everything in this step:
+Access without touching credentials, for everything in this step. Pick the
+first way that works:
 
-- **Preferred:** the person downloads the files and puts them into the pack
-  folder (paths below). Tell them exactly where to click.
-- You may fetch public pages yourself if you have a web tool.
-- If the person has set up a sync tool (e.g. a Moodle downloader or a synced
-  cloud folder), read from its target folder.
-- **Never** ask for, store or write passwords, tokens or session cookies to
-  files. Logins are the person's job.
+1. **Through a browser you can control (best).** Moodle, ILIAS, the campus
+   system and most course pages need a login, so a plain web fetch does not
+   reach them. If you can drive a real browser, do the clicking yourself
+   while the person only logs in. See "Working through the browser" below.
+2. **The person downloads, you guide.** Tell them exactly where to click and
+   which folder to save into (paths below), then check the folder.
+3. **A sync tool** the person already uses (a Moodle downloader, a synced
+   cloud folder): read from its target folder.
+4. **Public pages** (chair website, course catalogue): fetch them yourself if
+   you have a web tool.
+
+**Never** ask for, type, store or write passwords, one-time codes, tokens or
+session cookies anywhere. Logging in is always the person's job.
+
+### Working through the browser
+
+Check which browser tools you have, for example the **Claude in Chrome**
+extension, a browser built into the AI app the person is using, computer
+use, or a browser automation tool such as a Playwright MCP server.
+
+- **You have one:** explain in one sentence that you will open their
+  university pages in that browser, and that they log in there themselves
+  while you look away from the password field. Then open the login page
+  (Moodle, campus system, …), ask them to log in (including any two-factor
+  step or "register device" prompt) and to say "done". After that you work:
+  open the dashboard, list their courses and match them to the subjects,
+  open each course, and download the script or slides, the exercise sheets
+  and anything else useful (e.g. "Download all files" or per section).
+- **You have none:** say which tool would let you do this for them and ask
+  whether they want to set it up now (for Claude Code: the Claude in Chrome
+  extension; follow that tool's own setup steps, do not guess them). If
+  they do not want to, use way 2.
+
+While you are logged in through their browser:
+
+- **Downloads** usually land in the browser's download folder. Move each
+  file into the pack right away (`material/<subject-id>/`,
+  `material/<subject-id>/sheets/`, `material/timetable.ics`) under a clear
+  name, and tell the person what you moved.
+- **Timetable:** in the campus system, look for the personal timetable and
+  its iCal / .ics export (see 3b).
+- **Registrations:** look for course or exam registration (enrolment keys,
+  tutorial group sign-up, exam registration periods). Do not register the
+  person yourself: tell them what is open and when it closes, and add each
+  deadline as an open task with a due date.
+- **Exam info:** dates, rooms and allowed aids often sit in a course news
+  post or a PDF; put them into `exam` (never guess).
+- Only read what the setup needs, do not submit forms, post messages or
+  change settings on their behalf, and stop when the person says so.
+- Record every course page as a `material` check with its `url`, so the
+  next "What's new?" can open the same page again.
 
 ### 3a. Scripts and slides
 
@@ -152,6 +201,11 @@ script) into `local/<pack>/material/<subject-id>/`. Typical places:
 
 In Moodle, downloading usually works per course via "Download all files" or
 per section; in ILIAS via "Download" on the folder.
+
+While you are in the course, also look for **old exams**, mock exams or exam
+prep sheets (often called "Altklausuren", "Probeklausur", "exam
+preparation"). Save them to `material/<subject-id>/exams/`: they show the
+exam format and are the best source for `exam`-level drills.
 
 Read the script once completely, or at least its table of contents and
 chapter openings: the topics in step 4 come from it. Note the version or
@@ -253,7 +307,9 @@ never end up in Git.
 The folder exists since step 2. Now fill it from the material, following
 CLAUDE.md, part A:
 
-1. `pack.json`: title, semester, settings from step 2, list of subjects.
+1. `pack.json`: `id`, title, semester, settings from step 2 (language,
+   questions per quiz, weekends), and the subject and dojo ids in display
+   order. Delete `subjects/example.json` from the copied empty pack.
 2. One `subjects/<id>.json` per subject with exam, `schedule` (step 3b),
    checks (3a, 3d) and exercise sheets with `file` and `tasks` (3c). Sheets
    that are not published yet but have a known date go in as `open` with
@@ -269,6 +325,8 @@ CLAUDE.md, part A:
 5. **Dojos:** one dojo for every calculation or construction procedure in the
    material. First look for templates in `packs/dojo-library/` and
    `packs/demo/dojos/`, otherwise write a new one (`schema/dojo.schema.json`).
+   Set `subject` and link the dojo to its `topics`, and add its id to
+   `pack.json` → `dojos`.
    Put the exam's allowed aids (e.g. the allowed calculator) into `aids`.
    Then fill each dojo with **drills**, the prepared exercises the app runs
    on its own as a timed practice round (format and rules: CLAUDE.md →
@@ -313,16 +371,29 @@ in the pack folder with "Process the inbox" (see CLAUDE.md, Processing the
 inbox). If you are Claude Code yourself, you can take this over directly and
 wait for new requests.
 
-Finally, have the person start a first quiz in the first subject (or ask it
+Check that everything arrived, in the app (if you can control a browser,
+look yourself; otherwise ask the person to check with you):
+
+- the calendar shows this week's classes and the exams,
+- every subject has a banner with its topics, and the open sheets and open
+  tasks show up on it,
+- clicking a sheet shows the file next to its tasks,
+- every dojo has a Dojo button and a practice round starts.
+
+Fix whatever is missing, then validate again.
+
+Finally, have the person do a first round: the **Study** button on the
+dashboard picks the most pressing topics across all subjects (or quiz
 directly in the chat and record it with `npm run review`), so that due dates
-get created.
+get created. Tick the last items off in `SETUP.md`.
 
 ## 6. Afterwards: regular upkeep
 
 Suggest this routine to the person and carry it out when they ask for it:
 
-- **"What's new?"** (e.g. twice a week): look at the check sources, have new
-  files put into `material/`, compare the script version, create new topics,
+- **"What's new?"** (e.g. twice a week): look at the check sources (through
+  the browser if you have one; the person logs in again if needed), put new
+  files into `material/`, compare the script version, create new topics,
   add new exercise sheets with `file` and `tasks`, update the timetable if it
   changed, set `lastChecked`.
 - **"Check my sheet <n>"**: read `work/<subject>/<sheet>.json` against the
@@ -338,6 +409,5 @@ Suggest this routine to the person and carry it out when they ask for it:
 - **"How am I doing?"**: due and overdue topics, exams in the next two
   weeks, open sheets, outdated checks.
 
-At the end of the setup, tick off the last items in `SETUP.md` and put short
-phrases the person can say to you at any time as a list in your final
-message.
+At the end of the setup, put short phrases the person can say to you at any
+time as a list in your final message.

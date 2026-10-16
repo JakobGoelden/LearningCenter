@@ -58,6 +58,10 @@ itself. It installs everything, asks about your subjects and exams, and then
 gets your material in together with you, step by step: your scripts or
 slides (e.g. from Moodle), your timetable (best as an .ics export from the
 campus system), your exercise sheets and your own notes (e.g. reMarkable).
+If the AI can control a browser (e.g. with the Claude in Chrome extension),
+it opens Moodle or your campus system there, you log in yourself, and it
+finds and downloads everything; it also points out open course or exam
+registrations. Your password never goes to the AI or into a file.
 From that it builds your topics and dojos and starts the app with your pack.
 It keeps a checklist in `local/<pack>/SETUP.md`, so you can stop and
 continue later. Details: [ONBOARDING.md](ONBOARDING.md).
