@@ -150,3 +150,18 @@ export function studyPlan(subjects: Subject[], on: ISODate, count: number): Stud
   }
   return [...blocks.values()];
 }
+
+/** Topics that are due today or overdue (skip never counts). */
+export function dueCount(subjects: Subject[], on: ISODate): number {
+  return subjects.reduce((n, s) => n + s.topics.filter((t) => t.status !== 'skip' && !!t.due && t.due <= on).length, 0);
+}
+
+/** Default size of a study round: everything that is due, else the usual quiz size. */
+export function studyCount(subjects: Subject[], on: ISODate, fallback: number): number {
+  return dueCount(subjects, on) || fallback;
+}
+
+/** Topics a study round can draw from at all. */
+export function studyCandidates(subjects: Subject[], on: ISODate): number {
+  return subjects.reduce((n, s) => n + s.topics.filter((t) => studyPriority(t, on, s.exam.date) > 0).length, 0);
+}

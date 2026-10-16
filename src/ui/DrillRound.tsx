@@ -63,6 +63,7 @@ export function DrillPractice({
   onFinish,
   onApply,
   chatPrompt,
+  ai,
   onRunning,
 }: {
   dojo: Dojo;
@@ -70,12 +71,20 @@ export function DrillPractice({
   onRunning?: (running: boolean) => void;
   /** Prompt for "Train in chat" at the chosen level. */
   chatPrompt?: (level: Level | 'all') => string;
+  /** AI extras in the app: write more drills, or a fresh task checked step by step. */
+  ai?: { busy: boolean; drillCount: number; moreDrills: () => void; freshTask: (level: Level | 'all') => void };
   onStart: (round: Drill[], level: Level | 'all') => void;
   onFinish: (summary: RoundSummary) => Promise<void>;
   onApply?: (summary: RoundSummary) => Promise<void>;
 }) {
   const drills = dojo.drills ?? [];
-  const levels = useMemo(() => (['easy', 'medium', 'exam'] as Level[]).filter((l) => drills.some((d) => (d.level ?? 'medium') === l)), [drills]);
+  const levels = useMemo(
+    () =>
+      drills.length
+        ? (['easy', 'medium', 'exam'] as Level[]).filter((l) => drills.some((d) => (d.level ?? 'medium') === l))
+        : (dojo.levels ?? (['easy', 'medium', 'exam'] as Level[])),
+    [drills, dojo.levels],
+  );
   const [level, setLevel] = useState<Level | 'all'>('all');
   const [count, setCount] = useState(5);
   const [timed, setTimed] = useState(true);
@@ -208,43 +217,88 @@ export function DrillPractice({
   }
 
   return (
-    <section class="panel stack dojo-mat">
+    <section class="panel stack dojo-mat dojo-start">
       <div class="row">
         <div style="flex:1">
-          <div class="dojo-eyebrow">Training round</div>
+          <div class="dojo-eyebrow">Training</div>
           <h2>Step onto the mat</h2>
         </div>
-        <span class="small muted">
-          {drills.length} prepared exercises · graded instantly
-          {bestPoints(dojo.id) > 0 && <> · best round {bestPoints(dojo.id)} points</>}
-        </span>
+        {bestPoints(dojo.id) > 0 && <span class="small muted">Best round {bestPoints(dojo.id)} points</span>}
       </div>
-      <div class="row small">
-        <span>Level</span>
-        <div class="segmented">
-          {(['all', ...levels] as (Level | 'all')[]).map((l) => (
-            <button class={`small${level === l ? ' primary' : ''}`} aria-pressed={level === l} onClick={() => setLevel(l)}>
-              {l === 'all' ? 'mixed' : LEVEL_LABEL[l]}
-            </button>
-          ))}
+      <div class="dojo-ways">
+        <div class="dojo-way app">
+          <div class="dojo-way-head">
+            <span class="dojo-way-icon" aria-hidden="true">
+              ▶
+            </span>
+            <div>
+              <strong>Here in the app</strong>
+              <span class="small muted">
+                {drills.length ? `${drills.length} prepared exercises, graded instantly, with points` : 'No prepared exercises yet'}
+              </span>
+            </div>
+          </div>
+          <div class="row small">
+            <span>Level</span>
+            <div class="segmented">
+              {(['all', ...levels] as (Level | 'all')[]).map((l) => (
+                <button class={`small${level === l ? ' primary' : ''}`} aria-pressed={level === l} onClick={() => setLevel(l)}>
+                  {l === 'all' ? 'mixed' : LEVEL_LABEL[l]}
+                </button>
+              ))}
+            </div>
+          </div>
+          {drills.length > 0 && (
+            <div class="row small">
+              <span>Exercises</span>
+              <div class="segmented">
+                {COUNTS.filter((c, i) => i === 0 || c <= available || COUNTS[i - 1] < available).map((c) => (
+                  <button class={`small${count === c ? ' primary' : ''}`} aria-pressed={count === c} onClick={() => setCount(c)}>
+                    {Math.min(c, available)}
+                  </button>
+                ))}
+              </div>
+              <label class="row" style="gap:4px">
+                <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.currentTarget.checked)} /> Timer
+              </label>
+            </div>
+          )}
+          {drills.length > 0 && (
+            <div>
+              <button class="primary dojo-go" disabled={!available} onClick={() => start(pickRound(drills, level, count))}>
+                Start training
+              </button>
+            </div>
+          )}
+          {ai && (
+            <div class="dojo-way-more small">
+              <span class="muted">With the AI:</span>
+              <button class={`small${drills.length ? ' ghost' : ' primary'}`} onClick={ai.moreDrills} disabled={ai.busy}>
+                + {ai.drillCount} new exercises
+              </button>
+              <button class="small ghost" onClick={() => ai.freshTask(level)} disabled={ai.busy} title="The AI writes a new task and checks your solution step by step">
+                A fresh task, checked step by step
+              </button>
+            </div>
+          )}
         </div>
-        <span>Exercises</span>
-        <div class="segmented">
-          {COUNTS.filter((c, i) => i === 0 || c <= available || COUNTS[i - 1] < available).map((c) => (
-            <button class={`small${count === c ? ' primary' : ''}`} aria-pressed={count === c} onClick={() => setCount(c)}>
-              {Math.min(c, available)}
-            </button>
-          ))}
-        </div>
-        <label class="row" style="gap:4px">
-          <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.currentTarget.checked)} /> Timer
-        </label>
-      </div>
-      <div class="start-row">
-        <button class="primary dojo-go" disabled={!available} onClick={() => start(pickRound(drills, level, count))}>
-          Start here
-        </button>
-        {chatPrompt && <ChatStart separate label="Train in chat" prompt={() => chatPrompt(level)} />}
+        {chatPrompt && (
+          <div class="dojo-way chat">
+            <div class="dojo-way-head">
+              <span class="dojo-way-icon" aria-hidden="true">
+                💬
+              </span>
+              <div>
+                <strong>In your AI chat</strong>
+                <span class="small muted">Talk it through, voice included</span>
+              </div>
+            </div>
+            <p class="small">
+              Your AI sets one task at a time, checks every step and gives hints when you ask. It records the result in your pack.
+            </p>
+            <ChatStart label="Copy prompt for the chat" prompt={() => chatPrompt('all')} />
+          </div>
+        )}
       </div>
     </section>
   );

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { diffDays, today } from '../lib/dates';
-import { mastery, studyPlan, type StudyBlock } from '../scheduling/scheduler';
+import { dueCount, mastery, studyCandidates, studyCount, studyPlan, type StudyBlock } from '../scheduling/scheduler';
 import type { ISODate, Topic } from '../model/types';
 import { QuizView } from './QuizView';
 import { href, navigate } from './router';
@@ -29,7 +29,10 @@ function reasons(t: Topic, on: ISODate, exam?: ISODate): string[] {
 export function StudyView() {
   const { fs, loaded } = usePack();
   const on = today();
-  const [count, setCount] = useState(loaded.pack.settings?.questionsPerQuiz ?? 5);
+  const due = dueCount(loaded.subjects, on);
+  const most = Math.max(1, studyCandidates(loaded.subjects, on));
+  // Everything due by default; the stepper only matters when you want less (or more).
+  const [count, setCount] = useState(Math.min(most, studyCount(loaded.subjects, on, loaded.pack.settings?.questionsPerQuiz ?? 5)));
   // The plan is fixed once the round starts, so saving progress does not reshuffle it.
   const [plan, setPlan] = useState<StudyBlock[] | null>(null);
   const [step, setStep] = useState(0);
@@ -101,10 +104,19 @@ export function StudyView() {
       ) : (
         <div class="panel stack study-plan">
           <div class="row">
-            <span class="muted">Picked for you: due topics first, weak ones and upcoming exams weigh more.</span>
+            <span class="muted">
+              {due && count >= due
+                ? `Everything that is due${count > due ? ', plus new and shaky topics' : ''}. Weak ones and upcoming exams come first.`
+                : 'Picked for you: due topics first, weak ones and upcoming exams weigh more.'}
+            </span>
             <span class="spacer" style="flex:1" />
             <span class="small">Questions</span>
-            <Stepper value={count} onChange={setCount} min={1} max={30} label="Questions" />
+            <Stepper value={count} onChange={setCount} min={1} max={Math.max(most, 1)} label="Questions" />
+            {due > 0 && count !== due && (
+              <button class="small all-due" onClick={() => setCount(due)}>
+                All due ({due})
+              </button>
+            )}
           </div>
           {preview.map((b) => (
             <div class="study-block" style={{ '--c': b.subject.color }}>
@@ -145,7 +157,7 @@ export function StudyView() {
 export function StudyCta() {
   const { fs, loaded } = usePack();
   const on = today();
-  const plan = useMemo(() => studyPlan(loaded.subjects, on, loaded.pack.settings?.questionsPerQuiz ?? 5), [loaded, on]);
+  const plan = useMemo(() => studyPlan(loaded.subjects, on, studyCount(loaded.subjects, on, loaded.pack.settings?.questionsPerQuiz ?? 5)), [loaded, on]);
   const due = loaded.subjects.reduce((n, s) => n + s.topics.filter((t) => t.status !== 'skip' && t.due && t.due <= on).length, 0);
   const first = plan[0];
   return (
