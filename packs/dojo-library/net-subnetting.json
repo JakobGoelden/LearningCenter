@@ -1,0 +1,11 @@
+{
+  "$schema": "../../schema/dojo.schema.json",
+  "id": "net-subnetting",
+  "subject": "net",
+  "title": "Subnetting",
+  "procedure": "IPv4-Netze in Subnetze aufteilen (CIDR, VLSM)",
+  "levels": ["easy", "medium", "exam"],
+  "aids": ["kein Taschenrechner"],
+  "promptTemplate": "Gib ein IPv4-Netz und Anforderungen an Subnetze. easy: gleich große Subnetze. medium: VLSM mit 3 Subnetzen. exam: VLSM mit 4–5 Subnetzen und Transfernetzen. Gefragt: Netzadresse, Präfix, Broadcast, erster/letzter Host je Subnetz. Beim Prüfen: jede Zeile einzeln, Überschneidungen und Reihenfolge (größte zuerst) kontrollieren.",
+  "answerFormat": "Tabelle: Subnetz | Netzadresse/Präfix | erster Host | letzter Host | Broadcast."
+}

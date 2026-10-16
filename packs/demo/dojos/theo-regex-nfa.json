@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../schema/dojo.schema.json",
+  "id": "theo-regex-nfa",
+  "subject": "theo",
+  "title": "RegExp → NFA",
+  "procedure": "Thompson-Konstruktion",
+  "description": "Baue aus einem regulären Ausdruck einen ε-NFA nach Thompson.",
+  "levels": ["easy", "medium", "exam"],
+  "topics": ["regex"],
+  "promptTemplate": "Erzeuge einen regulären Ausdruck über {a,b} für die Thompson-Konstruktion. easy: eine Verkettung und ein Stern. medium: Vereinigung, Verkettung und Stern geschachtelt. exam: Klausurniveau mit zwei Ebenen Schachtelung. Beim Prüfen: kontrolliere die Teilautomaten von innen nach außen und ob jeder genau einen Start- und Endzustand hat.",
+  "answerFormat": "Übergänge als Liste 'q0 --a--> q1', ε als 'eps'."
+}

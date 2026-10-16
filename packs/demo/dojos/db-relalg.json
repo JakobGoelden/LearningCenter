@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../schema/dojo.schema.json",
+  "id": "db-relalg",
+  "subject": "db",
+  "title": "Relationale Algebra",
+  "procedure": "Anfragen in relationaler Algebra formulieren",
+  "description": "Natürlichsprachige Frage in einen Algebra-Ausdruck übersetzen.",
+  "levels": ["easy", "medium", "exam"],
+  "topics": ["relational-algebra"],
+  "promptTemplate": "Gib ein Schema mit 2–3 Relationen und eine Frage. easy: Selektion und Projektion. medium: Join und Umbenennung. exam: Differenz oder Division. Notation: σ, π, ⋈, ρ, ∪, −, ÷ (ASCII-Ersatz sigma, pi, join, rho, union, minus, div erlaubt). Beim Prüfen: Operator für Operator von innen nach außen, Attributnamen und Schemata der Zwischenergebnisse kontrollieren.",
+  "answerFormat": "Ein Ausdruck, gern mit Zwischenschritten."
+}

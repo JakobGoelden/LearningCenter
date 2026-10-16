@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../schema/dojo.schema.json",
+  "id": "db-sql",
+  "subject": "db",
+  "title": "SQL von Hand",
+  "procedure": "SQL-Anfragen schreiben und von Hand auswerten",
+  "description": "Kleines Schema mit Beispieldaten, eine Frage in natürlicher Sprache, Antwort als SQL plus Ergebnistabelle.",
+  "levels": ["easy", "medium", "exam"],
+  "topics": ["sql-basics"],
+  "promptTemplate": "Gib ein kleines Schema (2–3 Tabellen, je höchstens 5 Zeilen Beispieldaten als Tabelle) und eine Frage in natürlicher Sprache. easy: SELECT/WHERE. medium: JOIN und GROUP BY. exam: Unterabfrage oder HAVING, mit NULL-Falle. Der Lernende schreibt die SQL-Anfrage und das Ergebnis. Beim Prüfen: werte die Anfrage des Lernenden auf den Beispieldaten aus und vergleiche mit der Musterlösung; Schritte: FROM/JOIN, WHERE, GROUP BY, HAVING, SELECT, ORDER BY.",
+  "answerFormat": "SQL-Anfrage, danach die Ergebnistabelle."
+}
