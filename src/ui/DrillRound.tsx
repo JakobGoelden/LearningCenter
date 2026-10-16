@@ -15,6 +15,7 @@ import { LEVEL_LABEL } from '../ai/requests';
 import { AutomatonEditor, AutomatonTable, emptyTable, tableToAutomaton, type TableState } from './AutomatonEditor';
 import { Markdown } from './Markdown';
 import { SCORE_LABEL } from './labels';
+import { Belt, beltFor, TimerRing } from './Emblem';
 
 export interface DrillOutcome {
   drill: Drill;
@@ -94,21 +95,30 @@ export function DrillPractice({
     const total = summary.outcomes.reduce((s, o) => s + o.seconds, 0);
     const mistakes = summary.outcomes.filter((o) => !o.result.correct).map((o) => o.drill);
     return (
-      <section class="panel stack">
-        <div class="row">
-          <h3 style="flex:1">Round finished</h3>
-          <span class={`score score-${summary.score}`}>
-            {right}/{summary.outcomes.length} right · {summary.score}/5 {SCORE_LABEL[summary.score]}
-          </span>
+      <section class="panel stack dojo-mat">
+        <div class="round-result">
+          <Belt score={summary.score} />
+          <div class="round-result-text">
+            <div class="dojo-eyebrow">Round finished</div>
+            <div class="round-result-big">
+              {right}/{summary.outcomes.length} <span>right</span>
+            </div>
+            <div class="row small">
+              <span class={`score score-${summary.score}`}>
+                {summary.score}/5 {SCORE_LABEL[summary.score]}
+              </span>
+              <span class="belt-name">{beltFor(summary.score).name}</span>
+              <span class="muted">
+                Time {fmt(total)}
+                {summary.timed ? '' : ' (untimed)'}
+              </span>
+            </div>
+          </div>
         </div>
-        <div class="small muted">
-          Time: {fmt(total)}
-          {summary.timed ? '' : ' (untimed)'}
-        </div>
-        <ul class="steps">
+        <ul class="steps round-list">
           {summary.outcomes.map((o) => (
             <li>
-              <span style={{ color: o.result.correct ? 'var(--ok)' : o.result.score >= 3 ? 'var(--warn)' : 'var(--danger)' }}>
+              <span class="round-mark" style={{ color: o.result.correct ? 'var(--ok)' : o.result.score >= 3 ? 'var(--warn)' : 'var(--danger)' }}>
                 {o.result.correct ? '✓' : o.result.score >= 3 ? '½' : '✗'}
               </span>
               <span class="small">
@@ -149,9 +159,12 @@ export function DrillPractice({
   }
 
   return (
-    <section class="panel stack">
+    <section class="panel stack dojo-mat">
       <div class="row">
-        <h3 style="flex:1">Practice round</h3>
+        <div style="flex:1">
+          <div class="dojo-eyebrow">Training round</div>
+          <h2>Step onto the mat</h2>
+        </div>
         <span class="small muted">{drills.length} prepared exercises · graded instantly</span>
       </div>
       <div class="row small">
@@ -176,8 +189,8 @@ export function DrillPractice({
         </label>
       </div>
       <div>
-        <button class="primary" disabled={!available} onClick={() => start(pickRound(drills, level, count))}>
-          Start
+        <button class="primary dojo-go" disabled={!available} onClick={() => start(pickRound(drills, level, count))}>
+          Start training
         </button>
       </div>
     </section>
@@ -226,17 +239,24 @@ function DrillRun({
   const outcome = outcomes[idx];
 
   return (
-    <section class="panel stack drill">
+    <section class="panel stack drill dojo-mat">
       <div class="row small">
         <span class="qnum">
           Exercise {idx + 1}/{drills.length}
         </span>
+        <span class="pips" aria-hidden="true">
+          {drills.map((_, i) => (
+            <i class={i < outcomes.length ? (outcomes[i].result.correct ? 'ok' : outcomes[i].result.score >= 3 ? 'partly' : 'wrong') : i === idx ? 'now' : ''} />
+          ))}
+        </span>
         <span class="badge">{KIND_HINT[drill.kind]}</span>
         {drill.level && <span class="badge">{LEVEL_LABEL[drill.level]}</span>}
         <span style="flex:1" />
-        <span class={`timer mono${timed && left < 10 && !done ? ' urgent' : ''}`} aria-live="off">
-          {timed ? fmt(done ? Math.max(0, limit - outcome.seconds) : left) : fmt(done ? outcome.seconds : elapsed)}
-        </span>
+        <TimerRing
+          fraction={timed ? (done ? Math.max(0, limit - outcome.seconds) : left) / limit : 1}
+          label={timed ? fmt(done ? Math.max(0, limit - outcome.seconds) : left) : fmt(done ? outcome.seconds : elapsed)}
+          urgent={timed && left < 10 && !done}
+        />
         <button class="ghost small" onClick={onCancel}>
           Stop
         </button>
@@ -256,6 +276,9 @@ function DrillRun({
       {done && (
         <div class="stack">
           <div class={`verdict ${outcome.result.correct ? 'ok' : outcome.result.score >= 3 ? 'partly' : 'wrong'}`}>
+            <span class={`stamp${!outcome.result.correct && outcome.result.score < 3 ? ' cross' : ''}`} aria-hidden="true">
+              {outcome.result.correct ? '一本' : outcome.result.score >= 3 ? '技有' : '×'}
+            </span>
             <strong>{outcome.result.correct ? 'Right!' : outcome.result.score >= 3 ? 'Almost.' : 'Not quite.'}</strong>{' '}
             {outcome.result.feedback}
           </div>

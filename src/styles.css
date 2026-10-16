@@ -17,8 +17,13 @@
   --st-shaky: #f08c00;
   --st-solid: #2f9e44;
   --st-skip: #d9d7d0;
-  --radius: 12px;
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.05), 0 2px 8px rgb(0 0 0 / 0.04);
+  --radius: 16px;
+  --shadow: 0 1px 2px rgb(20 20 40 / 0.04), 0 4px 16px -4px rgb(20 20 40 / 0.08);
+  --shadow-hover: 0 2px 4px rgb(20 20 40 / 0.05), 0 12px 32px -8px rgb(20 20 40 / 0.18);
+  --ink: #15131c;
+  --ink-2: #221e2c;
+  --vermilion: #ef4b2a;
+  --gold: #f2b84b;
   --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
   color-scheme: light;
 }
@@ -40,7 +45,10 @@
     --ok-bg: #1b3322;
     --st-new: #6e6e78;
     --st-skip: #3a3a42;
-    --shadow: none;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-hover: 0 12px 32px -8px rgb(0 0 0 / 0.6);
+    --ink: #0d0c12;
+    --ink-2: #1a1722;
     color-scheme: dark;
   }
 }
@@ -50,10 +58,15 @@ html, body { margin: 0; }
 body {
   background: var(--bg);
   color: var(--text);
-  font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font: 15px/1.5 Inter, 'SF Pro Text', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background-image:
+    radial-gradient(1200px 500px at 10% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
+    radial-gradient(900px 400px at 100% 0%, color-mix(in srgb, #8b5cf6 8%, transparent), transparent 70%);
+  background-repeat: no-repeat;
+  min-height: 100vh;
 }
 a { color: var(--accent); }
-h1, h2, h3 { line-height: 1.25; margin: 0; }
+h1, h2, h3 { line-height: 1.25; margin: 0; letter-spacing: -0.01em; }
 h1 { font-size: 1.25rem; }
 h2 { font-size: 1.1rem; }
 h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; }
@@ -418,3 +431,190 @@ table.automaton.readonly td, table.automaton.readonly th { border: 1px solid var
   .week-grid { display: none; }
   .week-list { display: block; }
 }
+
+
+/* ===========================================================================
+   Visual layer: header, panels, banners
+   =========================================================================== */
+.topbar {
+  position: sticky; top: 0; z-index: 20; margin: 0 -16px 8px; padding: 12px 16px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+.topbar .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 1.05rem; letter-spacing: -0.01em; }
+.logo { width: 30px; height: 30px; flex: none; filter: drop-shadow(0 2px 6px rgb(91 123 255 / 0.35)); }
+button.primary, .btn.primary {
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #8b5cf6));
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+button.primary:hover:not(:disabled), .btn.primary:hover { filter: brightness(1.08); }
+button, .btn { transition: border-color 0.15s, background 0.15s, transform 0.1s, filter 0.15s; }
+button:active:not(:disabled), .btn:active { transform: translateY(1px); }
+.panel { transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s; }
+
+.banner {
+  position: relative; overflow: hidden; border-left: 0; padding: 16px 18px 16px 24px;
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--c, var(--accent)) 9%, var(--panel)) 0%, var(--panel) 55%);
+}
+.banner::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 6px; background: linear-gradient(var(--c, var(--accent)), color-mix(in srgb, var(--c, var(--accent)) 55%, #fff)); }
+.banner:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.banner-head h2 { font-size: 1.2rem; }
+.banner .statusbar { height: 12px; border-radius: 999px; box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.08); }
+.statusbar > span + span { box-shadow: -1px 0 0 var(--panel); }
+.flag { font-weight: 500; }
+
+.calendar > .panel h2, .cal-head h2 { font-size: 1.15rem; }
+.cal-today { background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 8%, var(--panel)), var(--panel) 60%); }
+.wg-day.today { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #8b5cf6)); }
+.wg-event { box-shadow: 0 1px 2px rgb(0 0 0 / 0.06); transition: transform 0.15s; }
+.wg-event:hover { transform: scale(1.02); }
+.card-link:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+
+/* ===========================================================================
+   Dojo: ink, vermilion and a torii
+   =========================================================================== */
+.dojo-tile {
+  position: relative; overflow: hidden; isolation: isolate; gap: 2px;
+  border: 0; color: #fff;
+  background:
+    radial-gradient(120% 90% at 50% 120%, color-mix(in srgb, var(--vermilion) 45%, transparent), transparent 60%),
+    linear-gradient(160deg, var(--ink-2), var(--ink));
+  box-shadow: 0 6px 20px -8px rgb(0 0 0 / 0.5), inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.dojo-tile::after { content: ''; position: absolute; inset: auto 0 0 0; height: 4px; background: var(--c, var(--vermilion)); }
+.dojo-tile strong { font-size: 0.95rem; letter-spacing: 0.32em; text-transform: uppercase; padding-left: 0.32em; }
+.dojo-sub { font-size: 0.75rem; color: rgb(255 255 255 / 0.65); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px; }
+.dojo-torii { width: 38px; height: 38px; color: var(--vermilion); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--vermilion) 55%, transparent)); transition: transform 0.25s, filter 0.25s; }
+.dojo-kanji {
+  position: absolute; z-index: -1; right: -6px; top: -8px; writing-mode: vertical-rl;
+  font-size: 3.2rem; font-weight: 900; line-height: 1; color: rgb(255 255 255 / 0.05); pointer-events: none;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif CJK JP', 'Noto Serif JP', serif;
+}
+.dojo-tile:hover { box-shadow: 0 12px 28px -10px color-mix(in srgb, var(--vermilion) 60%, transparent), inset 0 0 0 1px rgb(255 255 255 / 0.1); transform: translateY(-2px); }
+.dojo-tile:hover .dojo-torii { transform: translateY(-2px) scale(1.08); filter: drop-shadow(0 0 16px var(--vermilion)); }
+@media (max-width: 560px) { .dojo-torii { width: 30px; height: 30px; } .dojo-tile strong { letter-spacing: 0.2em; } }
+
+/* Hero at the top of a dojo page */
+.dojo-hero {
+  position: relative; overflow: hidden; isolation: isolate; border-radius: 20px;
+  padding: 22px 24px 24px; color: #fff; min-height: 190px;
+  background:
+    radial-gradient(70% 120% at 85% 110%, color-mix(in srgb, var(--vermilion) 38%, transparent), transparent 60%),
+    radial-gradient(60% 80% at 0% 0%, color-mix(in srgb, var(--c, var(--accent)) 35%, transparent), transparent 70%),
+    linear-gradient(150deg, var(--ink-2), var(--ink));
+  box-shadow: 0 18px 40px -20px rgb(0 0 0 / 0.6);
+}
+.dojo-hero-enso { position: absolute; z-index: -1; right: 2%; top: 50%; width: 260px; height: 260px; transform: translateY(-50%) rotate(-12deg); color: rgb(255 255 255 / 0.08); }
+.dojo-hero-torii { position: absolute; z-index: -1; right: calc(2% + 75px); top: 50%; width: 110px; height: 110px; transform: translateY(-50%); color: var(--vermilion); opacity: 0.9; filter: drop-shadow(0 0 24px color-mix(in srgb, var(--vermilion) 60%, transparent)); }
+.dojo-hero-kanji {
+  position: absolute; z-index: -1; left: -10px; bottom: -28px; font-size: 9rem; font-weight: 900; line-height: 1;
+  color: rgb(255 255 255 / 0.04); letter-spacing: -0.05em; pointer-events: none;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif CJK JP', 'Noto Serif JP', serif;
+}
+.dojo-hero-body { display: grid; gap: 6px; max-width: min(620px, 100% - 170px); }
+.dojo-hero h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
+.dojo-hero-eyebrow, .dojo-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--vermilion); }
+.dojo-hero-sub { color: rgb(255 255 255 / 0.75); }
+.dojo-hero-desc { margin: 2px 0 0; color: rgb(255 255 255 / 0.85); }
+.dojo-hero-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.dojo-hero-tags span { font-size: 0.78rem; border-radius: 999px; padding: 2px 10px; background: rgb(255 255 255 / 0.08); border: 1px solid rgb(255 255 255 / 0.12); }
+.dojo-back { color: rgb(255 255 255 / 0.7); text-decoration: none; font-size: 0.85rem; margin-bottom: 6px; }
+.dojo-back:hover { color: #fff; }
+@media (max-width: 640px) {
+  .dojo-hero { padding: 18px; }
+  .dojo-hero h1 { font-size: 1.5rem; }
+  .dojo-hero-body { max-width: 100%; }
+  .dojo-hero-torii { right: 12px; top: 18px; transform: none; width: 54px; height: 54px; opacity: 0.55; }
+  .dojo-hero-eyebrow { padding-right: 60px; }
+  .topbar { position: static; }
+  .dojo-hero-enso { width: 180px; height: 180px; right: -40px; }
+}
+
+/* Dojo list */
+.dojo-card {
+  position: relative; overflow: hidden; isolation: isolate; display: grid; gap: 6px; align-content: start;
+  padding: 18px 18px 18px; border-radius: var(--radius); text-decoration: none; color: #fff; min-height: 150px;
+  background: radial-gradient(90% 90% at 100% 100%, color-mix(in srgb, var(--vermilion) 28%, transparent), transparent 60%), linear-gradient(160deg, var(--ink-2), var(--ink));
+  box-shadow: 0 8px 24px -14px rgb(0 0 0 / 0.6); transition: transform 0.2s, box-shadow 0.2s;
+}
+.dojo-card h2 { padding-right: 56px; }
+.dojo-card .muted, .dojo-card .small { color: rgb(255 255 255 / 0.72); }
+.dojo-card-torii { position: absolute; z-index: -1; right: 14px; top: 14px; width: 48px; height: 48px; color: var(--vermilion); opacity: 0.85; }
+.dojo-card-count { justify-self: start; font-size: 0.75rem; font-weight: 700; border-radius: 999px; padding: 1px 9px; background: var(--vermilion); color: #fff; }
+.dojo-card:hover { transform: translateY(-3px); box-shadow: 0 16px 32px -14px color-mix(in srgb, var(--vermilion) 70%, transparent); }
+
+/* The training mat: practice panels */
+.dojo-mat {
+  position: relative; border: 0; border-top: 3px solid var(--vermilion);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 119px, color-mix(in srgb, var(--border) 35%, transparent) 119px 120px),
+    linear-gradient(var(--panel), color-mix(in srgb, var(--gold) 5%, var(--panel)));
+}
+.dojo-mat h2 { font-size: 1.35rem; font-weight: 800; }
+button.dojo-go {
+  font-size: 1.02rem; padding: 10px 22px; border-radius: 999px; border: 0; letter-spacing: 0.02em;
+  background: linear-gradient(135deg, var(--vermilion), #c2255c); box-shadow: 0 8px 20px -8px var(--vermilion);
+}
+.dojo-mat .segmented button.primary { background: var(--ink); border-color: var(--ink); box-shadow: none; color: #fff; }
+
+/* Timer ring and progress pips */
+.timer-ring { position: relative; width: 52px; height: 52px; display: inline-grid; place-items: center; flex: none; }
+.timer-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.timer-ring circle { fill: none; stroke-width: 4.5; }
+.timer-ring .track { stroke: var(--border); }
+.timer-ring .arc { stroke: var(--vermilion); stroke-linecap: round; transition: stroke-dashoffset 0.25s linear, stroke 0.2s; }
+.timer-ring > span { font-size: 0.78rem; font-weight: 800; }
+.timer-ring.urgent .arc { stroke: var(--danger); }
+.timer-ring.urgent > span { color: var(--danger); animation: pulse 0.9s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+.dojo-mat .timebar { height: 6px; }
+.dojo-mat .timebar > div { background: linear-gradient(90deg, var(--gold), var(--vermilion)); }
+.pips { display: inline-flex; gap: 3px; flex-wrap: wrap; }
+.pips i { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+.pips i.now { background: var(--ink); box-shadow: 0 0 0 2px color-mix(in srgb, var(--vermilion) 50%, transparent); }
+.pips i.ok { background: var(--ok); }
+.pips i.partly { background: var(--warn); }
+.pips i.wrong { background: var(--danger); }
+@media (prefers-color-scheme: dark) { .pips i.now { background: #fff; } .dojo-mat .segmented button.primary { background: #fff; color: var(--ink); } }
+
+/* Verdict stamp */
+.verdict { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px; animation: verdict-in 0.25s ease-out; }
+.stamp {
+  flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 10px;
+  border: 3px solid currentColor; font-weight: 900; font-size: 1rem; line-height: 1;
+  transform: rotate(-10deg); animation: stamp 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif CJK JP', 'Noto Serif JP', serif;
+}
+.verdict.ok .stamp { color: var(--vermilion); }
+.stamp.cross { font-size: 1.8rem; font-family: inherit; }
+@keyframes stamp { from { transform: rotate(-10deg) scale(2.2); opacity: 0; } to { transform: rotate(-10deg) scale(1); opacity: 1; } }
+@keyframes verdict-in { from { transform: translateY(4px); opacity: 0; } }
+
+/* Round result with belt */
+.round-result { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.belt { width: 120px; height: 60px; flex: none; filter: drop-shadow(0 4px 8px rgb(0 0 0 / 0.2)); animation: stamp 0.5s cubic-bezier(0.2, 1.4, 0.4, 1); transform: rotate(-4deg); }
+.round-result-text { display: grid; gap: 4px; }
+.round-result-big { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1; }
+.round-result-big span { font-size: 1rem; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.belt-name { font-weight: 700; }
+.round-list li { align-items: baseline; }
+.round-mark { font-weight: 800; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* Subject page head */
+.subject-head {
+  padding: 16px 18px; border-radius: var(--radius); position: relative; overflow: hidden;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--c, var(--accent)) 16%, var(--panel)), var(--panel) 70%);
+  box-shadow: var(--shadow); border: 1px solid var(--border);
+}
+.subject-head::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 6px; background: var(--c, var(--accent)); }
+.subject-head > a:first-child { text-decoration: none; font-size: 0.9rem; }
+.subject-head h1 { font-size: 1.5rem; font-weight: 800; }
+.btn.dojo-btn { background: linear-gradient(160deg, var(--ink-2), var(--ink)); color: #fff; border-color: transparent; }
+.btn.dojo-btn svg { color: var(--vermilion); }
+.btn.dojo-btn:hover { box-shadow: 0 6px 16px -6px var(--vermilion); }
