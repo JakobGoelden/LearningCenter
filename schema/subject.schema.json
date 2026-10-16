@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JakobGoelden/LearningCenter/schema/subject.schema.json",
+  "title": "Subject (subjects/<id>.json)",
+  "type": "object",
+  "required": ["id", "name", "exam", "topics"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": { "$ref": "common.schema.json#/$defs/id" },
+    "name": { "type": "string", "minLength": 1 },
+    "short": { "type": "string", "maxLength": 12, "description": "Short label for chips, e.g. 'DB'." },
+    "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "notes": { "type": "string" },
+    "exam": {
+      "type": "object",
+      "required": ["format"],
+      "additionalProperties": false,
+      "properties": {
+        "format": { "enum": ["written", "talk", "project", "unknown"], "description": "written = Klausur, talk = Vortrag/mündlich, project = Projekt, unknown = unklar." },
+        "date": { "$ref": "common.schema.json#/$defs/date" },
+        "time": { "$ref": "common.schema.json#/$defs/time" },
+        "location": { "type": "string" },
+        "durationMinutes": { "type": "integer", "minimum": 1 },
+        "aids": { "type": "array", "items": { "type": "string" }, "description": "Allowed aids, e.g. 'Taschenrechner TI-30X', '1 DIN-A4-Blatt'." },
+        "notes": { "type": "string" }
+      }
+    },
+    "topics": { "type": "array", "items": { "$ref": "#/$defs/topic" } },
+    "sheets": { "type": "array", "items": { "$ref": "#/$defs/sheet" } },
+    "openItems": { "type": "array", "items": { "$ref": "#/$defs/openItem" } },
+    "checks": { "type": "array", "items": { "$ref": "#/$defs/check" } }
+  },
+  "$defs": {
+    "topic": {
+      "type": "object",
+      "required": ["id", "title", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/id" },
+        "title": { "type": "string", "minLength": 1 },
+        "notes": { "type": "string", "description": "What the topic covers, sources, typical pitfalls. Helps the AI ask good questions." },
+        "status": { "$ref": "common.schema.json#/$defs/topicStatus" },
+        "due": { "$ref": "common.schema.json#/$defs/date", "description": "Next review date." },
+        "intervalDays": { "type": "integer", "minimum": 0, "description": "Interval that produced 'due'." },
+        "history": { "type": "array", "items": { "$ref": "#/$defs/review" } }
+      }
+    },
+    "review": {
+      "type": "object",
+      "required": ["date", "score", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "date": { "$ref": "common.schema.json#/$defs/date" },
+        "score": { "$ref": "common.schema.json#/$defs/score" },
+        "source": { "enum": ["quiz", "dojo", "manual"] },
+        "sessionId": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
+    "sheet": {
+      "type": "object",
+      "required": ["id", "label", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/id" },
+        "label": { "type": "string", "description": "e.g. 'Blatt 3' or 'B3'." },
+        "due": { "$ref": "common.schema.json#/$defs/date" },
+        "status": { "enum": ["open", "done", "checked"], "description": "open = offen, done = bearbeitet, checked = geprüft/korrigiert." },
+        "url": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "openItem": {
+      "type": "object",
+      "required": ["id", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/id" },
+        "text": { "type": "string", "minLength": 1 },
+        "createdAt": { "$ref": "common.schema.json#/$defs/date" },
+        "doneAt": { "$ref": "common.schema.json#/$defs/date" }
+      }
+    },
+    "check": {
+      "type": "object",
+      "required": ["id", "kind", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/id" },
+        "kind": { "enum": ["material", "script", "notes", "other"], "description": "material = Materialquelle (z.B. Moodle), script = Skript-Version, notes = eigene Mitschrift." },
+        "label": { "type": "string" },
+        "lastChecked": { "$ref": "common.schema.json#/$defs/date" },
+        "version": { "type": "string" },
+        "url": { "type": "string", "description": "Where to look: a link (e.g. the Moodle course) or a path relative to the pack folder (e.g. material/db/ or notes/db/)." },
+        "everyDays": { "type": "integer", "minimum": 1, "description": "Flag the check as stale after this many days." },
+        "note": { "type": "string" }
+      }
+    }
+  }
+}

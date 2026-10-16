@@ -1,0 +1,10 @@
+{
+  "$schema": "../../schema/dojo.schema.json",
+  "id": "net-routing",
+  "subject": "net",
+  "title": "Routing-Tabellen",
+  "procedure": "Routing-Tabellen aufstellen und Longest-Prefix-Match anwenden",
+  "levels": ["easy", "medium", "exam"],
+  "promptTemplate": "Beschreibe eine kleine Topologie (Router, Netze, Interfaces) als Text. easy: 2 Router, Tabelle für einen Router. medium: 3 Router mit Default-Route. exam: Aggregation möglicher Routen und Zuordnung von Zieladressen per Longest-Prefix-Match. Beim Prüfen: Zeile für Zeile Ziel, Präfix, Next Hop, Interface.",
+  "answerFormat": "Tabelle: Ziel/Präfix | Next Hop | Interface."
+}

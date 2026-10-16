@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JakobGoelden/LearningCenter/schema/request.schema.json",
+  "title": "AI request (inbox/<id>.json)",
+  "description": "Written by the app. An AI answers with outbox/<id>.json matching response.schema.json.",
+  "type": "object",
+  "required": ["id", "kind", "createdAt", "subject", "prompt"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": { "type": "string" },
+    "kind": { "$ref": "#/$defs/kind" },
+    "createdAt": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "subject": { "$ref": "common.schema.json#/$defs/id" },
+    "sessionId": { "type": "string" },
+    "dojo": { "$ref": "common.schema.json#/$defs/id" },
+    "level": { "$ref": "common.schema.json#/$defs/level" },
+    "language": { "type": "string" },
+    "summary": { "type": "string", "description": "Human-readable one-liner, e.g. 'Abfrage Datenbanken starten (5 Fragen)'." },
+    "context": { "type": "object", "description": "Structured input: topics, questions and answers, the current task, ..." },
+    "prompt": { "type": "string", "description": "Complete, self-contained instructions. An AI can answer from this field alone." }
+  },
+  "$defs": {
+    "kind": { "enum": ["quiz.start", "quiz.grade", "dojo.task", "dojo.check", "dojo.hint", "dojo.solution"] }
+  }
+}

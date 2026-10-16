@@ -1,0 +1,79 @@
+{
+  "$schema": "../../../schema/subject.schema.json",
+  "id": "theo",
+  "name": "Theoretische Informatik",
+  "short": "Theo",
+  "color": "#6d5bd0",
+  "exam": {
+    "format": "written",
+    "date": "2027-02-08",
+    "time": "10:00",
+    "location": "Audimax",
+    "durationMinutes": 120,
+    "aids": ["1 handbeschriebenes DIN-A4-Blatt"]
+  },
+  "topics": [
+    {
+      "id": "dfa-nfa",
+      "title": "DFA und NFA",
+      "notes": "Definitionen, akzeptierte Sprache, Nichtdeterminismus, ε-Übergänge.",
+      "status": "solid",
+      "due": "2026-10-23",
+      "intervalDays": 7,
+      "history": [
+        { "date": "2026-10-13", "score": 4, "source": "quiz" },
+        { "date": "2026-10-16", "score": 5, "source": "quiz" }
+      ]
+    },
+    {
+      "id": "powerset",
+      "title": "Potenzmengenkonstruktion",
+      "notes": "NFA → DFA, ε-Hülle, warum höchstens 2^n Zustände.",
+      "status": "shaky",
+      "due": "2026-10-14",
+      "intervalDays": 1,
+      "history": [{ "date": "2026-10-13", "score": 2, "source": "dojo" }]
+    },
+    {
+      "id": "regex",
+      "title": "Reguläre Ausdrücke",
+      "notes": "Syntax, Thompson-Konstruktion, Zustandselimination DFA → RegExp.",
+      "status": "shaky",
+      "due": "2026-10-16",
+      "intervalDays": 3,
+      "history": [{ "date": "2026-10-13", "score": 3, "source": "quiz" }]
+    },
+    {
+      "id": "minimization",
+      "title": "DFA-Minimierung",
+      "notes": "Äquivalenzklassen, Table-Filling-Algorithmus, Myhill-Nerode.",
+      "status": "new"
+    },
+    {
+      "id": "pumping",
+      "title": "Pumping-Lemma für reguläre Sprachen",
+      "notes": "Beweisstruktur, typische Fehler beim Wählen von w und der Zerlegung.",
+      "status": "new"
+    },
+    {
+      "id": "history-of-automata",
+      "title": "Geschichte der Automatentheorie",
+      "notes": "Nicht klausurrelevant.",
+      "status": "skip"
+    }
+  ],
+  "sheets": [
+    { "id": "b1", "label": "B1", "due": "2026-10-20", "status": "checked" },
+    { "id": "b2", "label": "B2", "due": "2026-10-27", "status": "done" },
+    { "id": "b3", "label": "B3", "due": "2026-11-03", "status": "open" }
+  ],
+  "openItems": [
+    { "id": "slides-vl3", "text": "Folien VL 3 fehlen noch auf Moodle", "createdAt": "2026-10-15" },
+    { "id": "notes-vl2", "text": "Mitschrift VL 2 mit Skript abgleichen", "createdAt": "2026-10-14" }
+  ],
+  "checks": [
+    { "id": "moodle", "kind": "material", "label": "Moodle-Kurs", "lastChecked": "2026-10-15", "everyDays": 3 },
+    { "id": "script", "kind": "script", "label": "Skript", "version": "v1.2", "lastChecked": "2026-10-12", "everyDays": 14 },
+    { "id": "notes", "kind": "notes", "label": "Eigene Mitschrift", "lastChecked": "2026-10-07", "everyDays": 7 }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "../../../schema/subject.schema.json",
+  "id": "db",
+  "name": "Datenbanken",
+  "short": "DB",
+  "color": "#1f8a70",
+  "exam": {
+    "format": "unknown",
+    "notes": "Klausur oder mündlich, wird in VL 4 bekanntgegeben.",
+    "aids": []
+  },
+  "topics": [
+    {
+      "id": "er-model",
+      "title": "ER-Modell",
+      "notes": "Entitäten, Beziehungen, Kardinalitäten (Chen und min/max).",
+      "status": "solid",
+      "due": "2026-10-30",
+      "intervalDays": 14,
+      "history": [
+        { "date": "2026-10-05", "score": 4, "source": "quiz" },
+        { "date": "2026-10-09", "score": 4, "source": "quiz" },
+        { "date": "2026-10-16", "score": 5, "source": "quiz" }
+      ]
+    },
+    {
+      "id": "relational-algebra",
+      "title": "Relationale Algebra",
+      "notes": "Selektion, Projektion, Join, Division; Übersetzung nach SQL.",
+      "status": "shaky",
+      "due": "2026-10-15",
+      "intervalDays": 1,
+      "history": [{ "date": "2026-10-14", "score": 2, "source": "dojo" }]
+    },
+    {
+      "id": "sql-basics",
+      "title": "SQL: SELECT, JOIN, GROUP BY",
+      "notes": "Auswertungsreihenfolge, HAVING vs. WHERE, NULL-Semantik.",
+      "status": "new"
+    },
+    {
+      "id": "normal-forms",
+      "title": "Normalformen (1NF–BCNF)",
+      "notes": "Funktionale Abhängigkeiten, Schlüssel, Zerlegung.",
+      "status": "new"
+    }
+  ],
+  "sheets": [
+    { "id": "b1", "label": "B1", "due": "2026-10-21", "status": "done" },
+    { "id": "b2", "label": "B2", "due": "2026-10-28", "status": "open" }
+  ],
+  "openItems": [
+    { "id": "exam-form", "text": "Prüfungsform in VL 4 erfragen", "createdAt": "2026-10-16" }
+  ],
+  "checks": [
+    { "id": "moodle", "kind": "material", "label": "Moodle-Kurs", "lastChecked": "2026-10-16", "everyDays": 3 },
+    { "id": "notes", "kind": "notes", "label": "Eigene Mitschrift", "everyDays": 7 }
+  ]
+}

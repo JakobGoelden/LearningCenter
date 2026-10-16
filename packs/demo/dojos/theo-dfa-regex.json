@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../schema/dojo.schema.json",
+  "id": "theo-dfa-regex",
+  "subject": "theo",
+  "title": "DFA → RegExp",
+  "procedure": "Zustandselimination",
+  "description": "Eliminiere Zustände eines DFA, bis ein regulärer Ausdruck übrig bleibt.",
+  "levels": ["easy", "medium", "exam"],
+  "topics": ["regex"],
+  "promptTemplate": "Erzeuge einen DFA mit {{level}}-Schwierigkeit (easy: 2–3 Zustände, medium: 3–4, exam: 4 mit Schleifen) für die Umwandlung in einen regulären Ausdruck per Zustandselimination. Nenne die Eliminationsreihenfolge nicht. Beim Prüfen: Äquivalenz des Ergebnisses zählt mehr als die Form; kontrolliere jeden Eliminationsschritt einzeln.",
+  "answerFormat": "Eliminationsschritte nacheinander, am Ende der reguläre Ausdruck."
+}

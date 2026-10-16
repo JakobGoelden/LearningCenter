@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JakobGoelden/LearningCenter/schema/dojo.schema.json",
+  "title": "Dojo definition (dojos/<id>.json)",
+  "description": "A practice room for one procedure. Pure data: add a file and list its id in pack.json to get a new dojo, no code needed.",
+  "type": "object",
+  "required": ["id", "subject", "title", "procedure", "promptTemplate"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": { "$ref": "common.schema.json#/$defs/id" },
+    "subject": { "$ref": "common.schema.json#/$defs/id" },
+    "title": { "type": "string" },
+    "procedure": { "type": "string", "description": "The algorithm or method, e.g. 'Potenzmengenkonstruktion NFA → DFA'." },
+    "description": { "type": "string" },
+    "levels": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/level" }, "minItems": 1 },
+    "topics": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/id" }, "description": "Topic ids in the subject that this dojo trains." },
+    "aids": { "type": "array", "items": { "type": "string" }, "description": "Tools to use or assume, e.g. a specific calculator." },
+    "promptTemplate": {
+      "type": "string",
+      "description": "Instructions for the AI. Placeholders: {{level}}, {{procedure}}, {{subject}}, {{aids}}, {{language}}."
+    },
+    "answerFormat": { "type": "string", "description": "How the learner should write the answer, e.g. a transition table." }
+  }
+}

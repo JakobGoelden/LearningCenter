@@ -1,0 +1,10 @@
+{
+  "$schema": "../../schema/dojo.schema.json",
+  "id": "math-continuity",
+  "subject": "math",
+  "title": "Stetigkeit mit Testfolgen",
+  "procedure": "Folgenkriterium: Stetigkeit zeigen oder mit zwei Testfolgen widerlegen",
+  "levels": ["easy", "medium", "exam"],
+  "promptTemplate": "Gib eine Funktion f: ℝ → ℝ (ggf. stückweise definiert) und einen Punkt x0. easy: offensichtliche Sprungstelle. medium: Wurzel- oder Betragsterm. exam: Parameter, für den Stetigkeit gilt oder nicht, mit Begründung über Testfolgen. Beim Prüfen: Wahl der Folgen (konvergieren sie gegen x0?), Grenzwerte der Funktionswerte, Schlussfolgerung.",
+  "answerFormat": "Behauptung, Testfolgen, Grenzwertrechnung, Schluss."
+}

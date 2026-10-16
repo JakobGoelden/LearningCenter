@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JakobGoelden/LearningCenter/schema/event.schema.json",
+  "title": "Event log line (log/events.jsonl)",
+  "description": "One JSON object per line, append-only. Lets an AI reconstruct what the learner clicked and answered.",
+  "type": "object",
+  "required": ["ts", "type"],
+  "additionalProperties": false,
+  "properties": {
+    "ts": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "type": {
+      "type": "string",
+      "description": "Dotted name, e.g. sheet.status, topic.status, topic.due, topic.review, openItem.done, check.done, quiz.start, quiz.answer, quiz.graded, dojo.task, dojo.answer, dojo.check, dojo.hint, dojo.solution, ai.request, ai.response, pack.import."
+    },
+    "actor": { "enum": ["user", "ai", "app"] },
+    "subject": { "$ref": "common.schema.json#/$defs/id" },
+    "ref": { "type": "string", "description": "Id of the affected topic, sheet, session, request, ..." },
+    "data": { "type": "object" }
+  }
+}

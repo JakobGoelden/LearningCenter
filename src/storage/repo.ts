@@ -1,0 +1,129 @@
+import { nowIso } from '../lib/dates';
+import { assertValid } from '../model/validate';
+import type { Bundle, Dojo, LoadedPack, LogEvent, Pack, Session, Subject } from '../model/types';
+import type { PackFs } from './fs';
+
+const SCHEMA_ROOT = '../../schema/';
+
+/** Pretty JSON with a trailing newline, keeping `$schema` first for editors. */
+export function toJson(value: unknown): string {
+  return JSON.stringify(value, null, 2) + '\n';
+}
+
+async function readJson(fs: PackFs, path: string): Promise<unknown> {
+  const text = await fs.read(path);
+  if (text === null) throw new Error(`${path} fehlt.`);
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(`${path} ist kein gültiges JSON: ${(e as Error).message}`);
+  }
+}
+
+export async function loadPack(fs: PackFs): Promise<LoadedPack> {
+  const pack = assertValid('pack', await readJson(fs, 'pack.json'), 'pack.json');
+  const subjects: Subject[] = [];
+  for (const id of pack.subjects) {
+    const path = `subjects/${id}.json`;
+    subjects.push(assertValid('subject', await readJson(fs, path), path));
+  }
+  const dojos: Dojo[] = [];
+  for (const id of pack.dojos ?? []) {
+    const path = `dojos/${id}.json`;
+    dojos.push(assertValid('dojo', await readJson(fs, path), path));
+  }
+  return { pack, subjects, dojos };
+}
+
+/** Modification times of all files the app reads, to notice outside edits. */
+export async function fingerprint(fs: PackFs, loaded: LoadedPack): Promise<string> {
+  const paths = [
+    'pack.json',
+    ...loaded.pack.subjects.map((id) => `subjects/${id}.json`),
+    ...(loaded.pack.dojos ?? []).map((id) => `dojos/${id}.json`),
+  ];
+  const times = await Promise.all(paths.map((p) => fs.mtime(p)));
+  return times.join(',');
+}
+
+export async function savePack(fs: PackFs, pack: Pack) {
+  assertValid('pack', pack);
+  await fs.write('pack.json', toJson({ $schema: `${SCHEMA_ROOT}pack.schema.json`, ...pack }));
+}
+
+export async function saveSubject(fs: PackFs, subject: Subject) {
+  assertValid('subject', subject, `subjects/${subject.id}.json`);
+  await fs.write(
+    `subjects/${subject.id}.json`,
+    toJson({ $schema: `../${SCHEMA_ROOT}subject.schema.json`, ...subject }),
+  );
+}
+
+export async function saveSession(fs: PackFs, session: Session) {
+  assertValid('session', session, `sessions/${session.id}.json`);
+  await fs.write(
+    `sessions/${session.id}.json`,
+    toJson({ $schema: `../${SCHEMA_ROOT}session.schema.json`, ...session }),
+  );
+}
+
+export async function loadSession(fs: PackFs, id: string): Promise<Session | null> {
+  const text = await fs.read(`sessions/${id}.json`);
+  return text ? assertValid('session', JSON.parse(text), `sessions/${id}.json`) : null;
+}
+
+export async function listSessions(fs: PackFs): Promise<string[]> {
+  return (await fs.list('sessions')).filter((n) => n.endsWith('.json')).map((n) => n.slice(0, -5));
+}
+
+export const EVENTS_PATH = 'log/events.jsonl';
+
+export async function appendEvent(fs: PackFs, event: Omit<LogEvent, 'ts'> & { ts?: string }) {
+  const full: LogEvent = { ts: event.ts ?? nowIso(), actor: 'user', ...event };
+  assertValid('event', full);
+  await fs.append(EVENTS_PATH, JSON.stringify(full) + '\n');
+}
+
+export async function readEvents(fs: PackFs, limit = 200): Promise<LogEvent[]> {
+  const text = (await fs.read(EVENTS_PATH)) ?? '';
+  return text
+    .split('\n')
+    .filter((l) => l.trim())
+    .slice(-limit)
+    .flatMap((l) => {
+      try {
+        return [JSON.parse(l) as LogEvent];
+      } catch {
+        return [];
+      }
+    });
+}
+
+const BUNDLE_DIRS = ['subjects', 'dojos', 'sessions'];
+
+/** Collects every pack file into one JSON document. */
+export async function exportBundle(fs: PackFs): Promise<Bundle> {
+  const files: Record<string, string> = {};
+  const add = async (path: string) => {
+    const text = await fs.read(path);
+    if (text !== null) files[path] = text;
+  };
+  await add('pack.json');
+  for (const dir of BUNDLE_DIRS) {
+    for (const name of await fs.list(dir)) if (name.endsWith('.json')) await add(`${dir}/${name}`);
+  }
+  await add(EVENTS_PATH);
+  return { format: 'learningcenter-bundle', schemaVersion: 1, exportedAt: nowIso(), files };
+}
+
+/** Writes all files of a bundle into `fs`, after validating the manifest. */
+export async function importBundle(fs: PackFs, data: unknown): Promise<void> {
+  const bundle = assertValid('bundle', data, 'Bundle');
+  if (!bundle.files['pack.json']) throw new Error('Bundle enthält keine pack.json.');
+  for (const [path, text] of Object.entries(bundle.files)) await fs.write(path, text);
+}
+
+/** Wraps a plain file map (e.g. the demo pack) as a bundle. */
+export function bundleOf(files: Record<string, string>): Bundle {
+  return { format: 'learningcenter-bundle', schemaVersion: 1, files };
+}

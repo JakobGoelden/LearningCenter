@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JakobGoelden/LearningCenter/schema/session.schema.json",
+  "title": "Quiz or dojo session (sessions/<id>.json)",
+  "type": "object",
+  "required": ["id", "type", "subject", "startedAt", "items"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": { "type": "string" },
+    "type": { "enum": ["quiz", "dojo"] },
+    "subject": { "$ref": "common.schema.json#/$defs/id" },
+    "dojo": { "$ref": "common.schema.json#/$defs/id" },
+    "level": { "$ref": "common.schema.json#/$defs/level" },
+    "adapter": { "type": "string" },
+    "startedAt": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "finishedAt": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "applied": { "type": "boolean", "description": "True once scores were written into the topics' history." },
+    "summary": { "type": "string" },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["n", "prompt"],
+        "additionalProperties": false,
+        "properties": {
+          "n": { "type": "integer", "minimum": 1 },
+          "topicId": { "$ref": "common.schema.json#/$defs/id" },
+          "kind": { "enum": ["why", "what-if", "explain", "apply", "task"] },
+          "prompt": { "type": "string" },
+          "answer": { "type": "string" },
+          "score": { "$ref": "common.schema.json#/$defs/score" },
+          "feedback": { "type": "string" },
+          "gaps": { "type": "array", "items": { "type": "string" } },
+          "steps": { "type": "array", "items": { "$ref": "response.schema.json#/$defs/step" } },
+          "hints": { "type": "array", "items": { "type": "string" } },
+          "solution": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JakobGoelden/LearningCenter/schema/bundle.schema.json",
+  "title": "Single-file pack export (*.pack.json)",
+  "type": "object",
+  "required": ["format", "schemaVersion", "files"],
+  "additionalProperties": false,
+  "properties": {
+    "format": { "const": "learningcenter-bundle" },
+    "schemaVersion": { "const": 1 },
+    "exportedAt": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "files": {
+      "type": "object",
+      "description": "Map of pack-relative path → file content as text, e.g. { \"pack.json\": \"{...}\", \"subjects/db.json\": \"{...}\" }.",
+      "additionalProperties": { "type": "string" }
+    }
+  }
+}

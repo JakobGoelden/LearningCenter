@@ -1,0 +1,10 @@
+{
+  "$schema": "../../schema/dojo.schema.json",
+  "id": "net-fragmentation",
+  "subject": "net",
+  "title": "IP-Fragmentierung",
+  "procedure": "IPv4-Pakete fragmentieren (Offset, MF-Flag, Länge)",
+  "levels": ["easy", "medium", "exam"],
+  "promptTemplate": "Gib eine Paketgröße, Header-Länge und eine oder mehrere MTUs auf dem Pfad. easy: eine MTU. medium: zwei MTUs nacheinander. exam: Header mit Optionen und erneute Fragmentierung. Gefragt: Anzahl Fragmente, Total Length, Fragment Offset (in 8-Byte-Einheiten), MF-Flag. Beim Prüfen: Nutzlast pro Fragment durch 8 teilbar? Offsets kumulativ? Letztes Fragment MF=0?",
+  "answerFormat": "Tabelle: Fragment | Total Length | Offset | MF."
+}
