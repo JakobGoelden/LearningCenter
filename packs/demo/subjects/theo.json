@@ -74,6 +74,6 @@
   "checks": [
     { "id": "moodle", "kind": "material", "label": "Moodle-Kurs", "lastChecked": "2026-10-15", "everyDays": 3 },
     { "id": "script", "kind": "script", "label": "Skript", "version": "v1.2", "lastChecked": "2026-10-12", "everyDays": 14 },
-    { "id": "notes", "kind": "notes", "label": "Eigene Mitschrift", "lastChecked": "2026-10-09", "everyDays": 7 }
+    { "id": "notes", "kind": "notes", "label": "Eigene Mitschrift", "lastChecked": "2026-10-07", "everyDays": 7 }
   ]
 }
