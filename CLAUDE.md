@@ -1,6 +1,9 @@
 # CLAUDE.md
 
 Anleitung für KI-Assistenten (Claude Code, Codex, Cursor, …) in diesem Repo.
+**Neue Person einrichten?** Dann zuerst [ONBOARDING.md](ONBOARDING.md)
+(Installation, Quellen wie Moodle und reMarkable finden, Pack anlegen, starten).
+
 Es gibt zwei Arten von Aufgaben: **Lernpacks pflegen** (Teil A) und **die App
 weiterentwickeln** (Teil B). Antworte Lernenden in ihrer Sprache (Standard:
 Deutsch); Code, Bezeichner und Commit-Messages auf Englisch.
@@ -26,6 +29,8 @@ local/<name>/
   dojos/<id>.json        Dojo-Definitionen (reine Daten)
   sessions/<id>.json     Protokolle von Abfragen und Dojos
   log/events.jsonl       Ereignis-Log, eine JSON-Zeile pro Ereignis, nur anhängen
+  material/<fach-id>/    heruntergeladene Skripte, Folien, Blätter (optional)
+  notes/<fach-id>/       eigene Notizen als PDF/Markdown, z.B. reMarkable-Export (optional)
   inbox/<id>.json        Anfragen der App (Datei-Brücke)
   outbox/<id>.json       deine Antworten darauf
 ```
@@ -50,7 +55,8 @@ Das Format ist in `schema/*.schema.json` vollständig beschrieben (JSON Schema
    weglassen und einen offenen Punkt anlegen.
 6. **Checks:** `material` (z.B. Moodle), `script` (Skript-Version in
    `version`), `notes` (eigene Mitschrift). `everyDays` markiert sie als
-   veraltet, wenn sie zu lange nicht geprüft wurden.
+   veraltet, wenn sie zu lange nicht geprüft wurden. `url` sagt, wo man
+   nachsieht (Link zum Kurs oder Pfad im Pack wie `material/db/`).
 7. Prüfen: `npm run validate -- local/<name>`. Nach **jeder** Änderung erneut.
 
 ### Beim Bearbeiten

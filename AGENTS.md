@@ -4,6 +4,9 @@ All instructions for AI agents are in [CLAUDE.md](CLAUDE.md) (German). Read it
 before creating or editing a learning pack, answering requests in a pack's
 `inbox/`, quizzing a learner, or changing the app.
 
+To set up LearningCenter for a new learner (install, find course material
+and personal notes, create and start a pack), follow [ONBOARDING.md](ONBOARDING.md).
+
 Short version:
 
 - Personal packs live in `local/` (git-ignored). Never commit personal data.

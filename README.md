@@ -22,6 +22,17 @@ Wiederholungen.
   Dojos sind reine Daten, neue brauchen keinen Code.
 - **Themenliste** pro Fach mit Status und Termin, auch von Hand änderbar.
 
+## Mit einer KI einrichten
+
+Das Projekt ist dafür gebaut, dass eine KI die Einrichtung übernimmt. Öffne
+das Repo in Claude Code (oder einem anderen KI-Werkzeug) und sag:
+
+> Lies ONBOARDING.md und richte LearningCenter für mich ein.
+
+Die KI installiert alles, fragt nach Fächern und Prüfungen, findet mit dir
+heraus, wo Skripte (z.B. Moodle) und eigene Notizen (z.B. reMarkable) liegen,
+legt dein Pack an und startet die App. Details: [ONBOARDING.md](ONBOARDING.md).
+
 ## Schnellstart
 
 Voraussetzung: Node.js 18.19 oder neuer.

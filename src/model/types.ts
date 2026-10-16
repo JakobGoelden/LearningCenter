@@ -70,6 +70,7 @@ export interface Check {
   label: string;
   lastChecked?: ISODate;
   version?: string;
+  url?: string;
   everyDays?: number;
   note?: string;
 }

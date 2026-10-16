@@ -185,7 +185,13 @@ export function SubjectTile({ subject: s, on }: { subject: Subject; on: ISODate 
               return (
                 <li>
                   <span class="grow">
-                    {c.label}
+                    {c.url && /^https?:\/\//.test(c.url) ? (
+                      <a href={c.url} target="_blank" rel="noreferrer">
+                        {c.label}
+                      </a>
+                    ) : (
+                      <span title={c.url}>{c.label}</span>
+                    )}
                     {c.version && <span class="muted"> {c.version}</span>}
                     <span class="muted"> · {CHECK_KIND[c.kind]}</span>
                   </span>

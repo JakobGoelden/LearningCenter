@@ -92,6 +92,7 @@
         "label": { "type": "string" },
         "lastChecked": { "$ref": "common.schema.json#/$defs/date" },
         "version": { "type": "string" },
+        "url": { "type": "string", "description": "Where to look: a link (e.g. the Moodle course) or a path relative to the pack folder (e.g. material/db/ or notes/db/)." },
         "everyDays": { "type": "integer", "minimum": 1, "description": "Flag the check as stale after this many days." },
         "note": { "type": "string" }
       }
