@@ -15,7 +15,6 @@ import { roundScore } from '../dojo/drills';
 import { Enso, Torii } from './Emblem';
 import { SymbolBar } from './SymbolBar';
 import { BackLink } from './BackLink';
-import { ChatStart } from './ChatStart';
 import { dojoChatPrompt } from '../ai/chat';
 import { taskSymbols } from '../dojo/symbols';
 import type { ComponentChildren } from 'preact';
@@ -30,7 +29,8 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
   const dojo = dojos.find((d) => d.id === dojoId);
   const { run, busy, panel } = useAi();
   const levels = dojo?.levels?.length ? dojo.levels : ALL_LEVELS;
-  const [level, setLevel] = useState<Level>(levels[Math.min(1, levels.length - 1)]);
+  const middleLevel = levels[Math.min(1, levels.length - 1)];
+  const [level, setLevel] = useState<Level>(middleLevel);
   const [session, setSession] = useState<Session | null>(null);
   /** Session file of the last practice round, linked from the topic reviews. */
   const drillSessionId = useRef('');
@@ -115,22 +115,23 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
     }
   };
 
-  const newTask = () =>
+  const newTask = (lvl: Level) =>
     guard(async () => {
+      setLevel(lvl);
       const id = sessionId('dojo', s.id);
-      const res = await run(dojoTaskRequest({ ...base, sessionId: id }));
+      const res = await run(dojoTaskRequest({ ...base, level: lvl, sessionId: id }));
       const next: Session = {
         id,
         type: 'dojo',
         subject: s.id,
         dojo: dojo.id,
-        level,
+        level: lvl,
         adapter: pack.ai.adapter,
         startedAt: nowIso(),
         items: [{ n: 1, kind: 'task', prompt: res.task! }],
       };
       await persist(next);
-      await log({ type: 'dojo.task', subject: s.id, ref: id, data: { dojo: dojo.id, level } });
+      await log({ type: 'dojo.task', subject: s.id, ref: id, data: { dojo: dojo.id, level: lvl } });
     });
 
   const hint = () =>
@@ -291,46 +292,15 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
         </>,
       )}
 
-      {dojo.drills?.length ? (
-        <DrillPractice
-          dojo={dojo}
-          onStart={(round, lvl) => void log({ type: 'dojo.drill.start', subject: s.id, ref: dojo.id, data: { count: round.length, level: lvl } })}
-          onFinish={saveRound}
-          onApply={trainsTopics ? applyRound : undefined}
-          chatPrompt={(lvl) => chat(lvl === 'all' ? undefined : lvl)}
-          onRunning={setRunning}
-        />
-      ) : (
-        <div class="panel small muted">
-          This dojo has no prepared exercises yet. Let the AI write some, or practise with AI-generated tasks below.
-        </div>
-      )}
-      <div class="row small">
-        <button class="small" onClick={writeDrills} disabled={busy}>
-          + {NEW_DRILLS} new exercises with AI
-        </button>
-        <span class="muted">They are saved in the dojo, so the next rounds run without the AI.</span>
-      </div>
-
-      <div class="panel stack">
-        <div class="row">
-          <h3 style="flex:1">Free practice with AI</h3>
-          <span class="small muted">The AI writes a fresh task and checks your solution step by step.</span>
-        </div>
-        <div class="row">
-          <span class="small">Level</span>
-          {levels.map((l) => (
-            <button class={`small ${l === level ? 'primary' : ''}`} onClick={() => setLevel(l)} disabled={busy}>
-              {LEVEL_LABEL[l]}
-            </button>
-          ))}
-          <span style="flex:1" />
-          <button class={session ? '' : 'primary'} onClick={newTask} disabled={busy}>
-            {session ? 'New task' : 'Generate task'}
-          </button>
-          <ChatStart separate label="Train in chat" prompt={() => chat(level)} />
-        </div>
-      </div>
+      <DrillPractice
+        dojo={dojo}
+        onStart={(round, lvl) => void log({ type: 'dojo.drill.start', subject: s.id, ref: dojo.id, data: { count: round.length, level: lvl } })}
+        onFinish={saveRound}
+        onApply={trainsTopics ? applyRound : undefined}
+        chatPrompt={(lvl) => chat(lvl === 'all' ? undefined : lvl)}
+        onRunning={setRunning}
+        ai={{ busy, drillCount: NEW_DRILLS, moreDrills: writeDrills, freshTask: (lvl) => newTask(lvl === 'all' ? middleLevel : lvl) }}
+      />
 
       {error && <div class="error">{error}</div>}
       {panel}
@@ -364,6 +334,10 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
               </button>
               <button onClick={solution} disabled={busy}>
                 Show solution
+              </button>
+              <span style="flex:1" />
+              <button class="ghost" onClick={() => newTask(level)} disabled={busy}>
+                New task
               </button>
             </div>
           </div>

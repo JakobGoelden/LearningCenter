@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyReview, pickQuizTopics, schedule, shiftOffWeekend, studyPlan, studyPriority } from '../src/scheduling/scheduler';
+import { applyReview, dueCount, pickQuizTopics, schedule, shiftOffWeekend, studyCandidates, studyCount, studyPlan, studyPriority } from '../src/scheduling/scheduler';
 import type { Subject, Topic } from '../src/model/types';
 
 const FRI = '2026-10-16';
@@ -82,5 +82,13 @@ describe('study plan', () => {
     const plan = studyPlan([subj('a', [fresh, later]), subj('b', [strong, weak, skipped])], FRI, 2);
     expect(plan.map((b) => [b.subject.id, b.topics.map((t) => t.id)])).toEqual([['b', ['weak', 'strong']]]);
     expect(studyPlan([subj('a', [later])], FRI, 5)).toEqual([]);
+  });
+
+  it('sizes a round to everything due, else the usual quiz size', () => {
+    const all = [subj('a', [fresh, later]), subj('b', [strong, weak, skipped])];
+    expect(dueCount(all, FRI)).toBe(2);
+    expect(studyCount(all, FRI, 5)).toBe(2);
+    expect(studyCount([subj('a', [fresh, later])], FRI, 5)).toBe(5);
+    expect(studyCandidates(all, FRI)).toBe(3);
   });
 });
