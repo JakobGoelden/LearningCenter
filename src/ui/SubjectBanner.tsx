@@ -1,12 +1,15 @@
 import { overview } from '../model/derive';
-import type { ISODate, Subject } from '../model/types';
+import type { Dojo, ISODate, Subject } from '../model/types';
 import { href } from './router';
 import { StatusBar } from './StatusBar';
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-/** One compact banner per subject: progress bar plus what needs attention. Opens the subject page. */
-export function SubjectBanner({ subject: s, on }: { subject: Subject; on: ISODate }) {
+/**
+ * One compact banner per subject: progress bar plus what needs attention. Opens the subject page.
+ * Subjects with dojos get a Dojo button next to it (straight into the dojo when there is only one).
+ */
+export function SubjectBanner({ subject: s, on, dojos = [] }: { subject: Subject; on: ISODate; dojos?: Dojo[] }) {
   const o = overview(s, on);
   const pct = Math.round(o.progress * 100);
   const learnable = o.statusCounts.new + o.statusCounts.shaky + o.statusCounts.solid;
@@ -27,7 +30,7 @@ export function SubjectBanner({ subject: s, on }: { subject: Subject; on: ISODat
   }
   if (o.openItems) flags.push({ text: plural(o.openItems, 'open task', 'open tasks'), urgent: false });
 
-  return (
+  const banner = (
     <a class="panel banner" href={href({ name: 'subject', subject: s.id })} style={{ '--c': s.color }}>
       <div class="banner-head">
         <h2>{s.name}</h2>
@@ -47,5 +50,22 @@ export function SubjectBanner({ subject: s, on }: { subject: Subject; on: ISODat
         )}
       </div>
     </a>
+  );
+  if (!dojos.length) return banner;
+  const only = dojos.length === 1 ? dojos[0] : undefined;
+  return (
+    <div class="banner-row">
+      {banner}
+      <a
+        class="panel dojo-tile"
+        href={href({ name: 'dojo', subject: s.id, dojo: only?.id })}
+        style={{ '--c': s.color }}
+        title={dojos.map((d) => d.title).join(', ')}
+        aria-label={`Dojo for ${s.name}: ${only ? only.title : `${dojos.length} dojos`}`}
+      >
+        <strong>Dojo</strong>
+        <span class="small muted">{only ? only.title : `${dojos.length} dojos`}</span>
+      </a>
+    </div>
   );
 }
