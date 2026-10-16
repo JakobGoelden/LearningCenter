@@ -58,12 +58,16 @@ function TodayPanel({ loaded, today }: { loaded: LoadedPack; today: ISODate }) {
   const empty = !timed.length && !todo.length && !soon.length && !stale.length;
 
   return (
-    <section class="panel cal-today" aria-label="Today">
-      <div class="cal-head">
-        <h2>Today</h2>
-        <span class="muted small">
-          {LONG_DAYS[weekday(today)]}, {dayOfMonth(today)} {monthOf(today)}
+    <section class="panel cal-today" aria-label="Today" data-kanji="今日">
+      <div class="cal-head today-head">
+        <span class="date-leaf" aria-hidden="true">
+          <span>{monthOf(today)}</span>
+          <b>{dayOfMonth(today)}</b>
         </span>
+        <div>
+          <h2>Today</h2>
+          <span class="muted small">{LONG_DAYS[weekday(today)]}</span>
+        </div>
       </div>
       {empty && <div class="muted small">Nothing planned. A good day to review ahead or practise in a dojo.</div>}
       {timed.length > 0 && (
@@ -265,7 +269,7 @@ function LongTermPanel({
   const weeksLeft = sem?.end ? Math.max(0, Math.ceil(diffDays(today, sem.end) / 7)) : null;
 
   return (
-    <section class="panel cal-long" aria-label="Long term">
+    <section class="panel cal-long" aria-label="Long term" data-kanji="道">
       <div class="cal-head">
         <h2>Long term</h2>
         <span class="muted small">

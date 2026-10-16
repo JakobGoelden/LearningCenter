@@ -33,6 +33,9 @@ export function SubjectBanner({ subject: s, on, dojos = [] }: { subject: Subject
 
   const banner = (
     <a class="panel banner" href={href({ name: 'subject', subject: s.id })} style={{ '--c': s.color }}>
+      <span class="banner-mark" aria-hidden="true">
+        {s.short ?? s.name}
+      </span>
       <div class="banner-head">
         <h2>{s.name}</h2>
         <span class="muted small">

@@ -629,3 +629,71 @@ button.dojo-go {
   background: color-mix(in srgb, var(--panel) 70%, transparent);
   backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
 }
+
+/* ===========================================================================
+   A little dojo spirit for the rest of the site
+   =========================================================================== */
+:root { --serif-jp: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif CJK JP', 'Noto Serif JP', serif; }
+
+/* Faint kanji watermark in a panel or page head corner (data-kanji). */
+[data-kanji] { position: relative; overflow: hidden; isolation: isolate; }
+[data-kanji]::after {
+  content: attr(data-kanji); position: absolute; z-index: -1; right: 10px; top: -6px; pointer-events: none;
+  font-family: var(--serif-jp); font-weight: 900; font-size: 4.6rem; line-height: 1; letter-spacing: -0.05em;
+  color: color-mix(in srgb, var(--c, var(--accent)) 13%, transparent);
+}
+.calendar [data-kanji]::after { font-size: 5.5rem; color: color-mix(in srgb, var(--accent) 9%, transparent); }
+.cal-long[data-kanji]::after { top: auto; bottom: -14px; }
+.subject-head[data-kanji]::after { top: 50%; right: 34%; transform: translateY(-50%) rotate(-8deg); font-size: 4.4rem; }
+.page-head.subject-head:not([style]) { --c: var(--accent); }
+
+/* Headings inside panels get a small brush stroke. */
+.panel > h3, .subject-grid .panel > h3, .panel .row > h3 {
+  display: inline-flex; align-items: center; gap: 8px; color: var(--text); letter-spacing: 0.08em;
+}
+.panel > h3::before, .panel .row > h3::before {
+  content: ''; width: 16px; height: 4px; border-radius: 2px; flex: none;
+  background: linear-gradient(90deg, var(--vermilion), var(--gold));
+}
+
+/* Today: a tear-off calendar leaf */
+.today-head { align-items: center; gap: 12px; }
+.date-leaf {
+  display: grid; justify-items: center; width: 54px; border-radius: 10px; overflow: hidden; flex: none;
+  background: var(--panel); box-shadow: 0 6px 14px -6px rgb(0 0 0 / 0.3), 0 0 0 1px var(--border);
+  transform: rotate(-4deg); transition: transform 0.2s;
+}
+.date-leaf span {
+  width: 100%; text-align: center; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase;
+  color: #fff; background: linear-gradient(135deg, var(--vermilion), #c2255c); padding: 2px 0;
+}
+.date-leaf b { font-size: 1.6rem; line-height: 1.25; padding-bottom: 2px; }
+.cal-today:hover .date-leaf { transform: rotate(0deg) scale(1.05); }
+
+/* Subject banners: big faint subject mark and a sheen on the progress bar */
+.banner-mark {
+  position: absolute; z-index: 0; right: 44px; bottom: -14px; pointer-events: none;
+  font-size: 3.6rem; font-weight: 900; letter-spacing: -0.04em; white-space: nowrap; line-height: 1;
+  color: color-mix(in srgb, var(--c, var(--accent)) 10%, transparent);
+}
+.banner > :not(.banner-mark) { position: relative; z-index: 1; }
+.banner .statusbar { position: relative; }
+.banner .statusbar::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+}
+.banner:hover .statusbar::after { animation: sheen 0.9s ease-out; }
+@keyframes sheen { to { transform: translateX(100%); } }
+@media (max-width: 560px) { .banner-mark { font-size: 2.6rem; right: 10px; } }
+
+/* Primary buttons glow a little */
+button.primary:hover:not(:disabled), .btn.primary:hover {
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--accent) 80%, transparent);
+}
+
+/* Pages ease in */
+.wrap > main > *, .calendar > *, .banners > *, .subject-grid > *, .cards > * { animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.calendar > :nth-child(2), .banners > :nth-child(2), .subject-grid > :nth-child(2), .cards > :nth-child(2) { animation-delay: 0.05s; }
+.calendar > :nth-child(3), .banners > :nth-child(3), .subject-grid > :nth-child(3), .cards > :nth-child(3) { animation-delay: 0.1s; }
+.banners > :nth-child(n + 4), .subject-grid > :nth-child(n + 4), .cards > :nth-child(n + 4) { animation-delay: 0.15s; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }

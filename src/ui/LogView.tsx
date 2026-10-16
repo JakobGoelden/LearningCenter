@@ -13,7 +13,7 @@ export function LogView() {
   const names = new Map(loaded.subjects.map((s) => [s.id, s.short ?? s.name]));
   return (
     <div class="stack">
-      <div class="page-head">
+      <div class="page-head subject-head" data-kanji="歴">
         <a href={href({ name: 'dashboard' })}>← Dashboard</a>
         <h1>History</h1>
         <span class="muted small">log/events.jsonl, newest first</span>
