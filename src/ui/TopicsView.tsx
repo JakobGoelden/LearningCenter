@@ -6,6 +6,7 @@ import { applyReview, ladderIndex, ladderOf } from '../scheduling/scheduler';
 import type { Score, Topic, TopicStatus } from '../model/types';
 import { SCORE_LABEL, TOPIC_STATUS } from './labels';
 import { href } from './router';
+import { BackLink } from './BackLink';
 
 export function TopicsView({ subjectId }: { subjectId: string }) {
   const { subject, updateSubject, loaded } = usePack();
@@ -76,7 +77,7 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
   return (
     <div class="stack">
       <div class="page-head subject-head" style={{ '--c': s.color }}>
-        <a href={href({ name: 'dashboard' })}>← Dashboard</a>
+        <BackLink href={href({ name: 'dashboard' })} label="Dashboard" />
         <h1>Topics: {s.name}</h1>
         <span class="spacer" />
         <a class="btn primary small" href={href({ name: 'quiz', subject: s.id })}>

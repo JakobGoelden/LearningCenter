@@ -105,6 +105,10 @@ The format is fully described in `schema/*.schema.json` (JSON Schema
 - Never delete or rewrite a topic's `history`, only append.
 - Append every content change as an event, e.g.
   `{"ts":"2026-10-16T09:00:00Z","type":"topic.add","actor":"ai","subject":"db","ref":"normal-forms","data":{"title":"Normal forms"}}`.
+  Content additions use `topic.add`, `question.add`, `sheet.add`,
+  `material.add` (new files in `material/`), `dojo.add` and
+  `dojo.drills.add`, always with `subject`: the dashboard shows per subject
+  when new content last arrived.
   Common types: `topic.add`, `topic.status`, `topic.due`, `topic.review`,
   `sheet.status`, `openItem.add`, `openItem.done`, `check.done`, `exam.update`,
   `quiz.start`, `quiz.answer`, `quiz.graded`, `quiz.applied`, `dojo.task`,
