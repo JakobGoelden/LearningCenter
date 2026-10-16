@@ -1,5 +1,5 @@
-import { addDays, weekday } from '../lib/dates';
-import type { ISODate, PackSettings, Review, Score, Topic, TopicStatus } from '../model/types';
+import { addDays, diffDays, weekday } from '../lib/dates';
+import type { ISODate, PackSettings, Review, Score, Subject, Topic, TopicStatus } from '../model/types';
 
 export const DEFAULT_LADDER = [1, 3, 7, 14, 21, 35, 60];
 
@@ -104,4 +104,49 @@ export function pickQuizTopics(topics: Topic[], on: ISODate, count: number): Top
     .filter((t) => t.status !== 'skip')
     .sort((a, b) => rank(a) - rank(b) || (a.due ?? '9999').localeCompare(b.due ?? '9999'))
     .slice(0, count);
+}
+
+/** How well a topic is known, 0–1: average of the last three scores (0 without history). */
+export function mastery(topic: Topic): number {
+  const recent = (topic.history ?? []).slice(-3);
+  return recent.length ? recent.reduce((a, r) => a + r.score, 0) / recent.length / 5 : 0;
+}
+
+/**
+ * Study priority of a topic (0 = not needed today). Due topics come first and
+ * rise the longer they are overdue; shaky and new topics fill up after them.
+ * Weak topics (low recent scores) and an exam within three weeks raise it.
+ */
+export function studyPriority(topic: Topic, on: ISODate, examDate?: ISODate): number {
+  let base: number;
+  if (isDue(topic, on)) base = 2 + Math.min(diffDays(topic.due!, on), 14) / 7;
+  else if (topic.status === 'shaky') base = 1;
+  else if (topic.status === 'new') base = 0.8;
+  else return 0;
+  const days = examDate && examDate >= on ? diffDays(on, examDate) : undefined;
+  const examBoost = days !== undefined && days <= 21 ? 1 + (21 - days) / 21 : 1;
+  return base * (0.6 + 1 - mastery(topic)) * examBoost;
+}
+
+export interface StudyBlock {
+  subject: Subject;
+  topics: Topic[];
+}
+
+/**
+ * The `count` most pressing topics across all subjects, grouped into one block
+ * per subject. Blocks are ordered by their most pressing topic.
+ */
+export function studyPlan(subjects: Subject[], on: ISODate, count: number): StudyBlock[] {
+  const ranked = subjects
+    .flatMap((s) => s.topics.map((t) => ({ s, t, p: studyPriority(t, on, s.exam.date) })))
+    .filter((x) => x.p > 0)
+    .sort((a, b) => b.p - a.p || (a.t.due ?? '9999').localeCompare(b.t.due ?? '9999'))
+    .slice(0, count);
+  const blocks = new Map<string, StudyBlock>();
+  for (const { s, t } of ranked) {
+    if (!blocks.has(s.id)) blocks.set(s.id, { subject: s, topics: [] });
+    blocks.get(s.id)!.topics.push(t);
+  }
+  return [...blocks.values()];
 }

@@ -8,6 +8,7 @@ export type Route =
   /** `ahead`: review ahead, topics due by that date count as due. */
   | { name: 'quiz'; subject: string; ahead?: string }
   | { name: 'dojo'; subject: string; dojo?: string }
+  | { name: 'study' }
   | { name: 'settings' }
   | { name: 'log' };
 
@@ -23,6 +24,7 @@ export function parseRoute(hash: string): Route {
       return a && b ? { name, subject: a, sheet: b } : { name: 'dashboard' };
     case 'dojo':
       return a ? { name, subject: a, dojo: b || undefined } : { name: 'dashboard' };
+    case 'study':
     case 'settings':
     case 'log':
       return { name };
