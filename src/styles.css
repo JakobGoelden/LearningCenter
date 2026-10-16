@@ -59,11 +59,16 @@ body {
   background: var(--bg);
   color: var(--text);
   font: 15px/1.5 Inter, 'SF Pro Text', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background-image:
-    radial-gradient(1200px 500px at 10% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
-    radial-gradient(900px 400px at 100% 0%, color-mix(in srgb, #8b5cf6 8%, transparent), transparent 70%);
-  background-repeat: no-repeat;
   min-height: 100vh;
+}
+/* Glow behind everything; fixed, so it stays put while the page scrolls. */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(55vw 45vh at 0% 0%, color-mix(in srgb, var(--accent) 48%, transparent), transparent 70%),
+    radial-gradient(50vw 50vh at 100% 5%, color-mix(in srgb, #8b5cf6 42%, transparent), transparent 70%),
+    radial-gradient(60vw 45vh at 85% 100%, color-mix(in srgb, var(--vermilion) 30%, transparent), transparent 70%),
+    radial-gradient(45vw 40vh at 5% 95%, color-mix(in srgb, #14b8a6 26%, transparent), transparent 70%);
 }
 a { color: var(--accent); }
 h1, h2, h3 { line-height: 1.25; margin: 0; letter-spacing: -0.01em; }
@@ -377,7 +382,7 @@ table.automaton.readonly td, table.automaton.readonly th { border: 1px solid var
 /* Long term: a timeline with one row per subject */
 .tl-scroll { overflow-x: auto; padding-bottom: 2px; }
 .tl { display: grid; grid-template-columns: max-content minmax(calc(var(--weeks) * 24px), 1fr); gap: 0 8px; }
-.tl-labels { display: grid; grid-template-rows: 30px; grid-auto-rows: 34px; position: sticky; left: 0; z-index: 5; background: var(--panel); padding-right: 4px; }
+.tl-labels { display: grid; grid-template-rows: 30px; grid-auto-rows: 34px; position: sticky; left: 0; z-index: 5; padding-right: 4px; }
 .tl-label {
   align-self: center; justify-self: start; max-width: 7em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   border-radius: 999px; padding: 1px 8px; font-size: 0.78rem; font-weight: 700; text-decoration: none;
@@ -618,3 +623,9 @@ button.dojo-go {
 .btn.dojo-btn { background: linear-gradient(160deg, var(--ink-2), var(--ink)); color: #fff; border-color: transparent; }
 .btn.dojo-btn svg { color: var(--vermilion); }
 .btn.dojo-btn:hover { box-shadow: 0 6px 16px -6px var(--vermilion); }
+
+/* Frosted panels so the background glow shows through a little. */
+.panel:not(.dojo-tile):not(.banner) {
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
+}
