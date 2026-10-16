@@ -2,9 +2,9 @@ import { diffDays } from '../lib/dates';
 import { isDue, isOverdue } from '../scheduling/scheduler';
 import type { Check, ISODate, LoadedPack, Sheet, Subject, Topic, TopicStatus } from './types';
 
-/** Exams within this many days show up in "Heute dran". */
+/** Exams within this many days show up in the "Today" line. */
 export const EXAM_SOON_DAYS = 14;
-/** Sheets due within this many days show up in "Heute dran". */
+/** Sheets due within this many days show up in the "Today" line. */
 export const SHEET_SOON_DAYS = 2;
 
 export interface SubjectOverview {
@@ -16,12 +16,20 @@ export interface SubjectOverview {
   upcoming: Topic[];
   sheetsSoon: Sheet[];
   openItems: number;
+  openSheets: Sheet[];
+  /** Share of non-skipped topics that are solid, 0–1. */
+  progress: number;
   staleChecks: Check[];
 }
 
 export function isCheckStale(c: Check, on: ISODate): boolean {
   if (!c.everyDays) return false;
   return !c.lastChecked || diffDays(c.lastChecked, on) > c.everyDays;
+}
+
+export function progressOf(c: Record<TopicStatus, number>): number {
+  const total = c.new + c.shaky + c.solid;
+  return total ? c.solid / total : 0;
 }
 
 export function overview(subject: Subject, on: ISODate): SubjectOverview {
@@ -43,6 +51,8 @@ export function overview(subject: Subject, on: ISODate): SubjectOverview {
       (s) => s.status === 'open' && s.due && diffDays(on, s.due) <= SHEET_SOON_DAYS,
     ),
     openItems: (subject.openItems ?? []).filter((i) => !i.doneAt).length,
+    openSheets: (subject.sheets ?? []).filter((s) => s.status === 'open'),
+    progress: progressOf(statusCounts),
     staleChecks: (subject.checks ?? []).filter((c) => isCheckStale(c, on)),
   };
 }
@@ -56,17 +66,17 @@ export interface TodayItem {
   urgent: boolean;
 }
 
-/** The "Heute dran" line across all subjects. */
+/** The "Today" line across all subjects. */
 export function todayItems(loaded: LoadedPack, on: ISODate): TodayItem[] {
   const items: TodayItem[] = [];
   for (const s of loaded.subjects) {
     const o = overview(s, on);
     if (o.due.length) {
-      const over = o.overdue.length ? `, ${o.overdue.length} überfällig` : '';
+      const over = o.overdue.length ? `, ${o.overdue.length} overdue` : '';
       items.push({
         subject: s,
         kind: 'reviews',
-        text: `${o.due.length} ${o.due.length === 1 ? 'Abfrage' : 'Abfragen'} fällig${over}`,
+        text: `${o.due.length} ${o.due.length === 1 ? 'review' : 'reviews'} due${over}`,
         urgent: o.overdue.length > 0,
       });
     }
@@ -74,7 +84,7 @@ export function todayItems(loaded: LoadedPack, on: ISODate): TodayItem[] {
       items.push({
         subject: s,
         kind: 'exam',
-        text: o.examInDays === 0 ? 'Prüfung heute' : `Prüfung in ${o.examInDays} ${o.examInDays === 1 ? 'Tag' : 'Tagen'}`,
+        text: o.examInDays === 0 ? 'exam today' : `exam in ${o.examInDays} ${o.examInDays === 1 ? 'day' : 'days'}`,
         urgent: o.examInDays <= 3,
       });
     }
@@ -83,7 +93,7 @@ export function todayItems(loaded: LoadedPack, on: ISODate): TodayItem[] {
       items.push({
         subject: s,
         kind: 'sheet',
-        text: `${sh.label} ${d < 0 ? 'überfällig' : d === 0 ? 'heute fällig' : d === 1 ? 'morgen fällig' : `in ${d} Tagen fällig`}`,
+        text: `${sh.label} ${d < 0 ? 'overdue' : d === 0 ? 'due today' : d === 1 ? 'due tomorrow' : `due in ${d} days`}`,
         urgent: d <= 0,
       });
     }
@@ -91,7 +101,7 @@ export function todayItems(loaded: LoadedPack, on: ISODate): TodayItem[] {
       items.push({
         subject: s,
         kind: 'check',
-        text: `prüfen: ${o.staleChecks.map((c) => c.label).join(', ')}`,
+        text: `check: ${o.staleChecks.map((c) => c.label).join(', ')}`,
         urgent: false,
       });
     }
