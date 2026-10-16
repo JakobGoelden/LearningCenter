@@ -20,11 +20,11 @@ describe('ai requests', () => {
     const quiz = quizStartRequest(pack, theo, theo.topics.slice(0, 3), 's1');
     expect(check('request', quiz)).toBeNull();
     expect(quiz.prompt).toContain('exactly 3 comprehension questions');
-    expect(quiz.prompt).toContain('Theoretische Informatik');
+    expect(quiz.prompt).toContain('Theoretical Computer Science');
 
     const task = dojoTaskRequest({ pack, subject: theo, dojo: dojos[0], level: 'exam', sessionId: 's2' });
     expect(check('request', task)).toBeNull();
-    expect(task.prompt).toContain('Potenzmengenkonstruktion');
+    expect(task.prompt).toContain('Powerset construction');
     expect(task.prompt).not.toMatch(/\{\{\w+\}\}/);
   });
 

@@ -2,11 +2,11 @@
   "$schema": "../../../schema/dojo.schema.json",
   "id": "db-sql",
   "subject": "db",
-  "title": "SQL von Hand",
-  "procedure": "SQL-Anfragen schreiben und von Hand auswerten",
-  "description": "Kleines Schema mit Beispieldaten, eine Frage in natürlicher Sprache, Antwort als SQL plus Ergebnistabelle.",
+  "title": "SQL by hand",
+  "procedure": "Writing SQL queries and evaluating them by hand",
+  "description": "Small schema with sample data, a question in plain language, answer as SQL plus the result table.",
   "levels": ["easy", "medium", "exam"],
   "topics": ["sql-basics"],
-  "promptTemplate": "Gib ein kleines Schema (2–3 Tabellen, je höchstens 5 Zeilen Beispieldaten als Tabelle) und eine Frage in natürlicher Sprache. easy: SELECT/WHERE. medium: JOIN und GROUP BY. exam: Unterabfrage oder HAVING, mit NULL-Falle. Der Lernende schreibt die SQL-Anfrage und das Ergebnis. Beim Prüfen: werte die Anfrage des Lernenden auf den Beispieldaten aus und vergleiche mit der Musterlösung; Schritte: FROM/JOIN, WHERE, GROUP BY, HAVING, SELECT, ORDER BY.",
-  "answerFormat": "SQL-Anfrage, danach die Ergebnistabelle."
+  "promptTemplate": "Give a small schema (2–3 tables, each with at most 5 rows of sample data as a table) and a question in plain language. easy: SELECT/WHERE. medium: JOIN and GROUP BY. exam: subquery or HAVING, with a NULL trap. The learner writes the SQL query and the result. When checking: evaluate the learner's query on the sample data and compare with the model solution; steps: FROM/JOIN, WHERE, GROUP BY, HAVING, SELECT, ORDER BY.",
+  "answerFormat": "SQL query, then the result table."
 }

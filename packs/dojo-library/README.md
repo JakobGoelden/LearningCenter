@@ -1,10 +1,10 @@
-# Dojo-Bibliothek
+# Dojo library
 
-Fertige Dojo-Definitionen zum Kopieren in ein eigenes Pack:
+Ready-made dojo definitions to copy into your own pack:
 
-1. Datei nach `<dein-pack>/dojos/` kopieren.
-2. `subject` auf die ID deines Fachs setzen.
-3. Die ID in `pack.json` unter `dojos` eintragen.
+1. Copy the file to `<your-pack>/dojos/`.
+2. Set `subject` to the ID of your subject.
+3. Add the ID to `pack.json` under `dojos`.
 
-Neue Dojos brauchen keinen Code. Platzhalter in `promptTemplate`:
+New dojos need no code. Placeholders in `promptTemplate`:
 `{{level}}`, `{{procedure}}`, `{{subject}}`, `{{aids}}`, `{{language}}`.

@@ -4,14 +4,14 @@ import { check } from '../src/model/validate';
 describe('schema', () => {
   it('accepts a minimal subject', () => {
     expect(
-      check('subject', { id: 'db', name: 'Datenbanken', exam: { format: 'written' }, topics: [] }),
+      check('subject', { id: 'db', name: 'Databases', exam: { format: 'written' }, topics: [] }),
     ).toBeNull();
   });
 
   it('rejects bad dates and unknown fields', () => {
     const errors = check('subject', {
       id: 'db',
-      name: 'Datenbanken',
+      name: 'Databases',
       exam: { format: 'written', date: '16.10.2026' },
       topics: [],
       extra: true,

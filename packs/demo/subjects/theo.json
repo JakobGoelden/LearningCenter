@@ -1,22 +1,22 @@
 {
   "$schema": "../../../schema/subject.schema.json",
   "id": "theo",
-  "name": "Theoretische Informatik",
+  "name": "Theoretical Computer Science",
   "short": "Theo",
   "color": "#6d5bd0",
   "exam": {
     "format": "written",
     "date": "2027-02-08",
     "time": "10:00",
-    "location": "Audimax",
+    "location": "Main lecture hall",
     "durationMinutes": 120,
-    "aids": ["1 handbeschriebenes DIN-A4-Blatt"]
+    "aids": ["1 handwritten A4 sheet"]
   },
   "topics": [
     {
       "id": "dfa-nfa",
-      "title": "DFA und NFA",
-      "notes": "Definitionen, akzeptierte Sprache, Nichtdeterminismus, ε-Übergänge.",
+      "title": "DFA and NFA",
+      "notes": "Definitions, accepted language, nondeterminism, ε-transitions.",
       "status": "solid",
       "due": "2026-10-23",
       "intervalDays": 7,
@@ -27,8 +27,8 @@
     },
     {
       "id": "powerset",
-      "title": "Potenzmengenkonstruktion",
-      "notes": "NFA → DFA, ε-Hülle, warum höchstens 2^n Zustände.",
+      "title": "Powerset construction",
+      "notes": "NFA → DFA, ε-closure, why at most 2^n states.",
       "status": "shaky",
       "due": "2026-10-14",
       "intervalDays": 1,
@@ -36,8 +36,8 @@
     },
     {
       "id": "regex",
-      "title": "Reguläre Ausdrücke",
-      "notes": "Syntax, Thompson-Konstruktion, Zustandselimination DFA → RegExp.",
+      "title": "Regular expressions",
+      "notes": "Syntax, Thompson construction, state elimination DFA → regex.",
       "status": "shaky",
       "due": "2026-10-16",
       "intervalDays": 3,
@@ -45,20 +45,20 @@
     },
     {
       "id": "minimization",
-      "title": "DFA-Minimierung",
-      "notes": "Äquivalenzklassen, Table-Filling-Algorithmus, Myhill-Nerode.",
+      "title": "DFA minimization",
+      "notes": "Equivalence classes, table-filling algorithm, Myhill-Nerode.",
       "status": "new"
     },
     {
       "id": "pumping",
-      "title": "Pumping-Lemma für reguläre Sprachen",
-      "notes": "Beweisstruktur, typische Fehler beim Wählen von w und der Zerlegung.",
+      "title": "Pumping lemma for regular languages",
+      "notes": "Proof structure, typical mistakes when choosing w and the split.",
       "status": "new"
     },
     {
       "id": "history-of-automata",
-      "title": "Geschichte der Automatentheorie",
-      "notes": "Nicht klausurrelevant.",
+      "title": "History of automata theory",
+      "notes": "Not relevant for the exam.",
       "status": "skip"
     }
   ],
@@ -68,12 +68,25 @@
     { "id": "b3", "label": "B3", "due": "2026-11-03", "status": "open" }
   ],
   "openItems": [
-    { "id": "slides-vl3", "text": "Folien VL 3 fehlen noch auf Moodle", "createdAt": "2026-10-15" },
-    { "id": "notes-vl2", "text": "Mitschrift VL 2 mit Skript abgleichen", "createdAt": "2026-10-14" }
+    { "id": "slides-vl3", "text": "Slides for lecture 3 still missing on Moodle", "createdAt": "2026-10-15" },
+    { "id": "notes-vl2", "text": "Compare lecture 2 notes with the script", "createdAt": "2026-10-14" }
   ],
   "checks": [
-    { "id": "moodle", "kind": "material", "label": "Moodle-Kurs", "lastChecked": "2026-10-15", "everyDays": 3 },
-    { "id": "script", "kind": "script", "label": "Skript", "version": "v1.2", "lastChecked": "2026-10-12", "everyDays": 14 },
-    { "id": "notes", "kind": "notes", "label": "Eigene Mitschrift", "lastChecked": "2026-10-07", "everyDays": 7 }
+    {
+      "id": "moodle",
+      "kind": "material",
+      "label": "Moodle course",
+      "lastChecked": "2026-10-15",
+      "everyDays": 3
+    },
+    {
+      "id": "script",
+      "kind": "script",
+      "label": "Script",
+      "version": "v1.2",
+      "lastChecked": "2026-10-12",
+      "everyDays": 14
+    },
+    { "id": "notes", "kind": "notes", "label": "Own notes", "lastChecked": "2026-10-07", "everyDays": 7 }
   ]
 }

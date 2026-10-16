@@ -17,7 +17,7 @@
       "required": ["format"],
       "additionalProperties": false,
       "properties": {
-        "format": { "enum": ["written", "talk", "project", "unknown"], "description": "written = Klausur, talk = Vortrag/mündlich, project = Projekt, unknown = unklar." },
+        "format": { "enum": ["written", "talk", "project", "unknown"], "description": "written = written exam, talk = talk or oral exam, project = project, unknown = not known yet." },
         "date": { "$ref": "common.schema.json#/$defs/date" },
         "time": { "$ref": "common.schema.json#/$defs/time" },
         "location": { "type": "string" },
@@ -66,7 +66,7 @@
         "id": { "$ref": "common.schema.json#/$defs/id" },
         "label": { "type": "string", "description": "e.g. 'Blatt 3' or 'B3'." },
         "due": { "$ref": "common.schema.json#/$defs/date" },
-        "status": { "enum": ["open", "done", "checked"], "description": "open = offen, done = bearbeitet, checked = geprüft/korrigiert." },
+        "status": { "enum": ["open", "done", "checked"], "description": "open = not started, done = worked on, checked = checked or graded." },
         "url": { "type": "string" },
         "notes": { "type": "string" }
       }

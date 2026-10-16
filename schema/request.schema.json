@@ -16,7 +16,7 @@
     "dojo": { "$ref": "common.schema.json#/$defs/id" },
     "level": { "$ref": "common.schema.json#/$defs/level" },
     "language": { "type": "string" },
-    "summary": { "type": "string", "description": "Human-readable one-liner, e.g. 'Abfrage Datenbanken starten (5 Fragen)'." },
+    "summary": { "type": "string", "description": "Human-readable one-liner, e.g. 'Quiz Databases: generate 5 questions'." },
     "context": { "type": "object", "description": "Structured input: topics, questions and answers, the current task, ..." },
     "prompt": { "type": "string", "description": "Complete, self-contained instructions. An AI can answer from this field alone." }
   },
