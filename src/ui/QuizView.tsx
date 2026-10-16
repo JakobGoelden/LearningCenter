@@ -17,7 +17,7 @@ export function sessionId(type: string, subject: string): string {
   return `${nowIso().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')}-${type}-${subject}`;
 }
 
-export function QuizView({ subjectId }: { subjectId: string }) {
+export function QuizView({ subjectId, ahead }: { subjectId: string; ahead?: string }) {
   const pack = usePack();
   const { fs, loaded, log, updateSubject, setNotice } = pack;
   const s = pack.subject(subjectId);
@@ -25,7 +25,9 @@ export function QuizView({ subjectId }: { subjectId: string }) {
   const on = today();
   const defaultCount = loaded.pack.settings?.questionsPerQuiz ?? 5;
   const [count, setCount] = useState(defaultCount);
-  const candidates = useMemo(() => (s ? pickQuizTopics(s.topics, on, 30) : []), [s, on]);
+  // Reviewing ahead: topics due by `ahead` are picked as if that day had come.
+  const pickOn = ahead && ahead > on ? ahead : on;
+  const candidates = useMemo(() => (s ? pickQuizTopics(s.topics, pickOn, 30) : []), [s, pickOn]);
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [phase, setPhase] = useState<Phase>('setup');
   const [session, setSession] = useState<Session | null>(null);
@@ -158,7 +160,11 @@ export function QuizView({ subjectId }: { subjectId: string }) {
             </div>
           ) : (
             <>
-              <div class="small muted">Due and shaky topics first. Untick what you want to leave out today:</div>
+              <div class="small muted">
+                {pickOn > on
+                  ? `Reviewing ahead: topics due by ${formatShort(pickOn)} come first. Untick what you want to leave out:`
+                  : 'Due and shaky topics first. Untick what you want to leave out today:'}
+              </div>
               <ul class="list">
                 {candidates.slice(0, count + excluded.size).map((t: Topic) => (
                   <li>
