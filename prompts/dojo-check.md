@@ -1,13 +1,13 @@
-## Aufgabe: Lösung im Dojo „{{dojo}}“ prüfen
+## Task: check a solution in the dojo "{{dojo}}"
 
-Verfahren: {{procedure}}
+Procedure: {{procedure}}
 
 {{template}}
 
-Prüfe die Lösung im Kontext Schritt für Schritt, in der Reihenfolge des Verfahrens.
+Check the solution in the context step by step, in the order of the procedure.
 
-- `steps`: ein Eintrag pro Teilschritt mit `label` (z.B. „ε-Hülle des Startzustands“), `ok` und bei Fehlern einem `comment`, der den ersten Fehler genau benennt.
-- Folgefehler nur einmal anrechnen: Wenn ein späterer Schritt aus einem früheren Fehler richtig weitergerechnet ist, ist er `ok`.
-- `correct`: true, wenn das Endergebnis stimmt.
-- `score`: 0–5 nach der Skala oben. Verwendete Tipps (`hintsUsed`) senken den Score um höchstens 1.
-- `feedback`: 1–3 Sätze, was als Nächstes zu üben ist.
+- `steps`: one entry per sub-step with a `label` (e.g. "ε-closure of the start state"), `ok`, and for errors a `comment` that pinpoints the first mistake.
+- Count follow-up errors only once: if a later step correctly continues from an earlier mistake, it is `ok`.
+- `correct`: true if the final result is right.
+- `score`: 0–5 on the scale above. Hints used (`hintsUsed`) lower the score by at most 1.
+- `feedback`: 1–3 sentences on what to practise next.

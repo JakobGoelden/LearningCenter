@@ -1,14 +1,14 @@
-# Prompt-Vorlagen
+# Prompt templates
 
-Die App baut jede KI-Anfrage aus `system.md`, der Vorlage für die Anfrageart
-und einem JSON-Kontextblock. Platzhalter stehen in `{{doppelten Klammern}}`.
-Änderungen hier wirken auf alle drei Wege (Datei-Brücke, API, Copy-Prompt).
+The app builds every AI request from `system.md`, the template for the request
+kind and a JSON context block. Placeholders use `{{double braces}}`. Changes
+here apply to all three AI paths (file bridge, API, copy-prompt).
 
-| Datei | Anfrageart |
+| File | Request kind |
 | --- | --- |
-| `quiz-start.md` | Fragen für eine Abfrage erzeugen |
-| `quiz-grade.md` | Antworten bewerten |
-| `dojo-task.md` | Dojo-Aufgabe erzeugen |
-| `dojo-check.md` | Lösung Schritt für Schritt prüfen |
-| `dojo-hint.md` | Tipp geben |
-| `dojo-solution.md` | Musterlösung zeigen |
+| `quiz-start.md` | generate quiz questions |
+| `quiz-grade.md` | grade answers |
+| `dojo-task.md` | generate a dojo task |
+| `dojo-check.md` | check a solution step by step |
+| `dojo-hint.md` | give a hint |
+| `dojo-solution.md` | show the model solution |
