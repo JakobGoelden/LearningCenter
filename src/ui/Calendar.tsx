@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { addDays, diffDays, formatShort, weekday } from '../lib/dates';
-import { entriesOn, isoWeek, longTermWeeks, weekStart, type CalendarEntry, type CalendarWeek } from '../model/calendar';
+import { entriesOn, isoWeek, longTermWeeks, weekStart, type CalendarEntry } from '../model/calendar';
 import { EXAM_SOON_DAYS, isCheckStale } from '../model/derive';
 import type { ISODate, LoadedPack, Subject } from '../model/types';
 import { href, type Route } from './router';
@@ -250,11 +250,19 @@ function LongTermPanel({
   onPick: (start: ISODate) => void;
 }) {
   const weeks = useMemo(() => longTermWeeks(loaded, today), [loaded, today]);
-  const maxReviews = Math.max(1, ...weeks.map((w) => w.reviews));
+  const first = weeks[0].start;
+  const days = weeks.length * 7;
+  /** Horizontal position of a date, in % of the timeline. */
+  const x = (d: ISODate) => (diffDays(first, d) / days) * 100;
+  const sem = loaded.pack.semester;
+  const lectureEnd = sem?.end && sem.end >= first && x(sem.end) < 100 ? addDays(sem.end, 1) : null;
+  const months = weeks
+    .flatMap((w) => Array.from({ length: 7 }, (_, i) => addDays(w.start, i)))
+    .filter((d, i) => i === 0 || dayOfMonth(d) === 1);
   const exams = loaded.subjects
     .map((s) => ({ s, date: s.exam.date }))
     .sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999'));
-  const sem = loaded.pack.semester;
+  const weeksLeft = sem?.end ? Math.max(0, Math.ceil(diffDays(today, sem.end) / 7)) : null;
 
   return (
     <section class="panel cal-long" aria-label="Long term">
@@ -262,20 +270,102 @@ function LongTermPanel({
         <h2>Long term</h2>
         <span class="muted small">
           {sem?.label ?? 'Semester'}
-          {sem?.end ? ` · lectures end ${formatShort(sem.end)} (${Math.max(0, Math.ceil(diffDays(today, sem.end) / 7))} weeks)` : ''}
+          {sem?.end && weeksLeft !== null
+            ? ` · lectures end ${formatShort(sem.end)}${weeksLeft ? `, ${weeksLeft} ${weeksLeft === 1 ? 'week' : 'weeks'} left` : ''}`
+            : ''}
         </span>
       </div>
-      <div class="lt-weeks" role="list">
-        {weeks.map((w, i) => (
-          <WeekCell w={w} first={i === 0 || monthOf(w.start) !== monthOf(weeks[i - 1].start)} max={maxReviews} selected={w.start === selected} onPick={onPick} />
-        ))}
+      <div class="tl-scroll">
+        <div class="tl" style={{ '--weeks': weeks.length }}>
+          <div class="tl-labels">
+            <span class="tl-axis-label" />
+            {loaded.subjects.map((s) => (
+              <a class="tl-label" style={{ '--c': s.color }} href={href({ name: 'subject', subject: s.id })} title={s.name}>
+                {label(s)}
+              </a>
+            ))}
+          </div>
+          <div class="tl-body">
+            <div class="tl-axis" aria-hidden="true">
+              {months.map((d) => (
+                <span class="tl-month" style={{ left: `${x(d)}%` }}>
+                  {monthOf(d)}
+                </span>
+              ))}
+              {weeks.map((w) => (
+                <span class="tl-tick" style={{ left: `${x(w.start)}%` }}>
+                  {dayOfMonth(w.start)}
+                </span>
+              ))}
+            </div>
+            <div class="tl-rows">
+              {lectureEnd && (
+                <div class="tl-free" style={{ left: `${x(lectureEnd)}%` }}>
+                  <span>lecture-free</span>
+                </div>
+              )}
+              {weeks.map((w) => (
+                <button
+                  class={`tl-week${w.start === selected ? ' selected' : ''}`}
+                  style={{ left: `${x(w.start)}%` }}
+                  onClick={() => onPick(w.start)}
+                  title={`Week ${w.week} (${formatShort(w.start)}): show it above`}
+                  aria-label={`Show week ${w.week} from ${formatShort(w.start)}`}
+                />
+              ))}
+              {loaded.subjects.map((s) => (
+                <div class="tl-row" style={{ '--c': s.color }}>
+                  {weeks.map((w) =>
+                    w.reviewsBy[s.id] ? (
+                      <span
+                        class="tl-load"
+                        style={{ left: `${x(w.start)}%`, '--a': Math.min(1, 0.25 + w.reviewsBy[s.id] * 0.2) }}
+                        title={`${s.name}: ${w.reviewsBy[s.id]} ${w.reviewsBy[s.id] === 1 ? 'review' : 'reviews'} due in week ${w.week}`}
+                      >
+                        {w.reviewsBy[s.id]}
+                      </span>
+                    ) : null,
+                  )}
+                  {weeks.flatMap((w) =>
+                    w.sheets
+                      .filter((e) => e.subject.id === s.id)
+                      .map((e) => (
+                        <a
+                          class="tl-sheet"
+                          style={{ left: `${x(e.date)}%` }}
+                          href={href({ name: 'sheet', subject: s.id, sheet: e.sheet! })}
+                          title={`${s.name}: ${e.text} due ${formatShort(e.date)}`}
+                        >
+                          ✎
+                        </a>
+                      )),
+                  )}
+                  {s.exam.date && s.exam.date >= first && x(s.exam.date) < 100 && (
+                    <a
+                      class={`tl-exam${x(s.exam.date) > 80 ? ' end' : ''}`}
+                      style={{ left: `${x(s.exam.date)}%` }}
+                      href={href({ name: 'subject', subject: s.id })}
+                      title={`${s.name} exam ${formatShort(s.exam.date)}${s.exam.time ? ` ${s.exam.time}` : ''}`}
+                    >
+                      ★ {dayOfMonth(s.exam.date)} {monthOf(s.exam.date)}
+                    </a>
+                  )}
+                </div>
+              ))}
+              <span class="tl-today" style={{ left: `${x(today)}%` }} title="Today" />
+            </div>
+          </div>
+        </div>
       </div>
       <div class="lt-legend small muted">
         <span>
-          <i class="lt-swatch reviews" /> reviews due
+          <i class="tl-swatch" /> reviews due
         </span>
         <span>✎ sheet deadline</span>
         <span>★ exam</span>
+        <span>
+          <i class="tl-swatch-now" /> today
+        </span>
         <span>Click a week to see it above.</span>
       </div>
       {exams.length > 0 && (
@@ -291,53 +381,6 @@ function LongTermPanel({
         </div>
       )}
     </section>
-  );
-}
-
-function WeekCell({
-  w,
-  first,
-  max,
-  selected,
-  onPick,
-}: {
-  w: CalendarWeek;
-  first: boolean;
-  max: number;
-  selected: boolean;
-  onPick: (start: ISODate) => void;
-}) {
-  const parts = [`Week ${w.week} from ${formatShort(w.start)}`];
-  if (w.reviews) parts.push(`${w.reviews} reviews due`);
-  for (const s of w.sheets) parts.push(`${s.subject.short ?? s.subject.name}: ${s.text} due ${formatShort(s.date)}`);
-  for (const e of w.exams) parts.push(`${e.subject.name} exam ${formatShort(e.date)}`);
-  return (
-    <button
-      role="listitem"
-      class={`lt-week${selected ? ' selected' : ''}${w.outside ? ' outside' : ''}${w.exams.length ? ' has-exam' : ''}`}
-      style={w.exams[0] ? { '--c': w.exams[0].subject.color } : undefined}
-      onClick={() => onPick(w.start)}
-      title={parts.join('\n')}
-      aria-label={parts.join(', ')}
-    >
-      <span class="lt-month">{first ? monthOf(w.start) : ''}</span>
-      <span class="lt-date">{dayOfMonth(w.start)}</span>
-      <span class="lt-bar">
-        <span style={{ height: `${(w.reviews / max) * 100}%` }} />
-      </span>
-      <span class="lt-marks">
-        {w.sheets.map((s) => (
-          <span class="lt-sheet" style={{ color: s.subject.color }}>
-            ✎
-          </span>
-        ))}
-        {w.exams.map((e) => (
-          <span class="lt-exam" style={{ background: e.subject.color }}>
-            ★{e.subject.short ?? ''}
-          </span>
-        ))}
-      </span>
-    </button>
   );
 }
 

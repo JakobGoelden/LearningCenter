@@ -43,11 +43,12 @@ describe('calendar', async () => {
     expect(past.every((x) => x.kind === 'class')).toBe(true);
   });
 
-  it('spans the long term to the end of the semester', () => {
+  it('spans the long term past the end of the semester', () => {
     const weeks = longTermWeeks(loaded, today);
     expect(weeks[0].start).toBe('2026-10-12');
     expect(weeks[0].reviews).toBe(3); // powerset, regex, relational-algebra
-    expect(weeks.at(-1)!.start).toBe('2027-02-15'); // semester end
+    expect(weeks[0].reviewsBy).toEqual({ theo: 2, db: 1 });
+    expect(weeks.at(-1)!.start).toBe('2027-03-01'); // two weeks after the semester ends
     expect(weeks.find((w) => w.exams.length)?.start).toBe('2027-02-08');
     expect(weeks.find((w) => w.sheets.some((s) => s.sheet === 'b3'))?.start).toBe('2026-11-02');
   });
