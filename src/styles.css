@@ -799,3 +799,4 @@ button.study-go { padding: 10px 20px; font-size: 1rem; }
   70% { opacity: 1; }
   100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(-1 * var(--d))) rotate(200deg) scale(1); }
 }
+.setup-hint { border-left: 4px solid var(--accent); }

@@ -48,15 +48,19 @@ the next reviews.
 
 ## Set it up with an AI
 
-The project is built so that an AI can do the setup. Open the repo in Claude
-Code (or another AI tool) and say:
+The project is built so that an AI does the setup with you. Clone the repo,
+open it in Claude Code (or another AI tool) and say:
 
-> Read ONBOARDING.md and set up LearningCenter for me.
+> Set me up.
 
-The AI installs everything, asks about your subjects and exams, works out
-with you where your course material (e.g. Moodle) and your own notes (e.g.
-reMarkable) live, creates your pack and starts the app. Details:
-[ONBOARDING.md](ONBOARDING.md).
+As long as you have no pack of your own, the AI starts the guided setup by
+itself. It installs everything, asks about your subjects and exams, and then
+gets your material in together with you, step by step: your scripts or
+slides (e.g. from Moodle), your timetable (best as an .ics export from the
+campus system), your exercise sheets and your own notes (e.g. reMarkable).
+From that it builds your topics and dojos and starts the app with your pack.
+It keeps a checklist in `local/<pack>/SETUP.md`, so you can stop and
+continue later. Details: [ONBOARDING.md](ONBOARDING.md).
 
 ## Quick start
 
@@ -68,8 +72,9 @@ npm run dev
 ```
 
 The app opens in your browser by itself (otherwise go to
-<http://localhost:5173>). Choose **Try the demo**. The demo
-lives in browser storage and has two subjects.
+<http://localhost:5173>). Choose **Try the demo** to look around. The demo
+lives in browser storage and has two subjects; it is only an example. For
+your own semester, do the setup above.
 
 ## Create your own pack
 

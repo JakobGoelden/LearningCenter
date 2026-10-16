@@ -4,8 +4,12 @@ All instructions for AI agents are in [CLAUDE.md](CLAUDE.md). Read it
 before creating or editing a learning pack, answering requests in a pack's
 `inbox/`, quizzing a learner, or changing the app.
 
-To set up LearningCenter for a new learner (install, find course material
-and personal notes, create and start a pack), follow [ONBOARDING.md](ONBOARDING.md).
+**First thing in every new conversation:** check `ls local/*/pack.json`.
+If there is no personal pack, the person is new: do not just start the demo.
+Greet them briefly and lead them through the guided setup in
+[ONBOARDING.md](ONBOARDING.md) right away (scripts, timetable, exercise
+sheets, notes, then topics and dojos). If a pack exists but
+`local/<pack>/SETUP.md` has open items, offer to continue the setup.
 
 Short version:
 

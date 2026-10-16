@@ -1,15 +1,35 @@
 # ONBOARDING.md: Setting up LearningCenter for a person
 
 This file is for an AI (Claude Code, Codex, Cursor, …) that installs
-LearningCenter for a learner and creates a personal semester. The person
-usually starts it like this:
+LearningCenter for a learner and creates a personal semester. Start it
+whenever there is no personal pack in `local/` yet (see CLAUDE.md, "Start
+here"), no matter how the person opened the conversation: "set me up",
+"hi", "what is this?" or "start the app" all mean the same here.
 
-> Read ONBOARDING.md and set up LearningCenter for me.
+## How to lead the setup
 
-Work through the steps in order. Only ask what you cannot find out yourself,
-and always in batches (one block of questions per step, not one question per
-message). Talk to the person in their own language, even though this guide is
-in English. The rules for data format, grading and due dates are in
+- **You lead, the person helps.** Most people do not know what the app
+  needs. Tell them what comes next and why in one sentence, then do it
+  together. They only do what only they can do: log in, click download,
+  answer questions. You do everything else (folders, reading files, JSON,
+  topics, dojos).
+- **One step at a time, together.** For each source, tell the person exactly
+  where to click and where to save the file (create the folder for them
+  first), wait until they say it is done, then check the folder and read
+  what arrived. Do not move on with a step half done.
+- **Ask in batches.** Only ask what you cannot find out yourself, one block
+  of questions per step, not one question per message.
+- **Their language.** Talk to the person in their language, even though this
+  guide is in English.
+- **The demo is not the goal.** Never end the setup by showing `packs/demo`.
+  The setup is done when the person's own pack has their subjects,
+  timetable, scripts, sheets, topics and dojos, or when the person
+  explicitly postpones an item (it then becomes an open task in the pack).
+- **Keep a checklist** in `local/<pack>/SETUP.md` (see step 2) and tick items
+  off as you go, so a later conversation can continue where this one
+  stopped. Show the person the checklist after every step.
+
+The rules for data format, grading and due dates are in
 [CLAUDE.md](CLAUDE.md). Read them before step 4.
 
 ---
@@ -53,14 +73,55 @@ Ask in one block, and offer examples so the answers come easily:
 
 Do not invent dates. Whatever is unknown becomes an open task in the pack.
 
+Then create the pack folder right away, so everything from step 3 has a
+place to go:
+
+```bash
+cp -r packs/empty local/<pack>      # e.g. local/wise26
+mkdir -p local/<pack>/material/<subject-id>/sheets local/<pack>/notes/<subject-id>   # per subject
+```
+
+and write `local/<pack>/SETUP.md` with one line per item, for example:
+
+```markdown
+# Setup checklist
+
+- [x] Installed, tests pass
+- [x] Semester, subjects and exams collected
+- [ ] Timetable (.ics export from the campus system)
+- [ ] DB: script / slides
+- [ ] DB: exercise sheets with tasks
+- [ ] DB: own notes
+- [ ] Theo: script / slides
+- [ ] …
+- [ ] Topics per subject from the scripts
+- [ ] Dojos with drills for every procedure
+- [ ] Pack valid, app started with the pack, first quiz done
+```
+
+`SETUP.md` is for you and the person; the app ignores it.
+
 ## 3. Collect timetable, scripts, sheets and notes
 
 This step is the core of the setup. The app is only as good as what you put
-into the pack here, so do not skip parts of it. For **every subject** you need:
+into the pack here, so do not skip parts of it. Go through it **together
+with the person**, in this order: scripts first (they are the source for
+topics and dojos), then the timetable, then the exercise sheets, then the
+notes. For each item:
+
+1. Ask where it lives (Moodle, campus system, chair website, …), if you do
+   not know yet.
+2. Tell them exactly what to click to download it and which folder to save
+   it to (the folder already exists from step 2).
+3. Wait until they say it is there, then list the folder and read the
+   files. If something is missing or the wrong file, say so right away.
+4. Tick it off in `SETUP.md`.
+
+For **every subject** you need:
 
 | What | Goes to | Used for |
 | --- | --- | --- |
-| Timetable (lectures, tutorials, labs) | `schedule` in `subjects/<id>.json` | "Today" line, subject page |
+| Timetable (lectures, tutorials, labs) | `schedule` in `subjects/<id>.json` | calendar on the dashboard, subject page |
 | Current script or slides | `material/<subject-id>/` + a `script` check | topics, quiz questions |
 | Exercise sheets | `material/<subject-id>/sheets/` + `sheets[]` with `file` and `tasks` | solving sheets in the app |
 | Own notes | `notes/<subject-id>/` + a `notes` check | comparing notes with the script |
@@ -79,7 +140,34 @@ Access without touching credentials, for everything in this step:
 - **Never** ask for, store or write passwords, tokens or session cookies to
   files. Logins are the person's job.
 
-### 3a. Timetable
+### 3a. Scripts and slides
+
+For **every subject**, get the current script (or the slides, if there is no
+script) into `local/<pack>/material/<subject-id>/`. Typical places:
+
+- The university's learning platform: **Moodle**, ILIAS, Stud.IP, OLAT, Canvas
+- The chair's website, GitLab/GitHub, shared cloud folders
+- A printed script or a book (then ask for photos or a scan of the table of
+  contents at least)
+
+In Moodle, downloading usually works per course via "Download all files" or
+per section; in ILIAS via "Download" on the folder.
+
+Read the script once completely, or at least its table of contents and
+chapter openings: the topics in step 4 come from it. Note the version or
+date printed on it, so later updates can be noticed.
+
+Record every source as a check in the subject, so the dashboard shows when
+it was last looked at:
+
+```json
+{ "id": "moodle", "kind": "material", "label": "Moodle course", "url": "https://moodle.example.edu/course/view.php?id=1234", "everyDays": 3 }
+{ "id": "script", "kind": "script", "label": "Script", "version": "v1.2", "url": "material/db/script.pdf", "everyDays": 14 }
+```
+
+`url` may be a link or a path relative to the pack folder.
+
+### 3b. Timetable
 
 Ask where the timetable is and get it as a file. Typical sources:
 
@@ -110,33 +198,6 @@ timetable gets looked at again after changes:
 ```json
 { "id": "timetable", "kind": "material", "label": "Timetable", "url": "material/timetable.ics", "everyDays": 30 }
 ```
-
-### 3b. Scripts and slides
-
-For **every subject**, get the current script (or the slides, if there is no
-script) into `local/<pack>/material/<subject-id>/`. Typical places:
-
-- The university's learning platform: **Moodle**, ILIAS, Stud.IP, OLAT, Canvas
-- The chair's website, GitLab/GitHub, shared cloud folders
-- A printed script or a book (then ask for photos or a scan of the table of
-  contents at least)
-
-In Moodle, downloading usually works per course via "Download all files" or
-per section; in ILIAS via "Download" on the folder.
-
-Read the script once completely, or at least its table of contents and
-chapter openings: the topics in step 4 come from it. Note the version or
-date printed on it, so later updates can be noticed.
-
-Record every source as a check in the subject, so the dashboard shows when
-it was last looked at:
-
-```json
-{ "id": "moodle", "kind": "material", "label": "Moodle course", "url": "https://moodle.example.edu/course/view.php?id=1234", "everyDays": 3 }
-{ "id": "script", "kind": "script", "label": "Script", "version": "v1.2", "url": "material/db/script.pdf", "everyDays": 14 }
-```
-
-`url` may be a link or a path relative to the pack folder.
 
 ### 3c. Exercise sheets
 
@@ -187,17 +248,14 @@ Storage: `local/<pack>/notes/<subject-id>/`. Plus one check per subject:
 `material/` and `notes/` are inside the pack folder under `local/`, so they
 never end up in Git.
 
-## 4. Create the pack
+## 4. Build the pack
 
-```bash
-cp -r packs/empty local/<pack>      # e.g. local/wise26
-```
-
-Then follow CLAUDE.md, part A:
+The folder exists since step 2. Now fill it from the material, following
+CLAUDE.md, part A:
 
 1. `pack.json`: title, semester, settings from step 2, list of subjects.
-2. One `subjects/<id>.json` per subject with exam, `schedule` (step 3a),
-   checks (3b, 3d) and exercise sheets with `file` and `tasks` (3c). Sheets
+2. One `subjects/<id>.json` per subject with exam, `schedule` (step 3b),
+   checks (3a, 3d) and exercise sheets with `file` and `tasks` (3c). Sheets
    that are not published yet but have a known date go in as `open` with
    `due` and without `file`.
 3. **Derive topics from the material:** go through the table of contents of
@@ -236,13 +294,17 @@ Then follow CLAUDE.md, part A:
 
 Then show the person a short overview: subjects, exams with dates, classes
 per week, scripts found, sheets with tasks, number of topics per subject,
-open tasks. Ask whether anything is missing.
+dojos with their number of drills, open tasks. Ask whether anything is
+missing, and update `SETUP.md`.
 
 ## 5. Start
 
 ```bash
 LC_PACK_DIR=local/<pack> npm run dev
 ```
+
+Always start the app with the person's own pack like this, not with the
+demo.
 
 The app opens in the browser by itself (otherwise <http://localhost:5173>).
 In **Settings → AI connection**,
@@ -276,5 +338,6 @@ Suggest this routine to the person and carry it out when they ask for it:
 - **"How am I doing?"**: due and overdue topics, exams in the next two
   weeks, open sheets, outdated checks.
 
-At the end of the setup, put short phrases the person can say to you at any
-time as a list in your final message.
+At the end of the setup, tick off the last items in `SETUP.md` and put short
+phrases the person can say to you at any time as a list in your final
+message.
