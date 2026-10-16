@@ -138,7 +138,7 @@ export function SettingsView() {
         </label>
         <div class="row">
           <div class="field">
-            <span>Questions per quiz</span>
+            <span>Questions per quiz when nothing is due (otherwise all due topics)</span>
             <Stepper value={settings.questionsPerQuiz ?? 5} onChange={(v) => savePackSettings({ questionsPerQuiz: v })} min={1} max={30} label="Questions per quiz" />
           </div>
           <label class="field">
