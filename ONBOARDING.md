@@ -41,39 +41,92 @@ Ask in one block, and offer examples so the answers come easily:
 2. **Subjects:** name, short name, and per subject the exam: format (written
    exam, presentation or oral exam, project, still unclear), date and time if
    known, allowed aids (e.g. a specific calculator, one A4 sheet).
-3. **Exercise sheets:** rhythm and due day per subject, if there are any.
-4. **Study rhythm:** how many questions per quiz, whether weekends should stay
+3. **Timetable:** where their timetable lives (university portal, Moodle,
+   a PDF, a calendar app) and which tutorial or lab group they are in.
+4. **Scripts and exercise sheets:** per subject, where the script or slides
+   and the exercise sheets are published, and the sheets' due day.
+5. **Study rhythm:** how many questions per quiz, whether weekends should stay
    free.
-5. **AI connection in the app:** file bridge with Claude Code (recommended if
+6. **AI connection in the app:** file bridge with Claude Code (recommended if
    you are Claude Code), own API key, or Copy-Prompt for any chat. Briefly
    explain the differences (see README).
 
 Do not invent dates. Whatever is unknown becomes an open task in the pack.
 
-## 3. Find sources: material and own notes
+## 3. Collect timetable, scripts, sheets and notes
 
-Goal: for every subject, know **where the official material lives** and
-**where the person's own notes live**, and make both readable for you.
+This step is the core of the setup. The app is only as good as what you put
+into the pack here, so do not skip parts of it. For **every subject** you need:
 
-### 3a. Official material (script, slides, exercise sheets)
+| What | Goes to | Used for |
+| --- | --- | --- |
+| Timetable (lectures, tutorials, labs) | `schedule` in `subjects/<id>.json` | "Today" line, subject page |
+| Current script or slides | `material/<subject-id>/` + a `script` check | topics, quiz questions |
+| Exercise sheets | `material/<subject-id>/sheets/` + `sheets[]` with `file` and `tasks` | solving sheets in the app |
+| Own notes | `notes/<subject-id>/` + a `notes` check | comparing notes with the script |
 
-Ask per subject where the material is. Typical places:
+If something does not exist or the person cannot get it right now, create an
+open task for it (e.g. "Upload timetable PDF", "Script for DB not published
+yet") instead of leaving it out silently.
 
-- The university's learning platform: **Moodle**, ILIAS, Stud.IP, OLAT, Canvas
-- The chair's website, GitLab/GitHub, shared cloud folders
-- A printed script or a book
+Access without touching credentials, for everything in this step:
 
-Access without touching credentials:
-
-- **Preferred:** the person downloads the files and puts them in
-  `local/<pack>/material/<subject-id>/`. In Moodle this often works per course
-  via "Download all files" or per section; in ILIAS via "Download" on the
-  folder.
+- **Preferred:** the person downloads the files and puts them into the pack
+  folder (paths below). Tell them exactly where to click.
 - You may fetch public pages yourself if you have a web tool.
 - If the person has set up a sync tool (e.g. a Moodle downloader or a synced
   cloud folder), read from its target folder.
 - **Never** ask for, store or write passwords, tokens or session cookies to
   files. Logins are the person's job.
+
+### 3a. Timetable
+
+Ask where the timetable is and get it as a file. Typical sources:
+
+- The university's campus system (e.g. HISinOne, LSF, TUMonline, Campus
+  Management): most have an **iCal / .ics export** of the personal timetable.
+  This is the best source: every weekly `VEVENT` with `RRULE:FREQ=WEEKLY`
+  becomes one entry.
+- A timetable PDF or a screenshot: read it page by page.
+- The course page in Moodle or the course catalogue, per subject.
+- If nothing exists as a file, the person dictates it.
+
+Save the file as `local/<pack>/material/timetable.ics` (or `.pdf`, `.png`)
+and fill `schedule` per subject:
+
+```json
+"schedule": [
+  { "kind": "lecture", "weekday": "mon", "start": "10:00", "end": "12:00", "location": "Main lecture hall" },
+  { "kind": "tutorial", "weekday": "wed", "start": "14:00", "end": "16:00", "location": "Room 2.031", "notes": "group B" }
+]
+```
+
+`kind` is `lecture`, `tutorial`, `lab`, `seminar` or `other`. Only put in the
+tutorial group the person actually attends. Use `from` / `until` for classes
+that start late or end early, and `notes` for things like "every other week".
+Never guess times or rooms; ask, or create an open task. Add a check so the
+timetable gets looked at again after changes:
+
+```json
+{ "id": "timetable", "kind": "material", "label": "Timetable", "url": "material/timetable.ics", "everyDays": 30 }
+```
+
+### 3b. Scripts and slides
+
+For **every subject**, get the current script (or the slides, if there is no
+script) into `local/<pack>/material/<subject-id>/`. Typical places:
+
+- The university's learning platform: **Moodle**, ILIAS, Stud.IP, OLAT, Canvas
+- The chair's website, GitLab/GitHub, shared cloud folders
+- A printed script or a book (then ask for photos or a scan of the table of
+  contents at least)
+
+In Moodle, downloading usually works per course via "Download all files" or
+per section; in ILIAS via "Download" on the folder.
+
+Read the script once completely, or at least its table of contents and
+chapter openings: the topics in step 4 come from it. Note the version or
+date printed on it, so later updates can be noticed.
 
 Record every source as a check in the subject, so the dashboard shows when
 it was last looked at:
@@ -85,7 +138,36 @@ it was last looked at:
 
 `url` may be a link or a path relative to the pack folder.
 
-### 3b. Own notes
+### 3c. Exercise sheets
+
+The person solves exercise sheets directly in the app: clicking a sheet opens
+it next to an editor. For that, every sheet needs:
+
+1. The file in `local/<pack>/material/<subject-id>/sheets/` (e.g.
+   `sheet-03.pdf`), referenced in `file`. A PDF, an image or a Markdown file
+   works. If the sheet is only online, `file` may be the https link.
+2. The tasks as text in `tasks`, so the person can answer them one by one.
+   Extract them from the PDF: keep the original numbering as `label`, the
+   full task text as Markdown in `text` (formulas as plain text, e.g.
+   `x^2 + 1`, tables as Markdown tables), and `points` if given. Subtasks
+   (a, b, c) may stay inside one task or become their own task, whichever
+   fits how the sheet is graded.
+
+```json
+{
+  "id": "b3", "label": "Sheet 3", "due": "2026-11-03", "status": "open",
+  "file": "material/theo/sheets/sheet-03.pdf",
+  "tasks": [
+    { "id": "1", "label": "Task 1", "points": 4, "text": "Construct the DFA for …" },
+    { "id": "2a", "label": "Task 2a", "points": 2, "text": "Which language …" }
+  ]
+}
+```
+
+The person's answers end up in `work/<subject-id>/<sheet-id>.json`. Never
+change them; read them only when the person asks for feedback.
+
+### 3d. Own notes
 
 Ask what the person takes notes with, and help with the export:
 
@@ -114,8 +196,10 @@ cp -r packs/empty local/<pack>      # e.g. local/wise26
 Then follow CLAUDE.md, part A:
 
 1. `pack.json`: title, semester, settings from step 2, list of subjects.
-2. One `subjects/<id>.json` per subject with exam, checks (step 3) and
-   exercise sheets (known sheets as `open` with `due`).
+2. One `subjects/<id>.json` per subject with exam, `schedule` (step 3a),
+   checks (3b, 3d) and exercise sheets with `file` and `tasks` (3c). Sheets
+   that are not published yet but have a known date go in as `open` with
+   `due` and without `file`.
 3. **Derive topics from the material:** go through the table of contents of
    the script or slides, one exam-relevant concept per topic. In `notes`,
    put scope, source (chapter, slide) and typical mistakes. Everything gets
@@ -132,8 +216,9 @@ Then follow CLAUDE.md, part A:
    (`actor: "ai"`).
 7. `npm run validate -- local/<pack>` must report "All packs valid.".
 
-Then show the person a short overview: subjects, exams with dates, number of
-topics per subject, open tasks. Ask whether anything is missing.
+Then show the person a short overview: subjects, exams with dates, classes
+per week, scripts found, sheets with tasks, number of topics per subject,
+open tasks. Ask whether anything is missing.
 
 ## 5. Start
 
@@ -141,7 +226,8 @@ topics per subject, open tasks. Ask whether anything is missing.
 LC_PACK_DIR=local/<pack> npm run dev
 ```
 
-The person opens <http://localhost:5173>. In **Settings → AI connection**,
+The app opens in the browser by itself (otherwise <http://localhost:5173>).
+In **Settings → AI connection**,
 choose the AI connection from step 2. With the file bridge, Claude Code runs
 in the pack folder with "Process the inbox" (see CLAUDE.md, Processing the
 inbox). If you are Claude Code yourself, you can take this over directly and
@@ -156,8 +242,12 @@ get created.
 Suggest this routine to the person and carry it out when they ask for it:
 
 - **"What's new?"** (e.g. twice a week): look at the check sources, have new
-  files put into `material/`, compare the script version, create new topics
-  and exercise sheets, set `lastChecked`.
+  files put into `material/`, compare the script version, create new topics,
+  add new exercise sheets with `file` and `tasks`, update the timetable if it
+  changed, set `lastChecked`.
+- **"Check my sheet <n>"**: read `work/<subject>/<sheet>.json` against the
+  tasks and give feedback per task (grading rules in CLAUDE.md), without
+  changing the answers.
 - **"Compare my notes"**: read new notes against the script and the topics,
   gaps become open tasks, new concepts become topics.
 - **"Quiz me on <subject>"** and **"Dojo <procedure>"**: see CLAUDE.md.

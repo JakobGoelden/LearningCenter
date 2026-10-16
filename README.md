@@ -10,10 +10,14 @@ the next reviews.
 
 - **Dashboard:** one banner per subject with a progress bar (share of topics
   that are solid) and, below it, flags for due reviews, open sheets and open
-  tasks. Click a banner to open the subject page with the panels Exam
-  (format, date, countdown, allowed aids), Progress, Exercise sheets (open →
-  done → checked), Open tasks and Last checks, plus the buttons Quiz, Dojo
-  and Topics.
+  tasks. Above them, the "Today" line shows today's classes and what is due.
+  Click a banner to open the subject page with the panels Exam (format, date,
+  countdown, allowed aids), Progress, Exercise sheets, Open tasks, Timetable
+  and Last checks, plus the buttons Quiz, Dojo and Topics.
+- **Exercise sheets:** click a sheet to open it next to an editor and write
+  your solutions task by task. The sheet (PDF, image or text) shows on the
+  left, your answers save themselves into the pack. Mark it done → checked
+  when you are finished.
 - **Quiz:** The AI asks questions that test understanding ("Question n/N"),
   grades them from 0 to 5 and explains gaps. Then spaced repetition takes
   over: topics you know well move on 1 → 3 → 7 → 14 → 21 days, shaky ones
@@ -46,7 +50,8 @@ npm install
 npm run dev
 ```
 
-Then open <http://localhost:5173> and choose **Try the demo**. The demo
+The app opens in your browser by itself (otherwise go to
+<http://localhost:5173>). Choose **Try the demo**. The demo
 lives in browser storage and has two subjects.
 
 ## Create your own pack
@@ -107,9 +112,11 @@ The format is open and documented with JSON Schema (`schema/`):
 ```
 <pack>/
   pack.json              title, semester, settings, subject and dojo IDs
-  subjects/<id>.json     exam, topics with history, exercise sheets, open tasks, checks
+  subjects/<id>.json     exam, timetable, topics with history, exercise sheets, open tasks, checks
   dojos/<id>.json        dojo definitions
   sessions/<id>.json     logs of quizzes and dojos
+  work/<subject>/<sheet>.json  your answers to an exercise sheet
+  material/, notes/      scripts, sheet PDFs, timetable and your own notes (not exported)
   log/events.jsonl       event log: what was clicked and answered
   inbox/, outbox/        requests and answers of the file bridge
 ```

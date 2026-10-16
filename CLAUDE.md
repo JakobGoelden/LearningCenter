@@ -27,11 +27,12 @@ Code, identifiers and commit messages are in English.
 ```
 local/<name>/
   pack.json              manifest: title, semester, settings, subject and dojo IDs
-  subjects/<id>.json     one subject: exam, topics (with history), sheets, open tasks, checks
+  subjects/<id>.json     one subject: exam, timetable, topics (with history), sheets, open tasks, checks
   dojos/<id>.json        dojo definitions (pure data)
   sessions/<id>.json     logs of quizzes and dojos
   log/events.jsonl       event log, one JSON line per event, append only
   material/<subject-id>/ downloaded scripts, slides, sheets (optional)
+  work/<subject-id>/<sheet-id>.json  the person's answers to a sheet, written in the app
   notes/<subject-id>/    own notes as PDF/Markdown, e.g. reMarkable export (optional)
   inbox/<id>.json        requests from the app (file bridge)
   outbox/<id>.json       your answers to them
@@ -58,7 +59,18 @@ The format is fully described in `schema/*.schema.json` (JSON Schema
    `version`), `notes` (own notes). `everyDays` marks them as outdated if
    they have not been checked for too long. `url` says where to look (link to
    the course or a path in the pack like `material/db/`).
-7. Validate: `npm run validate -- local/<name>`. Again after **every** change.
+7. **Timetable:** `schedule` lists weekly classes (`kind`, `weekday`
+   `mon`…`sun`, `start`, `end`, optional `location`, `from`, `until`,
+   `notes`). Take it from the person's timetable (an .ics export is best),
+   never guess.
+8. **Exercise sheets:** `file` points at the sheet (path in the pack such as
+   `material/db/sheets/sheet-02.pdf`, or an https link) and `tasks` holds the
+   tasks as Markdown (`id`, `label`, `text`, optional `points`), extracted
+   from the sheet. With both, the person can solve the sheet in the app.
+   Their answers land in `work/<subject-id>/<sheet-id>.json`
+   (`work.schema.json`); never edit them, read them only to give feedback
+   when asked.
+9. Validate: `npm run validate -- local/<name>`. Again after **every** change.
 
 ### When editing
 
@@ -180,7 +192,7 @@ check it step by step, give a hint or model solution only on request.
 ### Understanding the current state
 
 `log/events.jsonl` shows what the person clicked and answered; `sessions/`
-holds the questions, answers and grades. For an overview ("How am I doing in
+holds the questions, answers and grades; `work/` holds their sheet answers. For an overview ("How am I doing in
 databases?"), summarize topic status, due dates, overdue sheets, outdated
 checks and open tasks.
 
@@ -192,6 +204,8 @@ checks and open tasks.
 - Commands: `npm run dev`, `npm run build`, `npm test`, `npm run typecheck`,
   `npm run validate`. With `LC_PACK_DIR=local/<name> npm run dev` the app
   reads and writes a pack folder through the dev server (any browser).
+  `npm run dev` opens the browser by itself; `BROWSER=none npm run dev`
+  turns that off (e.g. for headless tests).
 - Structure:
   - `schema/` JSON schemas (source of truth for the format)
   - `src/model/` types (mirror of the schema), validation, derived views
