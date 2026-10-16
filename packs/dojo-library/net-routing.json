@@ -6,5 +6,42 @@
   "procedure": "Building routing tables and applying longest prefix match",
   "levels": ["easy", "medium", "exam"],
   "promptTemplate": "Describe a small topology (routers, networks, interfaces) in text. easy: 2 routers, table for one router. medium: 3 routers with a default route. exam: aggregating possible routes and mapping destination addresses by longest prefix match. When checking: row by row destination, prefix, next hop, interface.",
-  "answerFormat": "Table: destination/prefix | next hop | interface."
+  "answerFormat": "Table: destination/prefix | next hop | interface.",
+  "drills": [
+    {
+      "id": "lpm-1",
+      "kind": "choice",
+      "level": "medium",
+      "prompt": "Routing table:\n\n| Prefix | Next hop |\n| --- | --- |\n| 10.0.0.0/8 | R1 |\n| 10.1.0.0/16 | R2 |\n| 10.1.2.0/24 | R3 |\n| 0.0.0.0/0 | R4 |\n\nWhere is a packet to **10.1.2.5** sent?",
+      "options": ["R1", "R2", "R3", "R4"],
+      "correct": [2],
+      "explanation": "Three prefixes match; the longest one, 10.1.2.0/24, wins."
+    },
+    {
+      "id": "lpm-2",
+      "kind": "choice",
+      "level": "medium",
+      "prompt": "Routing table:\n\n| Prefix | Next hop |\n| --- | --- |\n| 10.0.0.0/8 | R1 |\n| 10.1.0.0/16 | R2 |\n| 10.1.2.0/24 | R3 |\n| 0.0.0.0/0 | R4 |\n\nWhere is a packet to **10.1.9.9** sent?",
+      "options": ["R1", "R2", "R3", "R4"],
+      "correct": [1],
+      "explanation": "10.1.0.0/16 is the longest matching prefix; 10.1.2.0/24 does not match."
+    },
+    {
+      "id": "lpm-3",
+      "kind": "choice",
+      "level": "easy",
+      "prompt": "Routing table:\n\n| Prefix | Next hop |\n| --- | --- |\n| 10.0.0.0/8 | R1 |\n| 10.1.0.0/16 | R2 |\n| 10.1.2.0/24 | R3 |\n| 0.0.0.0/0 | R4 |\n\nWhere is a packet to **11.0.0.1** sent?",
+      "options": ["R1", "R2", "R3", "R4"],
+      "correct": [3],
+      "explanation": "Only the default route 0.0.0.0/0 matches."
+    },
+    {
+      "id": "aggregate",
+      "kind": "input",
+      "level": "exam",
+      "prompt": "Aggregate `192.168.4.0/24` and `192.168.5.0/24` into a single prefix.",
+      "accept": ["192.168.4.0/23"],
+      "explanation": "4 = 00000100 and 5 = 00000101 differ only in the last bit of the third byte, so 23 bits are shared."
+    }
+  ]
 }

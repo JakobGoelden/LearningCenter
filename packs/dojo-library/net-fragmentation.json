@@ -6,5 +6,40 @@
   "procedure": "Fragmenting IPv4 packets (offset, MF flag, length)",
   "levels": ["easy", "medium", "exam"],
   "promptTemplate": "Give a packet size, header length and one or more MTUs along the path. easy: one MTU. medium: two MTUs in a row. exam: header with options and fragmenting again. Asked for: number of fragments, total length, fragment offset (in 8-byte units), MF flag. When checking: is the payload per fragment divisible by 8? Are the offsets cumulative? Does the last fragment have MF=0?",
-  "answerFormat": "Table: fragment | total length | offset | MF."
+  "answerFormat": "Table: fragment | total length | offset | MF.",
+  "drills": [
+    {
+      "id": "count",
+      "kind": "number",
+      "level": "medium",
+      "prompt": "An IPv4 packet has a total length of 4000 bytes and a 20-byte header (no options). It must cross a link with MTU 1500. Into how many fragments is it split?",
+      "answer": 3,
+      "explanation": "Payload 3980 bytes; at most 1480 bytes of payload per fragment (1500 − 20, divisible by 8): 1480 + 1480 + 1020."
+    },
+    {
+      "id": "offset-third",
+      "kind": "number",
+      "level": "medium",
+      "prompt": "An IPv4 packet has a total length of 4000 bytes and a 20-byte header (no options). It must cross a link with MTU 1500. What is the fragment offset of the third fragment (in 8-byte units)?",
+      "answer": 370,
+      "explanation": "It starts after 2 · 1480 = 2960 payload bytes: 2960 / 8 = 370."
+    },
+    {
+      "id": "length-last",
+      "kind": "number",
+      "level": "medium",
+      "prompt": "An IPv4 packet has a total length of 4000 bytes and a 20-byte header (no options). It must cross a link with MTU 1500. What is the total length of the last fragment?",
+      "answer": 1040,
+      "unit": "bytes",
+      "explanation": "Remaining payload 3980 − 2960 = 1020 bytes, plus the 20-byte header."
+    },
+    {
+      "id": "mf-flag",
+      "kind": "choice",
+      "level": "easy",
+      "prompt": "Which fragments have the MF (more fragments) flag set to 0?",
+      "options": ["Only the first", "All fragments", "Only the last", "None"],
+      "correct": [2]
+    }
+  ]
 }

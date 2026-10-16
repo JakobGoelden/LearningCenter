@@ -8,5 +8,52 @@
   "levels": ["easy", "medium", "exam"],
   "topics": ["relational-algebra"],
   "promptTemplate": "Give a schema with 2–3 relations and a question. easy: selection and projection. medium: join and renaming. exam: difference or division. Notation: σ, π, ⋈, ρ, ∪, −, ÷ (ASCII stand-ins sigma, pi, join, rho, union, minus, div are fine). When checking: operator by operator from the inside out, checking attribute names and the schemas of intermediate results.",
-  "answerFormat": "One expression, intermediate steps welcome."
+  "answerFormat": "One expression, intermediate steps welcome.",
+  "drills": [
+    {
+      "id": "selection",
+      "kind": "choice",
+      "level": "easy",
+      "topic": "relational-algebra",
+      "prompt": "Which operator picks **rows** that satisfy a condition?",
+      "options": ["σ (selection)", "π (projection)", "⋈ (join)", "ρ (renaming)"],
+      "correct": [0]
+    },
+    {
+      "id": "columns",
+      "kind": "choice",
+      "level": "medium",
+      "topic": "relational-algebra",
+      "prompt": "Which operators can change the **number of columns**?",
+      "options": ["π (projection)", "σ (selection)", "⋈ (natural join)", "∪ (union)"],
+      "correct": [0, 2],
+      "explanation": "Projection keeps some columns, a join combines the columns of both relations. Selection and union keep the schema."
+    },
+    {
+      "id": "cross-product",
+      "kind": "number",
+      "level": "easy",
+      "topic": "relational-algebra",
+      "prompt": "R has 3 rows and S has 4 rows. How many rows does R × S have?",
+      "answer": 12,
+      "explanation": "The cross product pairs every row of R with every row of S: 3 · 4."
+    },
+    {
+      "id": "division",
+      "kind": "input",
+      "level": "exam",
+      "topic": "relational-algebra",
+      "prompt": "Which operator answers questions like \"students who attended **all** lectures\"? Give its name.",
+      "accept": ["division", "÷", "divide", "relational division"],
+      "explanation": "Division R ÷ S returns the values that appear in R together with every tuple of S."
+    },
+    {
+      "id": "enrolled-db",
+      "kind": "self",
+      "level": "medium",
+      "topic": "relational-algebra",
+      "prompt": "Schema: `Student(sid, name)`, `Enrolled(sid, cid)`.\n\nWrite an expression for the **names** of all students enrolled in course `'db'`.",
+      "solution": "`π_name(σ_cid='db'(Enrolled) ⋈ Student)`\n\nSelect first, so the join works on fewer rows; project on name at the end."
+    }
+  ]
 }

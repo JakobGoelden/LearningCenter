@@ -8,5 +8,129 @@
   "levels": ["easy", "medium", "exam"],
   "topics": ["powerset", "dfa-nfa"],
   "promptTemplate": "Create an NFA for the powerset construction at level {{level}}. easy: 3 states, alphabet {a,b}, no ε-transitions. medium: 4 states with one ε-transition. exam: 4–5 states, ε-transitions, several final states, worded like an exam question. Give the NFA as a transition table (rows = states, columns = symbols, start state marked →, final states marked *). When checking: first check the ε-closure of the start state, then each row of the DFA table on its own, then the final states.",
-  "answerFormat": "DFA as a table: state sets like {q0,q1} as rows, one column per symbol, start state marked →, final states marked *."
+  "answerFormat": "DFA as a table: state sets like {q0,q1} as rows, one column per symbol, start state marked →, final states marked *.",
+  "drills": [
+    {
+      "id": "max-states",
+      "kind": "choice",
+      "level": "easy",
+      "topic": "powerset",
+      "prompt": "An NFA has 4 states. At most how many states can the DFA from the powerset construction have?",
+      "options": ["4", "8", "16", "24"],
+      "correct": [2],
+      "explanation": "Each DFA state is a subset of the 4 NFA states, and there are 2^4 = 16 subsets (the empty set, the dead state, included)."
+    },
+    {
+      "id": "true-statements",
+      "kind": "choice",
+      "level": "medium",
+      "topic": "powerset",
+      "prompt": "Which statements about the powerset construction are true?",
+      "options": [
+        "Every DFA state is a set of NFA states.",
+        "A DFA state is final if it contains at least one final NFA state.",
+        "A DFA state is final only if all of its NFA states are final.",
+        "The empty set can show up as a (dead) state."
+      ],
+      "correct": [0, 1, 3],
+      "explanation": "The DFA simulates all runs of the NFA at once, so it accepts as soon as one of them could be in a final state."
+    },
+    {
+      "id": "step-a",
+      "kind": "input",
+      "level": "easy",
+      "topic": "powerset",
+      "prompt": "NFA over {a, b} with transitions q0 –a→ q0, q0 –a→ q1, q0 –b→ q0, q1 –b→ q2.\n\nWhich set of NFA states does the DFA reach from {q0} on **a**? Write it like `{q0,q1}`.",
+      "accept": ["{q0,q1}", "{q1,q0}"],
+      "explanation": "From q0, the symbol a leads to q0 and to q1."
+    },
+    {
+      "id": "eps-closure",
+      "kind": "input",
+      "level": "medium",
+      "topic": "powerset",
+      "prompt": "An ε-NFA has the transitions q0 –ε→ q1, q1 –ε→ q2, q2 –a→ q0 and q2 –b→ q3.\n\nWhat is the ε-closure of q0? Write it like `{q0,q1}`.",
+      "accept": ["{q0,q1,q2}", "{q0,q2,q1}", "{q1,q0,q2}", "{q1,q2,q0}", "{q2,q0,q1}", "{q2,q1,q0}"],
+      "explanation": "The ε-closure contains q0 itself and everything reachable by ε-transitions only: q1, then q2. q3 needs a b."
+    },
+    {
+      "id": "convert-ends-ab",
+      "kind": "automaton",
+      "level": "medium",
+      "topic": "powerset",
+      "prompt": "Convert this NFA into an equivalent **DFA** with the powerset construction. Only reachable states are needed.",
+      "alphabet": ["a", "b"],
+      "given": {
+        "states": ["q0", "q1", "q2"],
+        "start": "q0",
+        "final": ["q2"],
+        "transitions": [["q0", "a", "q0"], ["q0", "b", "q0"], ["q0", "a", "q1"], ["q1", "b", "q2"]]
+      },
+      "reference": {
+        "automaton": {
+          "states": ["q0", "q1", "q2"],
+          "start": "q0",
+          "final": ["q2"],
+          "transitions": [["q0", "a", "q0"], ["q0", "b", "q0"], ["q0", "a", "q1"], ["q1", "b", "q2"]]
+        }
+      },
+      "deterministic": true,
+      "explanation": "Reachable sets: {q0}, {q0,q1}, {q0,q2}. {q0,q2} is final because it contains q2. The language: all words ending in ab."
+    },
+    {
+      "id": "convert-contains-aa",
+      "kind": "automaton",
+      "level": "exam",
+      "topic": "powerset",
+      "prompt": "Convert this ε-NFA into an equivalent **DFA**. Start with the ε-closure of the start state.",
+      "alphabet": ["a", "b"],
+      "given": {
+        "states": ["p0", "p1", "p2", "p3"],
+        "start": "p0",
+        "final": ["p3"],
+        "transitions": [
+          ["p0", "a", "p0"],
+          ["p0", "b", "p0"],
+          ["p0", "ε", "p1"],
+          ["p1", "a", "p2"],
+          ["p2", "a", "p3"],
+          ["p3", "a", "p3"],
+          ["p3", "b", "p3"]
+        ]
+      },
+      "reference": {
+        "automaton": {
+          "states": ["p0", "p1", "p2", "p3"],
+          "start": "p0",
+          "final": ["p3"],
+          "transitions": [
+            ["p0", "a", "p0"],
+            ["p0", "b", "p0"],
+            ["p0", "ε", "p1"],
+            ["p1", "a", "p2"],
+            ["p2", "a", "p3"],
+            ["p3", "a", "p3"],
+            ["p3", "b", "p3"]
+          ]
+        }
+      },
+      "deterministic": true,
+      "seconds": 600,
+      "explanation": "Start: {p0,p1}. On a: {p0,p1,p2}; on a again: {p0,p1,p2,p3}, which is final. Once p3 is in the set it stays, so the DFA accepts all words containing aa."
+    },
+    {
+      "id": "order-steps",
+      "kind": "order",
+      "level": "easy",
+      "topic": "powerset",
+      "prompt": "Put the steps of the powerset construction in order.",
+      "items": [
+        "Take the ε-closure of the NFA start state: it is the DFA start state.",
+        "For a DFA state and a symbol, collect all NFA states reachable on that symbol.",
+        "Take the ε-closure of that set: it is the target DFA state.",
+        "Repeat for every new DFA state until no new states appear.",
+        "Mark every DFA state that contains a final NFA state as final."
+      ]
+    }
+  ]
 }
