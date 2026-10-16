@@ -24,9 +24,13 @@ the next reviews.
   over: topics you know well move on 1 → 3 → 7 → 14 → 21 days, shaky ones
   stay short, and nothing is scheduled on weekends.
 - **Dojos:** practice rooms for procedures like NFA → DFA, SQL by hand or
-  subnetting. The AI creates tasks (easy / medium / exam level) and checks
-  your solution step by step; hint and model solution at the push of a
-  button. Dojos are pure data, new ones need no code.
+  subnetting. Practice rounds run right in the app: pick a level and a
+  count, answer against a timer (multiple choice, short answers, numbers,
+  putting steps in order, writing a regex or building an automaton in a
+  transition table) and get instant feedback, checked by the app itself.
+  Save the round to your progress like a quiz. The AI writes new exercises
+  on request, and for free practice it creates tasks and checks your
+  solution step by step. Dojos are pure data, new ones need no code.
 - **Topic list** per subject with status (new / shaky / solid / skip) and
   due date, also editable by hand.
 
