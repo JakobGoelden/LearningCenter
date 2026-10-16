@@ -7,6 +7,7 @@ import { downloadText, pickTextFile } from '../lib/download';
 import { today } from '../lib/dates';
 import { href } from './router';
 import { Stepper } from './Stepper';
+import { BackLink } from './BackLink';
 
 const EFFORTS: Effort[] = ['low', 'medium', 'high', 'xhigh', 'max'];
 
@@ -47,7 +48,7 @@ export function SettingsView() {
   return (
     <div class="stack">
       <div class="page-head subject-head">
-        <a href={href({ name: 'dashboard' })}>← Dashboard</a>
+        <BackLink href={href({ name: 'dashboard' })} label="Dashboard" />
         <h1>Settings</h1>
       </div>
 

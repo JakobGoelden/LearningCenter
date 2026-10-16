@@ -8,6 +8,7 @@ import type { Weekday } from '../model/types';
 import { href } from './router';
 import { Torii } from './Emblem';
 import { StatusBar } from './StatusBar';
+import { BackLink } from './BackLink';
 
 /** Full detail page for one subject, opened from its dashboard banner. */
 export function SubjectView({ subjectId }: { subjectId: string }) {
@@ -67,7 +68,7 @@ export function SubjectView({ subjectId }: { subjectId: string }) {
   return (
     <div class="stack">
       <div class="page-head subject-head" style={{ '--c': s.color }}>
-        <a href={href({ name: 'dashboard' })}>← Dashboard</a>
+        <BackLink href={href({ name: 'dashboard' })} label="Dashboard" />
         <h1>{s.name}</h1>
         <span class="spacer" />
         <a class="btn primary" href={href({ name: 'quiz', subject: s.id })}>

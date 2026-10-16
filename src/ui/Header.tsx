@@ -15,7 +15,7 @@ export function Header() {
   };
   return (
     <header class="topbar">
-      <a class="brand" href={href({ name: 'dashboard' })}>
+      <a class="brand" href={href({ name: 'dashboard' })} title="Back to the dashboard">
         <Logo />
         {pack.title}
       </a>

@@ -6,6 +6,7 @@ import type { Sheet, SheetStatus, SheetWork } from '../model/types';
 import { Markdown } from './Markdown';
 import { SHEET_STATUS } from './labels';
 import { href } from './router';
+import { BackLink } from './BackLink';
 
 /** Answer key used when the sheet lists no tasks. */
 const WHOLE_SHEET = '_';
@@ -85,7 +86,7 @@ export function SheetView({ subjectId, sheetId }: { subjectId: string; sheetId: 
   return (
     <div class="stack">
       <div class="page-head subject-head" style={{ '--c': s.color }}>
-        <a href={href({ name: 'subject', subject: s.id })}>← {s.name}</a>
+        <BackLink href={href({ name: 'subject', subject: s.id })} label={s.name} />
         <h1>{sheet.label}</h1>
         {sheet.due && (
           <span class={`badge${late ? ' danger' : ''}`}>

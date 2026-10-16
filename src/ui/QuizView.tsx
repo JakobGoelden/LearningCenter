@@ -14,6 +14,7 @@ import { SCORE_LABEL, TOPIC_STATUS } from './labels';
 import { Stepper } from './Stepper';
 import { ChatStart, copyText } from './ChatStart';
 import { quizChatPrompt, quizGradeChatPrompt } from '../ai/chat';
+import { BackLink } from './BackLink';
 
 /** review: compare with the key points and grade yourself (quizzes run in the app). */
 type Phase = 'setup' | 'answer' | 'review' | 'results';
@@ -323,7 +324,7 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
     <div class="stack">
       {head ?? (
         <div class="page-head subject-head" style={{ '--c': s.color }}>
-          <a href={href({ name: 'dashboard' })}>← Dashboard</a>
+          <BackLink href={href({ name: 'dashboard' })} label="Dashboard" />
           <h1>Quiz: {s.name}</h1>
           <span class="spacer" />
           <a class="btn small" href={href({ name: 'topics', subject: s.id })}>

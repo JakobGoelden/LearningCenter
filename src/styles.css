@@ -451,7 +451,7 @@ table.automaton.readonly td, table.automaton.readonly th { border: 1px solid var
   border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
 .topbar .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 1.05rem; letter-spacing: -0.01em; }
-.logo { width: 30px; height: 30px; flex: none; filter: drop-shadow(0 2px 6px rgb(91 123 255 / 0.35)); }
+.logo { width: 40px; height: 40px; flex: none; filter: drop-shadow(0 2px 6px rgb(91 123 255 / 0.35)); }
 button.primary, .btn.primary {
   background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #8b5cf6));
   box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--accent) 60%, transparent);
@@ -528,8 +528,6 @@ button:active:not(:disabled), .btn:active { transform: translateY(1px); }
 .dojo-hero-desc { margin: 2px 0 0; color: rgb(255 255 255 / 0.85); }
 .dojo-hero-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .dojo-hero-tags span { font-size: 0.78rem; border-radius: 999px; padding: 2px 10px; background: rgb(255 255 255 / 0.08); border: 1px solid rgb(255 255 255 / 0.12); }
-.dojo-back { color: rgb(255 255 255 / 0.7); text-decoration: none; font-size: 0.85rem; margin-bottom: 6px; }
-.dojo-back:hover { color: #fff; }
 @media (max-width: 640px) {
   .dojo-hero { padding: 18px; }
   .dojo-hero h1 { font-size: 1.5rem; }
@@ -702,8 +700,6 @@ textarea:focus, input:focus, select:focus { outline: none; border-color: var(--a
 .list li:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
 .banner .chevron { transition: transform 0.2s; }
 .banner:hover .chevron { transform: translateX(4px); }
-.page-head > a:first-child { transition: transform 0.15s; display: inline-block; }
-.page-head > a:first-child:hover { transform: translateX(-3px); }
 
 /* Study: the one-click button on the dashboard */
 .study-cta {
@@ -893,10 +889,17 @@ button.study-go { padding: 10px 20px; font-size: 1rem; }
 .chat-start-hint { animation: rise 0.25s ease-out; }
 .chat-start-manual { flex-basis: 100%; }
 .chat-start-manual textarea { min-height: 120px; font-size: 0.8rem; }
-.study-cta-row { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; margin-bottom: 14px; }
-.study-cta-row .study-cta { flex: 1 1 320px; margin-bottom: 0; }
-.study-cta-row .chat-start { flex: 0 1 auto; }
-.study-cta-row .chat-start-btn { height: 100%; padding: 10px 18px; border-radius: var(--radius); }
+.study-cta { flex-wrap: wrap; }
+.study-cta-main {
+  flex: 1 1 260px; display: flex; align-items: center; gap: 14px; min-width: 0; padding: 0; border: 0; border-radius: 0;
+  background: none; box-shadow: none; color: inherit; font: inherit; text-align: left; cursor: pointer; position: relative; z-index: 1;
+}
+.study-cta-main:hover, .study-cta-main:active { background: none; box-shadow: none; transform: none; }
+.study-cta .chat-start { position: relative; z-index: 1; }
+.study-cta .chat-start-btn { color: #fff; background: rgb(255 255 255 / 0.16); border: 1px solid rgb(255 255 255 / 0.35); box-shadow: none; padding: 8px 16px; }
+.study-cta .chat-start-btn:hover { background: rgb(255 255 255 / 0.28); border-color: rgb(255 255 255 / 0.6); }
+.study-cta .chat-start-btn.done { color: #fff; background: rgb(255 255 255 / 0.3); border-color: #fff; }
+.study-cta .chat-start-hint { color: rgb(255 255 255 / 0.85); }
 
 /* Results waiting for the AI */
 .pending-results { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; border-left: 4px solid var(--gold); animation: rise 0.3s ease-out; }
@@ -919,3 +922,41 @@ button.study-go { padding: 10px 20px; font-size: 1rem; }
 .check-ai-now { grid-column: 1 / -1; justify-self: start; }
 button.link { padding: 0; border: 0; background: none; box-shadow: none; color: var(--accent); text-decoration: underline; font: inherit; cursor: pointer; }
 .round-list li { grid-template-columns: 22px 1fr auto; }
+
+/* Back link: pill with a centred chevron */
+.back-link {
+  display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; border-radius: 999px; line-height: 1;
+  font-size: 0.9rem; font-weight: 600; color: var(--text); text-decoration: none; white-space: nowrap;
+  background: var(--panel); border: 1px solid var(--border); box-shadow: var(--shadow);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.back-link-icon {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; flex: none;
+  color: #fff; background: var(--c, var(--accent)); transition: transform 0.15s;
+}
+.back-link-icon svg { display: block; }
+.back-link:hover { border-color: var(--c, var(--accent)); box-shadow: var(--shadow-hover); text-decoration: none; }
+.back-link:hover .back-link-icon { transform: translateX(-2px); }
+.back-link:active { transform: scale(0.96); }
+.back-link.on-dark { justify-self: start; margin-bottom: 6px; color: #fff; background: rgb(255 255 255 / 0.12); border-color: rgb(255 255 255 / 0.25); box-shadow: none; }
+.back-link.on-dark .back-link-icon { background: var(--vermilion); }
+.back-link.on-dark:hover { background: rgb(255 255 255 / 0.2); border-color: rgb(255 255 255 / 0.5); }
+
+/* Brand: big logo that reads as the way home */
+.topbar .brand { font-size: 1.15rem; padding: 4px 10px 4px 4px; margin-left: -4px; border-radius: 14px; transition: background 0.15s; }
+.topbar .brand:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); text-decoration: none; }
+.topbar .brand:hover .logo { transform: rotate(-6deg) scale(1.06); }
+.logo { transition: transform 0.2s cubic-bezier(0.2, 1.5, 0.4, 1); }
+
+/* Dojo focus: while a round runs, only the round is shown */
+.dojo-page.focus > :not(.drill) { display: none; }
+.dojo-page.focus > .drill { animation: focus-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes focus-in { from { opacity: 0; transform: translateY(14px) scale(0.98); } }
+
+/* "or train in chat", set apart from the start button */
+.chat-alt { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; flex-wrap: wrap; }
+.chat-alt-or { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.chat-alt-or::before, .chat-alt-or::after { content: ''; width: 22px; height: 1px; background: var(--border); }
+.chat-alt-box { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 12px 6px 6px; border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 999px; background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.chat-alt-box .chat-start-btn { border-color: transparent; background: var(--panel); }
+@media (max-width: 560px) { .chat-alt { margin-left: 0; width: 100%; } }

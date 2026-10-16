@@ -8,6 +8,7 @@ import { href, navigate } from './router';
 import { Stepper } from './Stepper';
 import { ChatStart } from './ChatStart';
 import { quizChatPrompt } from '../ai/chat';
+import { BackLink } from './BackLink';
 
 /** Why a topic made it into today's study round, as short chips. */
 function reasons(t: Topic, on: ISODate, exam?: ISODate): string[] {
@@ -68,7 +69,7 @@ export function StudyView() {
         topics={block.topics.map((t) => t.id)}
         head={
           <div class="page-head subject-head" style={{ '--c': block.subject.color }}>
-            <a href={href({ name: 'dashboard' })}>← Dashboard</a>
+            <BackLink href={href({ name: 'dashboard' })} label="Dashboard" />
             <h1>Study: {block.subject.name}</h1>
             {plan.length > 1 && (
               <span class="badge">
@@ -89,7 +90,7 @@ export function StudyView() {
   return (
     <div class="stack">
       <div class="page-head subject-head">
-        <a href={href({ name: 'dashboard' })}>← Dashboard</a>
+        <BackLink href={href({ name: 'dashboard' })} label="Dashboard" />
         <h1>Study</h1>
       </div>
       {total === 0 ? (
@@ -148,8 +149,8 @@ export function StudyCta() {
   const due = loaded.subjects.reduce((n, s) => n + s.topics.filter((t) => t.status !== 'skip' && t.due && t.due <= on).length, 0);
   const first = plan[0];
   return (
-    <div class="study-cta-row">
-      <button class={`study-cta${plan.length ? '' : ' calm'}`} onClick={() => navigate({ name: 'study' })}>
+    <div class={`study-cta${plan.length ? '' : ' calm'}`}>
+      <button class="study-cta-main" onClick={() => navigate({ name: 'study' })}>
         <span class="study-cta-play" aria-hidden="true">
           ▶
         </span>

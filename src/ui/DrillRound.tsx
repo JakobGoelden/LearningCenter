@@ -63,8 +63,11 @@ export function DrillPractice({
   onFinish,
   onApply,
   chatPrompt,
+  onRunning,
 }: {
   dojo: Dojo;
+  /** True while a round runs (not on the setup or the result). */
+  onRunning?: (running: boolean) => void;
   /** Prompt for "Train in chat" at the chosen level. */
   chatPrompt?: (level: Level | 'all') => string;
   onStart: (round: Drill[], level: Level | 'all') => void;
@@ -79,6 +82,12 @@ export function DrillPractice({
   const [round, setRound] = useState<Drill[] | null>(null);
   const [summary, setSummary] = useState<RoundSummary | null>(null);
   const [applied, setApplied] = useState(false);
+  const running = !!round && !summary;
+  useEffect(() => {
+    onRunning?.(running);
+    if (running) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [running]);
+  useEffect(() => () => onRunning?.(false), []);
   const available = drills.filter((d) => level === 'all' || (d.level ?? 'medium') === level).length;
 
   const start = (pick: Drill[]) => {
@@ -235,7 +244,7 @@ export function DrillPractice({
         <button class="primary dojo-go" disabled={!available} onClick={() => start(pickRound(drills, level, count))}>
           Start here
         </button>
-        {chatPrompt && <ChatStart label="Train in chat" prompt={() => chatPrompt(level)} />}
+        {chatPrompt && <ChatStart separate label="Train in chat" prompt={() => chatPrompt(level)} />}
       </div>
     </section>
   );

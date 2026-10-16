@@ -14,6 +14,7 @@ import { DrillPractice, type RoundSummary } from './DrillRound';
 import { roundScore } from '../dojo/drills';
 import { Enso, Torii } from './Emblem';
 import { SymbolBar } from './SymbolBar';
+import { BackLink } from './BackLink';
 import { ChatStart } from './ChatStart';
 import { dojoChatPrompt } from '../ai/chat';
 import { taskSymbols } from '../dojo/symbols';
@@ -34,13 +35,17 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
   /** Session file of the last practice round, linked from the topic reviews. */
   const drillSessionId = useRef('');
   const [error, setError] = useState<string | null>(null);
+  /** A practice round is running: show only the round. */
+  const [running, setRunning] = useState(false);
 
   if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
 
   const back = (
-    <a class="dojo-back" href={dojo ? href({ name: 'dojo', subject: s.id }) : href({ name: 'dashboard' })}>
-      ← {dojo ? 'All dojos' : 'Dashboard'}
-    </a>
+    <BackLink
+      class="on-dark"
+      href={dojo ? href({ name: 'dojo', subject: s.id }) : href({ name: 'dashboard' })}
+      label={dojo ? 'All dojos' : 'Dashboard'}
+    />
   );
   const hero = (title: string, sub: ComponentChildren, extra?: ComponentChildren) => (
     <header class="dojo-hero" style={{ '--c': s.color }}>
@@ -268,7 +273,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
   const trainsTopics = (dojo.drills ?? []).some((d) => d.topic && s.topics.some((t) => t.id === d.topic)) || !!dojo.topics?.length;
 
   return (
-    <div class="stack">
+    <div class={`stack dojo-page${running ? ' focus' : ''}`}>
       {hero(
         dojo.title,
         dojo.procedure,
@@ -293,6 +298,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
           onFinish={saveRound}
           onApply={trainsTopics ? applyRound : undefined}
           chatPrompt={(lvl) => chat(lvl === 'all' ? undefined : lvl)}
+          onRunning={setRunning}
         />
       ) : (
         <div class="panel small muted">
@@ -322,7 +328,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
           <button class={session ? '' : 'primary'} onClick={newTask} disabled={busy}>
             {session ? 'New task' : 'Generate task'}
           </button>
-          <ChatStart label="Train in chat" prompt={() => chat(level)} />
+          <ChatStart separate label="Train in chat" prompt={() => chat(level)} />
         </div>
       </div>
 

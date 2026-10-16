@@ -3,6 +3,7 @@ import { usePack } from '../state/context';
 import { readEvents } from '../storage/repo';
 import type { LogEvent } from '../model/types';
 import { href } from './router';
+import { BackLink } from './BackLink';
 
 export function LogView() {
   const { fs, loaded } = usePack();
@@ -14,7 +15,7 @@ export function LogView() {
   return (
     <div class="stack">
       <div class="page-head subject-head">
-        <a href={href({ name: 'dashboard' })}>← Dashboard</a>
+        <BackLink href={href({ name: 'dashboard' })} label="Dashboard" />
         <h1>History</h1>
         <span class="muted small">log/events.jsonl, newest first</span>
       </div>
