@@ -88,20 +88,22 @@ and write `local/<pack>/SETUP.md` with one line per item, for example:
 
 - [x] Installed, tests pass
 - [x] Semester, subjects and exams collected
-- [ ] Timetable (.ics export from the campus system)
 - [ ] DB: script / slides
 - [ ] DB: exercise sheets with tasks
 - [ ] DB: own notes
+- [ ] DB: old exams (if any)
 - [ ] Theo: script / slides
 - [ ] …
+- [ ] Timetable (.ics export from the campus system)
 - [ ] Topics per subject from the scripts
 - [ ] Dojos with drills for every procedure
-- [ ] Pack valid, app started with the pack, first quiz done
+- [ ] Pack valid, app started with the pack and checked
+- [ ] First Study round done
 ```
 
 `SETUP.md` is for you and the person; the app ignores it.
 
-## 3. Collect timetable, scripts, sheets and notes
+## 3. Collect scripts, timetable, sheets and notes
 
 This step is the core of the setup. The app is only as good as what you put
 into the pack here, so do not skip parts of it. Go through it **together
@@ -126,6 +128,7 @@ For **every subject** you need:
 | Current script or slides | `material/<subject-id>/` + a `script` check | topics, quiz questions |
 | Exercise sheets | `material/<subject-id>/sheets/` + `sheets[]` with `file` and `tasks` | solving sheets in the app |
 | Own notes | `notes/<subject-id>/` + a `notes` check | comparing notes with the script |
+| Old exams, exam prep (if available) | `material/<subject-id>/exams/` | exam-level drills, exam format |
 
 If something does not exist or the person cannot get it right now, create an
 open task for it (e.g. "Upload timetable PDF", "Script for DB not published
@@ -198,6 +201,11 @@ script) into `local/<pack>/material/<subject-id>/`. Typical places:
 
 In Moodle, downloading usually works per course via "Download all files" or
 per section; in ILIAS via "Download" on the folder.
+
+While you are in the course, also look for **old exams**, mock exams or exam
+prep sheets (often called "Altklausuren", "Probeklausur", "exam
+preparation"). Save them to `material/<subject-id>/exams/`: they show the
+exam format and are the best source for `exam`-level drills.
 
 Read the script once completely, or at least its table of contents and
 chapter openings: the topics in step 4 come from it. Note the version or
@@ -299,7 +307,9 @@ never end up in Git.
 The folder exists since step 2. Now fill it from the material, following
 CLAUDE.md, part A:
 
-1. `pack.json`: title, semester, settings from step 2, list of subjects.
+1. `pack.json`: `id`, title, semester, settings from step 2 (language,
+   questions per quiz, weekends), and the subject and dojo ids in display
+   order. Delete `subjects/example.json` from the copied empty pack.
 2. One `subjects/<id>.json` per subject with exam, `schedule` (step 3b),
    checks (3a, 3d) and exercise sheets with `file` and `tasks` (3c). Sheets
    that are not published yet but have a known date go in as `open` with
@@ -315,6 +325,8 @@ CLAUDE.md, part A:
 5. **Dojos:** one dojo for every calculation or construction procedure in the
    material. First look for templates in `packs/dojo-library/` and
    `packs/demo/dojos/`, otherwise write a new one (`schema/dojo.schema.json`).
+   Set `subject` and link the dojo to its `topics`, and add its id to
+   `pack.json` → `dojos`.
    Put the exam's allowed aids (e.g. the allowed calculator) into `aids`.
    Then fill each dojo with **drills**, the prepared exercises the app runs
    on its own as a timed practice round (format and rules: CLAUDE.md →
@@ -359,9 +371,21 @@ in the pack folder with "Process the inbox" (see CLAUDE.md, Processing the
 inbox). If you are Claude Code yourself, you can take this over directly and
 wait for new requests.
 
-Finally, have the person start a first quiz in the first subject (or ask it
+Check that everything arrived, in the app (if you can control a browser,
+look yourself; otherwise ask the person to check with you):
+
+- the calendar shows this week's classes and the exams,
+- every subject has a banner with its topics, and the open sheets and open
+  tasks show up on it,
+- clicking a sheet shows the file next to its tasks,
+- every dojo has a Dojo button and a practice round starts.
+
+Fix whatever is missing, then validate again.
+
+Finally, have the person do a first round: the **Study** button on the
+dashboard picks the most pressing topics across all subjects (or quiz
 directly in the chat and record it with `npm run review`), so that due dates
-get created.
+get created. Tick the last items off in `SETUP.md`.
 
 ## 6. Afterwards: regular upkeep
 
@@ -385,6 +409,5 @@ Suggest this routine to the person and carry it out when they ask for it:
 - **"How am I doing?"**: due and overdue topics, exams in the next two
   weeks, open sheets, outdated checks.
 
-At the end of the setup, tick off the last items in `SETUP.md` and put short
-phrases the person can say to you at any time as a list in your final
-message.
+At the end of the setup, put short phrases the person can say to you at any
+time as a list in your final message.
