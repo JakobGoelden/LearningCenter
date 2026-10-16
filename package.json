@@ -17,6 +17,7 @@
     "validate": "node scripts/validate-packs.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "preact": "^10.29.8"

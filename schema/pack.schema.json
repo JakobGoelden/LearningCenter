@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JakobGoelden/LearningCenter/schema/pack.schema.json",
+  "title": "Learning pack manifest (pack.json)",
+  "type": "object",
+  "required": ["schemaVersion", "id", "title", "subjects"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "id": { "$ref": "common.schema.json#/$defs/id" },
+    "title": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+    "owner": { "type": "string", "description": "Free text, e.g. the learner's name. Optional." },
+    "semester": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string", "description": "e.g. WiSe 2026/27" },
+        "start": { "$ref": "common.schema.json#/$defs/date" },
+        "end": { "$ref": "common.schema.json#/$defs/date" }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reviewLadder": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 },
+          "minItems": 2,
+          "description": "Review intervals in days, from shortest to longest. Default [1, 3, 7, 14, 21, 35, 60]."
+        },
+        "skipWeekends": { "type": "boolean", "description": "Move reviews that fall on Saturday or Sunday to Monday. Default true." },
+        "questionsPerQuiz": { "type": "integer", "minimum": 1, "maximum": 30, "description": "Default number of questions per quiz. Default 5." },
+        "language": { "type": "string", "description": "Language for AI questions and feedback, e.g. 'de' or 'en'. Default 'de'." }
+      }
+    },
+    "subjects": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/id" },
+      "description": "Subject ids in display order. Each id has a file subjects/<id>.json."
+    },
+    "dojos": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/id" },
+      "description": "Dojo ids. Each id has a file dojos/<id>.json."
+    }
+  }
+}

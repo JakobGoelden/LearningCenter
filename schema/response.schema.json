@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JakobGoelden/LearningCenter/schema/response.schema.json",
+  "title": "AI response (outbox/<id>.json)",
+  "description": "The field required depends on the request kind: quiz.start → questions, quiz.grade → grades, dojo.task → task, dojo.check → check, dojo.hint → hint, dojo.solution → solution.",
+  "type": "object",
+  "required": ["requestId", "kind"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "requestId": { "type": "string" },
+    "kind": { "$ref": "request.schema.json#/$defs/kind" },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["prompt"],
+        "additionalProperties": false,
+        "properties": {
+          "topicId": { "type": "string" },
+          "kind": { "enum": ["why", "what-if", "explain", "apply"] },
+          "prompt": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "grades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["n", "score", "feedback"],
+        "additionalProperties": false,
+        "properties": {
+          "n": { "type": "integer", "minimum": 1 },
+          "score": { "$ref": "common.schema.json#/$defs/score" },
+          "feedback": { "type": "string" },
+          "gaps": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "task": { "type": "string", "description": "Task statement (Markdown allowed)." },
+    "check": {
+      "type": "object",
+      "required": ["score", "feedback"],
+      "additionalProperties": false,
+      "properties": {
+        "correct": { "type": "boolean" },
+        "score": { "$ref": "common.schema.json#/$defs/score" },
+        "steps": { "type": "array", "items": { "$ref": "#/$defs/step" } },
+        "feedback": { "type": "string" }
+      }
+    },
+    "hint": { "type": "string" },
+    "solution": { "type": "string" },
+    "summary": { "type": "string", "description": "Optional overall comment." }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "required": ["label", "ok"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "ok": { "type": "boolean" },
+        "comment": { "type": "string" }
+      }
+    }
+  }
+}

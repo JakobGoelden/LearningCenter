@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JakobGoelden/LearningCenter/schema/common.schema.json",
+  "title": "Shared definitions",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$",
+      "maxLength": 80,
+      "description": "Lowercase slug: letters, digits, '.', '_' and '-'. Unique within its list."
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Calendar date in local time, YYYY-MM-DD."
+    },
+    "time": {
+      "type": "string",
+      "pattern": "^\\d{2}:\\d{2}$",
+      "description": "Local time of day, HH:MM."
+    },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp, e.g. 2026-10-16T08:30:00+02:00."
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5,
+      "description": "0 = no idea, 1 = wrong, 2 = major gaps, 3 = mostly right with gaps, 4 = right, 5 = right and well explained."
+    },
+    "level": {
+      "enum": ["easy", "medium", "exam"],
+      "description": "Difficulty: easy (leicht), medium (mittel), exam (Klausurniveau)."
+    },
+    "topicStatus": {
+      "enum": ["new", "shaky", "solid", "skip"],
+      "description": "new = not yet reviewed, shaky = unsicher, solid = sicher, skip = nicht abfragen."
+    }
+  }
+}
