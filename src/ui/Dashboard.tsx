@@ -6,12 +6,18 @@ import { Calendar } from './Calendar';
 import { SubjectBanner } from './SubjectBanner';
 import { StudyCta } from './StudyView';
 import { ChatStart } from './ChatStart';
-import { pendingResults, type PendingResults as PendingResultsData } from '../model/sync';
+import { lastContentBySubject, pendingResults, type PendingResults as PendingResultsData } from '../model/sync';
 import { syncPrompt } from '../ai/chat';
 
 export function Dashboard() {
-  const { loaded } = usePack();
+  const { fs, loaded } = usePack();
   const on = today();
+  const [lastContent, setLastContent] = useState<Map<string, string>>(new Map());
+  useEffect(() => {
+    readEvents(fs, 20000)
+      .then((events) => setLastContent(lastContentBySubject(events)))
+      .catch(() => setLastContent(new Map()));
+  }, [fs, loaded]);
   return (
     <>
       {loaded.subjects.length > 0 && <StudyCta />}
@@ -25,7 +31,13 @@ export function Dashboard() {
       ) : (
         <div class="banners">
           {loaded.subjects.map((s) => (
-            <SubjectBanner key={s.id} subject={s} on={on} dojos={loaded.dojos.filter((d) => d.subject === s.id)} />
+            <SubjectBanner
+              key={s.id}
+              subject={s}
+              on={on}
+              dojos={loaded.dojos.filter((d) => d.subject === s.id)}
+              lastContent={lastContent.get(s.id)}
+            />
           ))}
         </div>
       )}

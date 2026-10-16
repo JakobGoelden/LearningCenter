@@ -1,8 +1,18 @@
 import { overview } from '../model/derive';
+import { diffDays, formatShort } from '../lib/dates';
 import type { Dojo, ISODate, Subject } from '../model/types';
 import { href } from './router';
 import { StatusBar } from './StatusBar';
 import { Torii } from './Emblem';
+
+/** "today", "yesterday", "3 days ago", then a short date. */
+function ago(date: ISODate, on: ISODate): string {
+  const d = diffDays(date, on);
+  if (d <= 0) return 'today';
+  if (d === 1) return 'yesterday';
+  if (d < 7) return `${d} days ago`;
+  return `on ${formatShort(date)}`;
+}
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -10,7 +20,18 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
  * One compact banner per subject: progress bar plus what needs attention. Opens the subject page.
  * Subjects with dojos get a Dojo button next to it (straight into the dojo when there is only one).
  */
-export function SubjectBanner({ subject: s, on, dojos = [] }: { subject: Subject; on: ISODate; dojos?: Dojo[] }) {
+export function SubjectBanner({
+  subject: s,
+  on,
+  dojos = [],
+  lastContent,
+}: {
+  subject: Subject;
+  on: ISODate;
+  dojos?: Dojo[];
+  /** Time new content (topics, questions, sheets, material, drills) last arrived. */
+  lastContent?: string;
+}) {
   const o = overview(s, on);
   const pct = Math.round(o.progress * 100);
   const learnable = o.statusCounts.new + o.statusCounts.shaky + o.statusCounts.solid;
@@ -52,6 +73,9 @@ export function SubjectBanner({ subject: s, on, dojos = [] }: { subject: Subject
         ) : (
           <span class="flag ok">All caught up</span>
         )}
+        <span class="flag content" title="When new topics, questions, sheets, material or exercises last arrived">
+          {lastContent ? `New content ${ago(lastContent.slice(0, 10), on)}` : 'No new content yet'}
+        </span>
       </div>
     </a>
   );

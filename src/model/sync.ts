@@ -39,3 +39,17 @@ export function pendingResults(events: LogEvent[]): PendingResults {
   const r = { quizzes: quizzes.size, toGrade: gradeLater.size, dojo: dojo.size, sheets: sheets.size };
   return { ...r, total: r.quizzes + r.toGrade + r.dojo + r.sheets, ...(lastSyncAt >= 0 ? { lastSync: events[lastSyncAt].ts } : {}) };
 }
+
+/** Event types that mean new learning content arrived (see CLAUDE.md → When editing). */
+export const CONTENT_EVENTS = new Set(['topic.add', 'question.add', 'sheet.add', 'material.add', 'dojo.add', 'dojo.drills.add']);
+
+/** Time of the latest content event per subject id. */
+export function lastContentBySubject(events: LogEvent[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const e of events) {
+    if (!e.subject || !CONTENT_EVENTS.has(e.type)) continue;
+    const prev = out.get(e.subject);
+    if (!prev || e.ts > prev) out.set(e.subject, e.ts);
+  }
+  return out;
+}

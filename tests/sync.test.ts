@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pendingResults } from '../src/model/sync';
+import { lastContentBySubject, pendingResults } from '../src/model/sync';
 import type { LogEvent } from '../src/model/types';
 
 const ev = (type: string, ref?: string, extra: Partial<LogEvent> = {}): LogEvent => ({ ts: '2026-10-16T09:00:00Z', type, actor: 'user', ...(ref ? { ref } : {}), ...extra });
@@ -30,5 +30,19 @@ describe('pending results', () => {
     const events = [ev('quiz.gradeLater', 'q3'), ev('ai.sync', undefined, { actor: 'ai' })];
     expect(pendingResults(events).toGrade).toBe(1);
     expect(pendingResults([...events, ev('quiz.applied', 'q3', { actor: 'ai' })]).toGrade).toBe(0);
+  });
+});
+
+describe('last content per subject', () => {
+  it('takes the newest content event and ignores other types', () => {
+    const m = lastContentBySubject([
+      ev('topic.add', 'a', { subject: 'db', ts: '2026-10-10T08:00:00Z' }),
+      ev('dojo.drills.add', 'd', { subject: 'db', ts: '2026-10-14T08:00:00Z' }),
+      ev('topic.review', 'a', { subject: 'db', ts: '2026-10-15T08:00:00Z' }),
+      ev('material.add', 'm', { subject: 'theo', ts: '2026-10-12T08:00:00Z' }),
+    ]);
+    expect(m.get('db')).toBe('2026-10-14T08:00:00Z');
+    expect(m.get('theo')).toBe('2026-10-12T08:00:00Z');
+    expect(m.has('math')).toBe(false);
   });
 });
