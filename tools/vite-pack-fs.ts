@@ -7,6 +7,17 @@ import type { Plugin } from 'vite';
  * browser during `npm run dev`. Enable with LC_PACK_DIR=path/to/pack.
  * Not part of the static build.
  */
+const MIME: Record<string, string> = {
+  pdf: 'application/pdf',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  svg: 'image/svg+xml',
+  txt: 'text/plain; charset=utf-8',
+  md: 'text/plain; charset=utf-8',
+  html: 'text/plain; charset=utf-8',
+};
+
 export function packFs(): Plugin {
   return {
     name: 'learningcenter-pack-fs',
@@ -49,6 +60,13 @@ export function packFs(): Plugin {
             case 'read':
               res.end(await readFile(abs, 'utf8'));
               return;
+            case 'raw': {
+              // Binary files such as sheet PDFs, displayed by the browser.
+              const ext = abs.slice(abs.lastIndexOf('.') + 1).toLowerCase();
+              res.setHeader('content-type', MIME[ext] ?? 'application/octet-stream');
+              res.end(await readFile(abs));
+              return;
+            }
             case 'write':
               await mkdir(dirname(abs), { recursive: true });
               await writeFile(abs, await body(req), 'utf8');

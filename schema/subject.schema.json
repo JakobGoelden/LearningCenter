@@ -22,11 +22,16 @@
         "time": { "$ref": "common.schema.json#/$defs/time" },
         "location": { "type": "string" },
         "durationMinutes": { "type": "integer", "minimum": 1 },
-        "aids": { "type": "array", "items": { "type": "string" }, "description": "Allowed aids, e.g. 'Taschenrechner TI-30X', '1 DIN-A4-Blatt'." },
+        "aids": { "type": "array", "items": { "type": "string" }, "description": "Allowed aids, e.g. 'Calculator TI-30X', '1 A4 sheet'." },
         "notes": { "type": "string" }
       }
     },
     "topics": { "type": "array", "items": { "$ref": "#/$defs/topic" } },
+    "schedule": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/class" },
+      "description": "Weekly timetable: lectures, tutorials, labs. Taken from the university timetable."
+    },
     "sheets": { "type": "array", "items": { "$ref": "#/$defs/sheet" } },
     "openItems": { "type": "array", "items": { "$ref": "#/$defs/openItem" } },
     "checks": { "type": "array", "items": { "$ref": "#/$defs/check" } }
@@ -64,11 +69,46 @@
       "additionalProperties": false,
       "properties": {
         "id": { "$ref": "common.schema.json#/$defs/id" },
-        "label": { "type": "string", "description": "e.g. 'Blatt 3' or 'B3'." },
+        "label": { "type": "string", "description": "e.g. 'Sheet 3' or 'B3'." },
         "due": { "$ref": "common.schema.json#/$defs/date" },
         "status": { "enum": ["open", "done", "checked"], "description": "open = not started, done = worked on, checked = checked or graded." },
-        "url": { "type": "string" },
+        "url": { "type": "string", "description": "Where the sheet is published, e.g. the Moodle page." },
+        "file": {
+          "type": "string",
+          "description": "The sheet itself: a path relative to the pack folder (e.g. material/db/sheet-3.pdf) or an https link. Shown next to the editor in the app."
+        },
+        "tasks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sheetTask" },
+          "description": "The sheet's tasks as text, so they can be solved in the app one by one. Usually extracted from the PDF by the AI."
+        },
         "notes": { "type": "string" }
+      }
+    },
+    "sheetTask": {
+      "type": "object",
+      "required": ["id", "label", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/id" },
+        "label": { "type": "string", "description": "e.g. 'Task 1' or '2a'." },
+        "text": { "type": "string", "description": "The task in Markdown." },
+        "points": { "type": "number", "minimum": 0 }
+      }
+    },
+    "class": {
+      "type": "object",
+      "required": ["kind", "weekday", "start", "end"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["lecture", "tutorial", "lab", "seminar", "other"] },
+        "weekday": { "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] },
+        "start": { "$ref": "common.schema.json#/$defs/time" },
+        "end": { "$ref": "common.schema.json#/$defs/time" },
+        "location": { "type": "string" },
+        "from": { "$ref": "common.schema.json#/$defs/date", "description": "First day this class takes place, if not the whole semester." },
+        "until": { "$ref": "common.schema.json#/$defs/date", "description": "Last day this class takes place." },
+        "notes": { "type": "string", "description": "e.g. 'every other week', 'group B'." }
       }
     },
     "openItem": {
@@ -88,7 +128,7 @@
       "additionalProperties": false,
       "properties": {
         "id": { "$ref": "common.schema.json#/$defs/id" },
-        "kind": { "enum": ["material", "script", "notes", "other"], "description": "material = Materialquelle (z.B. Moodle), script = Skript-Version, notes = eigene Mitschrift." },
+        "kind": { "enum": ["material", "script", "notes", "other"], "description": "material = material source (e.g. Moodle), script = script version, notes = own notes." },
         "label": { "type": "string" },
         "lastChecked": { "$ref": "common.schema.json#/$defs/date" },
         "version": { "type": "string" },

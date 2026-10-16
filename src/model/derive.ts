@@ -1,6 +1,6 @@
-import { diffDays } from '../lib/dates';
+import { diffDays, weekday } from '../lib/dates';
 import { isDue, isOverdue } from '../scheduling/scheduler';
-import type { Check, ISODate, LoadedPack, Sheet, Subject, Topic, TopicStatus } from './types';
+import type { Check, ClassSlot, ISODate, LoadedPack, Sheet, Subject, Topic, TopicStatus, Weekday } from './types';
 
 /** Exams within this many days show up in the "Today" line. */
 export const EXAM_SOON_DAYS = 14;
@@ -57,13 +57,32 @@ export function overview(subject: Subject, on: ISODate): SubjectOverview {
   };
 }
 
-export type TodayKind = 'reviews' | 'exam' | 'sheet' | 'check';
+const WEEKDAY_KEYS: Weekday[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+export const CLASS_LABEL: Record<ClassSlot['kind'], string> = {
+  lecture: 'Lecture',
+  tutorial: 'Tutorial',
+  lab: 'Lab',
+  seminar: 'Seminar',
+  other: 'Class',
+};
+
+/** Timetable slots of `subject` that take place on `on`, earliest first. */
+export function classesOn(subject: Subject, on: ISODate): ClassSlot[] {
+  const day = WEEKDAY_KEYS[weekday(on)];
+  return (subject.schedule ?? [])
+    .filter((c) => c.weekday === day && (!c.from || c.from <= on) && (!c.until || on <= c.until))
+    .sort((a, b) => a.start.localeCompare(b.start));
+}
+
+export type TodayKind = 'class' | 'reviews' | 'exam' | 'sheet' | 'check';
 
 export interface TodayItem {
   subject: Subject;
   kind: TodayKind;
   text: string;
   urgent: boolean;
+  /** HH:MM, orders classes within the day. */
+  time?: string;
 }
 
 /** The "Today" line across all subjects. */
@@ -71,6 +90,15 @@ export function todayItems(loaded: LoadedPack, on: ISODate): TodayItem[] {
   const items: TodayItem[] = [];
   for (const s of loaded.subjects) {
     const o = overview(s, on);
+    for (const c of classesOn(s, on)) {
+      items.push({
+        subject: s,
+        kind: 'class',
+        text: `${CLASS_LABEL[c.kind]} ${c.start}–${c.end}${c.location ? ` · ${c.location}` : ''}`,
+        urgent: false,
+        time: c.start,
+      });
+    }
     if (o.due.length) {
       const over = o.overdue.length ? `, ${o.overdue.length} overdue` : '';
       items.push({
@@ -106,6 +134,9 @@ export function todayItems(loaded: LoadedPack, on: ISODate): TodayItem[] {
       });
     }
   }
-  const order: Record<TodayKind, number> = { exam: 0, reviews: 1, sheet: 2, check: 3 };
-  return items.sort((a, b) => Number(b.urgent) - Number(a.urgent) || order[a.kind] - order[b.kind]);
+  const order: Record<TodayKind, number> = { exam: 0, class: 1, reviews: 2, sheet: 3, check: 4 };
+  return items.sort(
+    (a, b) =>
+      Number(b.urgent) - Number(a.urgent) || order[a.kind] - order[b.kind] || (a.time ?? '').localeCompare(b.time ?? ''),
+  );
 }

@@ -85,6 +85,17 @@ export class FolderFs implements PackFs {
     return fh ? (await fh.getFile()).text() : null;
   }
 
+  private urls = new Map<string, string>();
+
+  async fileUrl(path: string) {
+    const fh = await this.file(path, false);
+    if (!fh) return null;
+    URL.revokeObjectURL(this.urls.get(path) ?? '');
+    const url = URL.createObjectURL(await fh.getFile());
+    this.urls.set(path, url);
+    return url;
+  }
+
   async write(path: string, text: string) {
     const fh = (await this.file(path, true))!;
     const w = await fh.createWritable();

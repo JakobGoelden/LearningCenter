@@ -51,6 +51,21 @@ function checkPack(dir) {
       ids.add(t.id);
     }
     topicIds.set(id, ids);
+    const sheetIds = new Set();
+    for (const sh of s.sheets ?? []) {
+      if (sheetIds.has(sh.id)) fail(`subjects/${id}.json: duplicate sheet id "${sh.id}"`);
+      sheetIds.add(sh.id);
+      if (sh.file && !/^https?:\/\//.test(sh.file) && !existsSync(join(dir, sh.file))) {
+        console.warn(`  ! subjects/${id}.json: sheet "${sh.id}" file not found: ${sh.file}`);
+      }
+    }
+    const work = join(dir, 'work', id);
+    if (existsSync(work)) {
+      for (const f of readdirSync(work).filter((f) => f.endsWith('.json'))) {
+        const w = checkFile(join(work, f), 'work');
+        if (w && !sheetIds.has(w.sheet)) fail(`work/${id}/${f}: unknown sheet "${w.sheet}"`);
+      }
+    }
   }
   for (const id of pack.dojos ?? []) {
     const d = checkFile(join(dir, 'dojos', `${id}.json`), 'dojo');
