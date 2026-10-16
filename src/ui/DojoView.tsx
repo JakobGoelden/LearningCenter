@@ -13,6 +13,10 @@ import { SCORE_LABEL } from './labels';
 import { DrillPractice, type RoundSummary } from './DrillRound';
 import { roundScore } from '../dojo/drills';
 import { Enso, Torii } from './Emblem';
+import { SymbolBar } from './SymbolBar';
+import { ChatStart } from './ChatStart';
+import { dojoChatPrompt } from '../ai/chat';
+import { taskSymbols } from '../dojo/symbols';
 import type { ComponentChildren } from 'preact';
 
 const ALL_LEVELS: Level[] = ['easy', 'medium', 'exam'];
@@ -207,7 +211,14 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
       type: 'dojo.drill.round',
       subject: s.id,
       ref: id,
-      data: { dojo: dojo.id, score: summary.score, right: summary.outcomes.filter((o) => o.result.correct).length, of: summary.outcomes.length },
+      data: {
+        dojo: dojo.id,
+        score: summary.score,
+        right: summary.outcomes.filter((o) => o.result.correct).length,
+        of: summary.outcomes.length,
+        points: summary.points,
+        ...(summary.record ? { record: true } : {}),
+      },
     });
   };
 
@@ -253,6 +264,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
       setNotice(`Added ${added.length} new exercises to "${dojo.title}".${res.summary ? ` ${res.summary}` : ''}`);
     });
 
+  const chat = (lvl?: Level) => dojoChatPrompt({ fs, pack: loaded.pack, subject: s, dojo, level: lvl });
   const trainsTopics = (dojo.drills ?? []).some((d) => d.topic && s.topics.some((t) => t.id === d.topic)) || !!dojo.topics?.length;
 
   return (
@@ -280,6 +292,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
           onStart={(round, lvl) => void log({ type: 'dojo.drill.start', subject: s.id, ref: dojo.id, data: { count: round.length, level: lvl } })}
           onFinish={saveRound}
           onApply={trainsTopics ? applyRound : undefined}
+          chatPrompt={(lvl) => chat(lvl === 'all' ? undefined : lvl)}
         />
       ) : (
         <div class="panel small muted">
@@ -309,6 +322,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
           <button class={session ? '' : 'primary'} onClick={newTask} disabled={busy}>
             {session ? 'New task' : 'Generate task'}
           </button>
+          <ChatStart label="Train in chat" prompt={() => chat(level)} />
         </div>
       </div>
 
@@ -324,7 +338,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
             </div>
             <Markdown text={item.prompt} />
           </div>
-          <div class="panel stack">
+          <div class="panel stack" data-symbols>
             <h3>Your solution</h3>
             {dojo.answerFormat && <div class="small muted">Format: {dojo.answerFormat}</div>}
             <textarea
@@ -334,6 +348,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
               onInput={(e) => setSession(patchItem({ answer: e.currentTarget.value }))}
               aria-label="Your solution"
             />
+            <SymbolBar symbols={taskSymbols(dojo, item.prompt)} />
             <div class="row">
               <button class="primary" onClick={check} disabled={busy || !item.answer?.trim()}>
                 Check

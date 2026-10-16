@@ -21,8 +21,8 @@ personal pack: `ls local/*/pack.json`.
 - **Pack found:** work with it (part A). If `local/<pack>/SETUP.md` still has
   open items (or the pack obviously lacks subjects, timetable, scripts,
   topics or dojos), offer to continue the setup where it stopped before
-  doing anything else. If quizzes are waiting to be graded (see "Grading
-  open quizzes"), offer to grade them.
+  doing anything else. If there are new results since your last sync (see
+  "Processing new results"), offer to process them.
 
 There are two kinds of tasks: **maintaining learning packs** (part A) and
 **developing the app** (part B). Answer learners in their language; quiz
@@ -185,11 +185,42 @@ When the person clicks "Quiz" or works in a dojo, the app writes a request to
 5. If the person wants, keep waiting for new requests (e.g. check every few
    seconds) until they say "stop".
 
+### Processing new results
+
+Everything the learner does in the app is saved: quizzes, dojo rounds, sheet
+answers. Until you have looked at it, the dashboard shows a banner "New
+results for your AI" with a prompt to copy. When the person pastes it (or
+says "Process my new results"):
+
+1. Find what is new: events in `log/events.jsonl` after the last `ai.sync`
+   event (all of them if there is none), not written by you (`actor` not
+   `ai`). Relevant types: `quiz.applied`, `quiz.gradeLater`,
+   `dojo.drill.round`, `dojo.applied`, `sheet.status` (to `done`),
+   `sheet.work`. The sessions are in `sessions/<ref>.json`.
+2. Grade open quizzes first (next section).
+3. Look at the results: self-graded quiz answers (`sessions/`), dojo rounds
+   (which drills went wrong, by `topicId`), sheets marked done (read
+   `work/<subject>/<sheet>.json` against the sheet's `tasks`; never edit
+   the answers). Grades that are already recorded stay as they are; do not
+   run `npm run review` again for them.
+4. Update the learning state where the results show a need: notes on
+   typical mistakes in the topic's `notes`, new prepared `questions` for
+   shaky topics, new drills in a dojo whose drills keep going wrong, open
+   tasks for gaps that need the script or the exercise class. Log each
+   change as an event and validate.
+5. Append `{"ts":"<now>","type":"ai.sync","actor":"ai","data":{"quizzes":n,"dojo":n,"sheets":n}}`
+   to `log/events.jsonl`. The banner disappears within seconds.
+6. Tell the person in a few lines what you saw and what you changed, and
+   name the next due dates.
+
 ### Grading open quizzes
 
-In the app the learner can end a quiz with "Let the AI grade later". The
-answers are then saved in `sessions/<id>.json` with `gradeLater: true`, and
-the dashboard says how many are waiting. When the person says "Grade my open
+At the end of a quiz in the app the learner picks "Check myself" or "Check
+in chat". The second saves the answers in `sessions/<id>.json` with
+`gradeLater: true` and copies a prompt naming that session; the dashboard
+banner counts open ones too. When the prompt comes in, go through the
+answers one at a time in the chat (the person may add something by voice
+before you settle a score), then do steps 3–5. When the person says "Grade my open
 quizzes" (or you notice open ones):
 
 1. Find the sessions with `gradeLater: true` and without `applied: true`.
@@ -199,14 +230,18 @@ quizzes" (or you notice open ones):
 3. Record one grade per topic (average if a topic appears more than once)
    with `npm run review -- local/<name> <subject-id> <topic-id> <score> quiz "<session id>"`.
 4. Set `applied: true` in the session and append a `quiz.applied` event
-   with `ref` = the session id (`actor: "ai"`), so the dashboard notice
-   disappears. Validate.
+   with `ref` = the session id (`actor: "ai"`), so it no longer counts as
+   open. Validate.
 5. Tell the person the result per question in a few lines and name the
    next due dates.
 
 ### Quizzing directly in the chat
 
-For "Quiz me on <subject>" without the app:
+For "Quiz me on <subject>" without the app. Every start button in the app
+has a partner "Start in chat" (Quiz, Study, Dojo) that copies a prompt with
+the pack path and the chosen topics; follow it like this, taking the topics
+from the prompt instead of picking them. The person may answer by voice:
+ignore filler words and transcription slips.
 
 1. Pick topics like the app does: first due/overdue ones (`due` ≤ today,
    oldest first), then `shaky`, then `new`; never `skip`. Default:
@@ -235,6 +270,15 @@ dojos to `pack.json` → `dojos`.
 
 In the chat: set a task following `promptTemplate`, wait for the solution,
 check it step by step, give a hint or model solution only on request.
+Afterwards record the grade for the dojo's `topics` with `npm run review`
+(`source` = `dojo`).
+
+`symbols` (optional) lists formula symbols that the app offers as buttons
+while answering, as characters (`["σ", "⋈"]`) or group names (`automata`,
+`sets`, `numbers`, `logic`, `relational-algebra`, `compare`, `calculus`,
+`powers`, `arrows`, `greek`, `brackets`; see `src/dojo/symbols.ts`). The
+app also adds the symbols it finds in a task and its answer key, so set
+`symbols` only when tasks need symbols they do not show.
 
 #### Drills (practice rounds in the app)
 
@@ -300,7 +344,8 @@ checks and open tasks.
 ## B. Developing the app
 
 - Stack: Vite 6, TypeScript (strict), Preact, Ajv. No backend. Node ≥ 18.19.
-- Commands: `npm run dev`, `npm run build`, `npm test`, `npm run typecheck`,
+- Commands: `npm start` (setup if there is no pack in `local/`, otherwise
+  the app on the newest pack; `npm run setup` forces the setup), `npm run dev`, `npm run build`, `npm test`, `npm run typecheck`,
   `npm run validate`. With `LC_PACK_DIR=local/<name> npm run dev` the app
   reads and writes a pack folder through the dev server (any browser).
   `npm run dev` opens the browser by itself; `BROWSER=none npm run dev`

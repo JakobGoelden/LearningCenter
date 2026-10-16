@@ -6,6 +6,7 @@ import { exportBundle, importBundle, toJson } from '../storage/repo';
 import { downloadText, pickTextFile } from '../lib/download';
 import { today } from '../lib/dates';
 import { href } from './router';
+import { Stepper } from './Stepper';
 
 const EFFORTS: Effort[] = ['low', 'medium', 'high', 'xhigh', 'max'];
 
@@ -113,10 +114,10 @@ export function SettingsView() {
         )}
 
         {ai.adapter === 'file-bridge' && (
-          <label class="field" style="max-width:240px">
+          <div class="field">
             <span>Check the outbox every … seconds</span>
-            <input type="number" min={1} max={60} value={ai.pollSeconds} onChange={(e) => set({ pollSeconds: Math.max(1, Number(e.currentTarget.value) || 2) })} />
-          </label>
+            <Stepper value={ai.pollSeconds} onChange={(v) => set({ pollSeconds: v })} min={1} max={60} label="Seconds" unit="s" />
+          </div>
         )}
       </section>
 
@@ -135,16 +136,10 @@ export function SettingsView() {
           No reviews on weekends (move them to Monday)
         </label>
         <div class="row">
-          <label class="field">
+          <div class="field">
             <span>Questions per quiz</span>
-            <input
-              type="number"
-              min={1}
-              max={30}
-              value={settings.questionsPerQuiz ?? 5}
-              onChange={(e) => savePackSettings({ questionsPerQuiz: Math.min(30, Math.max(1, Number(e.currentTarget.value) || 5)) })}
-            />
-          </label>
+            <Stepper value={settings.questionsPerQuiz ?? 5} onChange={(v) => savePackSettings({ questionsPerQuiz: v })} min={1} max={30} label="Questions per quiz" />
+          </div>
           <label class="field">
             <span>AI language</span>
             <select value={settings.language ?? 'en'} onChange={(e) => savePackSettings({ language: e.currentTarget.value })}>

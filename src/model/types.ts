@@ -158,6 +158,8 @@ export interface Dojo {
   aids?: string[];
   promptTemplate: string;
   answerFormat?: string;
+  /** Formula symbols (or group names, see src/dojo/symbols.ts) offered as buttons while answering. */
+  symbols?: string[];
   /** Prepared exercises that run and get graded in the app. */
   drills?: Drill[];
 }

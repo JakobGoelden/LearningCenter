@@ -21,6 +21,11 @@
       "description": "Instructions for the AI. Placeholders: {{level}}, {{procedure}}, {{subject}}, {{aids}}, {{language}}."
     },
     "answerFormat": { "type": "string", "description": "How the learner should write the answer, e.g. a transition table." },
+    "symbols": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Formula symbols offered as buttons while answering, e.g. [\"σ\", \"⋈\"], or group names: automata, sets, numbers, logic, relational-algebra, compare, calculus, powers, arrows, greek, brackets. The app also adds symbols it finds in the task and the answer key."
+    },
     "drills": {
       "type": "array",
       "items": { "$ref": "#/$defs/drill" },

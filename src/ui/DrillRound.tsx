@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Dojo, Drill, Level } from '../model/types';
 import {
   answerText,
@@ -16,12 +16,18 @@ import { AutomatonEditor, AutomatonTable, emptyTable, tableToAutomaton, type Tab
 import { Markdown } from './Markdown';
 import { SCORE_LABEL } from './labels';
 import { Belt, beltFor, TimerRing } from './Emblem';
+import { bestPoints, drillPoints, recordPoints, roundPoints, type DrillPoints } from '../dojo/points';
+import { drillSymbols } from '../dojo/symbols';
+import { SymbolBar } from './SymbolBar';
+import { Cheer } from './QuizView';
+import { ChatStart } from './ChatStart';
 
 export interface DrillOutcome {
   drill: Drill;
   answer: string;
   result: DrillResult;
   seconds: number;
+  points: DrillPoints;
 }
 
 export interface RoundSummary {
@@ -29,6 +35,11 @@ export interface RoundSummary {
   timed: boolean;
   outcomes: DrillOutcome[];
   score: ReturnType<typeof roundScore>;
+  points: number;
+  bestStreak: number;
+  /** Best total on this device before this round. */
+  bestBefore: number;
+  record: boolean;
 }
 
 const COUNTS = [5, 10, 20];
@@ -51,8 +62,11 @@ export function DrillPractice({
   onStart,
   onFinish,
   onApply,
+  chatPrompt,
 }: {
   dojo: Dojo;
+  /** Prompt for "Train in chat" at the chosen level. */
+  chatPrompt?: (level: Level | 'all') => string;
   onStart: (round: Drill[], level: Level | 'all') => void;
   onFinish: (summary: RoundSummary) => Promise<void>;
   onApply?: (summary: RoundSummary) => Promise<void>;
@@ -78,10 +92,22 @@ export function DrillPractice({
     return (
       <DrillRun
         key={round.map((d) => d.id).join()}
+        dojo={dojo}
         drills={round}
         timed={timed}
         onDone={async (outcomes) => {
-          const s: RoundSummary = { level, timed, outcomes, score: roundScore(outcomes.map((o) => o.result)) };
+          const pts = roundPoints(outcomes.map((o) => ({ level: o.drill.level, result: o.result, limit: secondsFor(o.drill), seconds: o.seconds, timed })));
+          const bestBefore = bestPoints(dojo.id);
+          const s: RoundSummary = {
+            level,
+            timed,
+            outcomes,
+            score: roundScore(outcomes.map((o) => o.result)),
+            points: pts.total,
+            bestStreak: pts.bestStreak,
+            bestBefore,
+            record: pts.total > 0 && recordPoints(dojo.id, pts.total),
+          };
           setSummary(s);
           await onFinish(s);
         }}
@@ -98,6 +124,19 @@ export function DrillPractice({
       <section class="panel stack dojo-mat">
         <div class="round-result">
           <Belt score={summary.score} />
+          <div class="round-points">
+            <CountUp value={summary.points} duration={1200} />
+            <span class="round-points-label">points</span>
+            {summary.record ? (
+              <span class="record-badge">
+                New record!
+                <Cheer />
+              </span>
+            ) : summary.bestBefore > 0 ? (
+              <span class="small muted">Best {summary.bestBefore}</span>
+            ) : null}
+            {summary.bestStreak >= 3 && <span class="small muted">Longest combo {summary.bestStreak}</span>}
+          </div>
           <div class="round-result-text">
             <div class="dojo-eyebrow">Round finished</div>
             <div class="round-result-big">
@@ -125,6 +164,7 @@ export function DrillPractice({
                 {firstLine(o.drill.prompt)}
                 {o.result.feedback && <span class="muted"> · {o.result.feedback}</span>}
               </span>
+              <span class="round-pts">+{o.points.points}</span>
             </li>
           ))}
         </ul>
@@ -165,7 +205,10 @@ export function DrillPractice({
           <div class="dojo-eyebrow">Training round</div>
           <h2>Step onto the mat</h2>
         </div>
-        <span class="small muted">{drills.length} prepared exercises · graded instantly</span>
+        <span class="small muted">
+          {drills.length} prepared exercises · graded instantly
+          {bestPoints(dojo.id) > 0 && <> · best round {bestPoints(dojo.id)} points</>}
+        </span>
       </div>
       <div class="row small">
         <span>Level</span>
@@ -188,21 +231,24 @@ export function DrillPractice({
           <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.currentTarget.checked)} /> Timer
         </label>
       </div>
-      <div>
+      <div class="start-row">
         <button class="primary dojo-go" disabled={!available} onClick={() => start(pickRound(drills, level, count))}>
-          Start training
+          Start here
         </button>
+        {chatPrompt && <ChatStart label="Train in chat" prompt={() => chatPrompt(level)} />}
       </div>
     </section>
   );
 }
 
 function DrillRun({
+  dojo,
   drills,
   timed,
   onDone,
   onCancel,
 }: {
+  dojo: Dojo;
   drills: Drill[];
   timed: boolean;
   onDone: (outcomes: DrillOutcome[]) => void;
@@ -216,6 +262,7 @@ function DrillRun({
   // Set during render so the first frame of a new exercise already uses it.
   const startedAt = useMemo(() => Date.now(), [idx]);
   const [now, setNow] = useState(Date.now());
+  const symbols = useMemo(() => drillSymbols(dojo, drill), [dojo, drill]);
 
   useEffect(() => {
     if (done) return;
@@ -225,10 +272,14 @@ function DrillRun({
 
   const elapsed = Math.max(0, (now - startedAt) / 1000);
   const left = Math.max(0, limit - elapsed);
+  const total = outcomes.reduce((s, o) => s + o.points.points, 0);
+  const streak = outcomes.length ? outcomes[outcomes.length - 1].points.streak : 0;
 
   const finish = (answer: string, result: DrillResult) => {
     if (done) return;
-    setOutcomes([...outcomes, { drill, answer, result, seconds: Math.round((Date.now() - startedAt) / 1000) }]);
+    const seconds = Math.round((Date.now() - startedAt) / 1000);
+    const points = drillPoints({ level: drill.level, result, limit, seconds, timed }, streak);
+    setOutcomes([...outcomes, { drill, answer, result, seconds, points }]);
   };
 
   useEffect(() => {
@@ -237,9 +288,10 @@ function DrillRun({
 
   const next = () => (idx + 1 < drills.length ? setIdx(idx + 1) : onDone(outcomes));
   const outcome = outcomes[idx];
+  const mood = done ? (outcome.result.correct ? 'ok' : outcome.result.score >= 3 ? 'partly' : 'wrong') : '';
 
   return (
-    <section class="panel stack drill dojo-mat">
+    <section class={`panel stack drill dojo-mat${done ? ` hit-${mood}` : ''}`} data-symbols>
       <div class="row small">
         <span class="qnum">
           Exercise {idx + 1}/{drills.length}
@@ -252,6 +304,24 @@ function DrillRun({
         <span class="badge">{KIND_HINT[drill.kind]}</span>
         {drill.level && <span class="badge">{LEVEL_LABEL[drill.level]}</span>}
         <span style="flex:1" />
+        {streak >= 2 && (
+          <span class={`combo${streak >= 5 ? ' hot' : streak >= 3 ? ' warm' : ''}`} key={streak} title={`${streak} right in a row`}>
+            <span class="combo-flame" aria-hidden="true">
+              🔥
+            </span>
+            {streak}
+            {streak >= 3 && <b>×{streak >= 5 ? 2 : 1.5}</b>}
+          </span>
+        )}
+        <span class="score-counter" aria-label={`${total} points`}>
+          <CountUp value={total} />
+          <small>pts</small>
+          {done && outcome.points.points > 0 && (
+            <span class="points-pop" aria-hidden="true">
+              +{outcome.points.points}
+            </span>
+          )}
+        </span>
         <TimerRing
           fraction={timed ? (done ? Math.max(0, limit - outcome.seconds) : left) / limit : 1}
           label={timed ? fmt(done ? Math.max(0, limit - outcome.seconds) : left) : fmt(done ? outcome.seconds : elapsed)}
@@ -273,14 +343,18 @@ function DrillRun({
         <AutomatonTable automaton={drill.given} alphabet={drill.alphabet} />
       )}
       <DrillInput key={drill.id + idx} drill={drill} locked={done} outcome={outcome} onSubmit={finish} />
+      {!done && <SymbolBar symbols={symbols} />}
       {done && (
         <div class="stack">
-          <div class={`verdict ${outcome.result.correct ? 'ok' : outcome.result.score >= 3 ? 'partly' : 'wrong'}`}>
-            <span class={`stamp${!outcome.result.correct && outcome.result.score < 3 ? ' cross' : ''}`} aria-hidden="true">
+          <div class={`verdict ${mood}`}>
+            <span class={`stamp${mood === 'wrong' ? ' cross' : ''}`} aria-hidden="true">
               {outcome.result.correct ? '一本' : outcome.result.score >= 3 ? '技有' : '×'}
             </span>
-            <strong>{outcome.result.correct ? 'Right!' : outcome.result.score >= 3 ? 'Almost.' : 'Not quite.'}</strong>{' '}
-            {outcome.result.feedback}
+            <span class="grow">
+              <strong>{outcome.result.correct ? 'Right!' : outcome.result.score >= 3 ? 'Almost.' : 'Not quite.'}</strong>{' '}
+              {outcome.result.feedback}
+            </span>
+            <PointsBreakdown p={outcome.points} />
           </div>
           {drill.explanation && <Markdown text={drill.explanation} />}
           <div>
@@ -292,6 +366,49 @@ function DrillRun({
       )}
     </section>
   );
+}
+
+/** "+30 = 20 + 5 speed × 1.5 combo" next to the verdict. */
+function PointsBreakdown({ p }: { p: DrillPoints }) {
+  if (!p.points) return <span class="pts-breakdown muted">+0</span>;
+  return (
+    <span class="pts-breakdown">
+      <b>+{p.points}</b>
+      <small>
+        {p.base}
+        {p.speed > 0 && <> + {p.speed} speed</>}
+        {p.combo > 1 && <> × {p.combo} combo</>}
+      </small>
+    </span>
+  );
+}
+
+/** Counts from the previous value up to `value` with an ease-out. */
+function CountUp({ value, duration = 600 }: { value: number; duration?: number }) {
+  const [shown, setShown] = useState(duration > 600 ? 0 : value);
+  const from = useRef(shown);
+  useEffect(() => {
+    const start = performance.now();
+    const a = from.current;
+    if (a === value) return;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      from.current = value;
+      setShown(value);
+      return;
+    }
+    let raf = 0;
+    const step = (t: number) => {
+      const k = Math.min(1, (t - start) / duration);
+      const v = Math.round(a + (value - a) * (1 - Math.pow(1 - k, 3)));
+      from.current = v;
+      setShown(v);
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <span class={`count-up${shown !== value ? ' counting' : ''}`}>{shown}</span>;
 }
 
 function DrillInput({
@@ -387,32 +504,11 @@ function DrillInput({
         </div>
       );
     }
-    case 'order': {
-      const move = (i: number, d: number) => {
-        const next = [...order];
-        [next[i], next[i + d]] = [next[i + d], next[i]];
-        setOrder(next);
-      };
+    case 'order':
       return (
         <div class="stack">
-          <ol class="order-list">
-            {order.map((item, i) => (
-              <li class={locked ? (item === i ? 'right' : 'wrong') : ''}>
-                <span class="muted mono">{i + 1}.</span>
-                <span class="grow">{drill.items[item]}</span>
-                {!locked && (
-                  <>
-                    <button class="ghost small" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Move up">
-                      ↑
-                    </button>
-                    <button class="ghost small" disabled={i === order.length - 1} onClick={() => move(i, 1)} aria-label="Move down">
-                      ↓
-                    </button>
-                  </>
-                )}
-              </li>
-            ))}
-          </ol>
+          <OrderList items={drill.items} order={order} onChange={setOrder} locked={locked} />
+          {!locked && <div class="small muted">Drag the steps into place, or focus one and use the arrow keys.</div>}
           {locked && outcome && !outcome.result.correct && (
             <div class="small">
               Right order: {drill.items.map((it, i) => `${i + 1}. ${it}`).join('  ')}
@@ -421,7 +517,6 @@ function DrillInput({
           {check(() => ({ kind: 'order', order }))}
         </div>
       );
-    }
     case 'automaton':
       return (
         <div class="stack">
@@ -474,6 +569,120 @@ function DrillInput({
         </div>
       );
   }
+}
+
+interface Drag {
+  from: number;
+  over: number;
+  dy: number;
+  startY: number;
+  pointer: number;
+  /** Midpoints of all rows and the dragged row's height plus gap, measured at the start. */
+  mids: number[];
+  shift: number;
+}
+
+/**
+ * Sortable list for order drills. Drag with mouse, pen or finger (the row
+ * follows the pointer, the others make room), or focus a row and use ↑/↓.
+ */
+function OrderList({ items, order, onChange, locked }: { items: string[]; order: number[]; onChange: (o: number[]) => void; locked: boolean }) {
+  const list = useRef<HTMLOListElement>(null);
+  const [drag, setDrag] = useState<Drag | null>(null);
+  const [dropped, setDropped] = useState<number | null>(null);
+  const [settling, setSettling] = useState(false);
+  const focusItem = useRef<number | null>(null);
+
+  // Keep keyboard focus on the moved row after it changed place.
+  useLayoutEffect(() => {
+    if (focusItem.current === null) return;
+    list.current?.querySelector<HTMLElement>(`[data-item="${focusItem.current}"]`)?.focus();
+    focusItem.current = null;
+  }, [order]);
+  useEffect(() => {
+    if (!settling) return;
+    const r = requestAnimationFrame(() => setSettling(false));
+    return () => cancelAnimationFrame(r);
+  }, [settling]);
+
+  const move = (from: number, to: number) => {
+    if (from === to) return;
+    const next = [...order];
+    const [it] = next.splice(from, 1);
+    next.splice(to, 0, it);
+    onChange(next);
+  };
+
+  const down = (i: number) => (e: PointerEvent) => {
+    if (locked || e.button !== 0) return;
+    const rows = [...(list.current?.children ?? [])].map((el) => el.getBoundingClientRect());
+    const gap = rows.length > 1 ? rows[1].top - rows[0].bottom : 0;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    setDropped(null);
+    setDrag({ from: i, over: i, dy: 0, startY: e.clientY, pointer: e.pointerId, mids: rows.map((r) => r.top + r.height / 2), shift: rows[i].height + gap });
+  };
+  const moveTo = (e: PointerEvent) => {
+    if (!drag || e.pointerId !== drag.pointer) return;
+    const dy = e.clientY - drag.startY;
+    const center = drag.mids[drag.from] + dy;
+    const over = drag.mids.filter((m, j) => j !== drag.from && m < center).length;
+    setDrag({ ...drag, dy, over });
+  };
+  const up = (e: PointerEvent) => {
+    if (!drag || e.pointerId !== drag.pointer) return;
+    setSettling(true);
+    setDrag(null);
+    setDropped(order[drag.from]);
+    move(drag.from, drag.over);
+  };
+  const key = (i: number) => (e: KeyboardEvent) => {
+    if (locked) return;
+    const to = e.key === 'ArrowUp' ? i - 1 : e.key === 'ArrowDown' ? i + 1 : e.key === 'Home' ? 0 : e.key === 'End' ? order.length - 1 : -1;
+    if (to < 0 || to >= order.length || to === i) return;
+    e.preventDefault();
+    focusItem.current = order[i];
+    setSettling(true);
+    setDropped(order[i]);
+    move(i, to);
+  };
+
+  const offset = (j: number) => {
+    if (!drag) return 0;
+    if (j === drag.from) return drag.dy;
+    if (drag.from < j && j <= drag.over) return -drag.shift;
+    if (drag.over <= j && j < drag.from) return drag.shift;
+    return 0;
+  };
+
+  return (
+    <ol class={`order-list${drag ? ' sorting' : ''}${settling ? ' settling' : ''}${locked ? '' : ' sortable'}`} ref={list} aria-label="Steps in your order">
+      {order.map((item, i) => (
+        <li
+          key={item}
+          data-item={item}
+          class={[locked ? (item === i ? 'right' : 'wrong') : '', drag?.from === i ? 'dragging' : '', dropped === item && !drag ? 'dropped' : '']
+            .filter(Boolean)
+            .join(' ')}
+          style={drag ? { transform: `translateY(${offset(i)}px)` } : undefined}
+          tabIndex={locked ? undefined : 0}
+          aria-label={locked ? undefined : `${i + 1}. ${items[item]}. Use arrow keys to move.`}
+          onPointerDown={down(i)}
+          onPointerMove={moveTo}
+          onPointerUp={up}
+          onPointerCancel={up}
+          onKeyDown={key(i)}
+        >
+          {!locked && (
+            <span class="grip" aria-hidden="true">
+              ⠿
+            </span>
+          )}
+          <span class="order-num mono">{(drag ? (i === drag.from ? drag.over : i - (drag.from < i && i <= drag.over ? 1 : 0) + (drag.over <= i && i < drag.from ? 1 : 0)) : i) + 1}.</span>
+          <span class="grow">{items[item]}</span>
+        </li>
+      ))}
+    </ol>
+  );
 }
 
 function fmt(seconds: number): string {

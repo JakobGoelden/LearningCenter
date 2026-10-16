@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { readEvents } from '../storage/repo';
-import { today } from '../lib/dates';
+import { formatShort, today } from '../lib/dates';
 import { Calendar } from './Calendar';
 import { SubjectBanner } from './SubjectBanner';
 import { StudyCta } from './StudyView';
+import { ChatStart } from './ChatStart';
+import { pendingResults, type PendingResults as PendingResultsData } from '../model/sync';
+import { syncPrompt } from '../ai/chat';
 
 export function Dashboard() {
   const { loaded } = usePack();
@@ -12,7 +15,7 @@ export function Dashboard() {
   return (
     <>
       {loaded.subjects.length > 0 && <StudyCta />}
-      <PendingGrades />
+      <PendingResults />
       <Calendar loaded={loaded} today={on} />
       {loaded.subjects.length === 0 ? (
         <div class="panel muted">
@@ -30,32 +33,48 @@ export function Dashboard() {
   );
 }
 
-/** Quizzes saved with "Let the AI grade later" that the AI has not graded yet. */
-function PendingGrades() {
+/**
+ * Results the AI has not processed yet (since its last ai.sync), with a prompt
+ * to copy. The AI appends ai.sync when done, and the banner goes away.
+ */
+function PendingResults() {
   const { fs, loaded } = usePack();
-  const [open, setOpen] = useState(0);
+  const [p, setP] = useState<PendingResultsData | null>(null);
   useEffect(() => {
-    readEvents(fs, 2000)
-      .then((events) => {
-        const pending = new Set<string>();
-        for (const e of events) {
-          if (!e.ref) continue;
-          if (e.type === 'quiz.gradeLater') pending.add(e.ref);
-          if (e.type === 'quiz.applied') pending.delete(e.ref);
-        }
-        setOpen(pending.size);
-      })
-      .catch(() => setOpen(0));
+    let alive = true;
+    const check = () =>
+      readEvents(fs, 5000)
+        .then((events) => alive && setP(pendingResults(events)))
+        .catch(() => alive && setP(null));
+    void check();
+    // The AI writes ai.sync while the app is open; look again now and then and when the tab comes back.
+    const t = window.setInterval(check, 8000);
+    window.addEventListener('focus', check);
+    return () => {
+      alive = false;
+      window.clearInterval(t);
+      window.removeEventListener('focus', check);
+    };
   }, [fs, loaded]);
-  if (!open) return null;
+  if (!p?.total) return null;
+  const parts = [
+    p.quizzes && `${p.quizzes} ${p.quizzes === 1 ? 'quiz' : 'quizzes'}`,
+    p.dojo && `${p.dojo} dojo ${p.dojo === 1 ? 'round' : 'rounds'}`,
+    p.sheets && `${p.sheets} ${p.sheets === 1 ? 'sheet' : 'sheets'}`,
+    p.toGrade && `${p.toGrade} ${p.toGrade === 1 ? 'quiz' : 'quizzes'} to grade`,
+  ].filter(Boolean) as string[];
   return (
-    <div class="panel pending-grades">
-      <strong>
-        {open} {open === 1 ? 'quiz is' : 'quizzes are'} waiting for grading.
-      </strong>{' '}
-      <span class="muted">
-        Tell your AI <em>"Grade my open quizzes"</em>. It grades your answers and updates your progress.
-      </span>
+    <div class="panel pending-results" role="status">
+      <span class="pending-results-dot" aria-hidden="true" />
+      <div class="pending-results-text">
+        <strong>New results for your AI</strong>
+        <span class="small">
+          {parts.join(' · ')}
+          {p.lastSync ? ` since its last look on ${formatShort(p.lastSync.slice(0, 10))}` : ''}. Copy the prompt into your AI chat: it grades what is open,
+          updates your learning state and then hides this banner.
+        </span>
+      </div>
+      <ChatStart label="Copy prompt" prompt={() => syncPrompt(fs)} />
     </div>
   );
 }

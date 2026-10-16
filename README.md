@@ -30,12 +30,20 @@ the next reviews.
   (low recent scores) and subjects with an exam in the next three weeks
   weigh more, then shaky and new topics fill up. It quizzes them subject by
   subject.
-- **Quiz:** runs right in the app, no copied prompts: each topic has
+- **Here or in the chat:** every start button (Study, Quiz, Dojo) has a
+  partner **Start in chat** that copies a prompt for your AI chat, handy
+  when you want to answer by voice. The AI records the grades in your pack.
+- **Results banner:** what you do in the app is saved right away. As long
+  as your AI has not looked at the new results, the dashboard shows a
+  banner with a prompt to copy; the AI grades what is open, updates your
+  topics, questions and drills, and the banner goes away.
+- **Quiz:** runs right in the app: each topic has
   prepared questions that test understanding (written by the AI when it
-  sets up your pack), shown one card at a time. At the end the cards flip
-  over to show the key points, and you grade yourself (right / partly /
-  wrong), or choose **Let the AI grade later**: your AI grades the answers
-  0–5 with feedback the next time you ask it to. With an API key or the
+  sets up your pack), shown one card at a time. At the end you choose
+  **Check myself** (the cards flip over to show the key points and you rate
+  each answer right / partly / wrong) or **Check in chat** (copies a prompt;
+  your AI goes through the answers with you, grades them 0–5 and records
+  them). With an API key or the
   file bridge you can also have the AI grade right away or write fresh
   questions. Then spaced repetition takes
   over: topics you know well move on 1 → 3 → 7 → 14 → 21 days, shaky ones
@@ -45,6 +53,10 @@ the next reviews.
   count, answer against a timer (multiple choice, short answers, numbers,
   putting steps in order, writing a regex or building an automaton in a
   transition table) and get instant feedback, checked by the app itself.
+  Points for every exercise (more for harder levels, a speed bonus and a
+  combo for answers in a row), a best round per dojo, drag and drop for
+  putting steps in order, and buttons for formula symbols like σ, ⋈ or ε
+  when a task needs them.
   Save the round to your progress like a quiz. The AI writes new exercises
   on request, and for free practice it creates tasks and checks your
   solution step by step. Dojos are pure data, new ones need no code.
@@ -53,13 +65,23 @@ the next reviews.
 
 ## Set it up with an AI
 
-The project is built so that an AI does the setup with you. Clone the repo,
-open it in Claude Code (or another AI tool) and say:
+The project is built so that an AI does the setup with you. Download it and
+run one command:
 
-> Set me up.
+```bash
+git clone https://github.com/JakobGoelden/LearningCenter.git
+cd LearningCenter
+npm start
+```
 
-As long as you have no pack of your own, the AI starts the guided setup by
-itself. It installs everything, asks about your subjects and exams, and then
+`npm start` installs what is missing and, as long as you have no pack of
+your own, opens Claude Code with the guided setup already running; you do
+not have to type anything to begin. Once your pack exists, the same command
+starts the app with it. `npm run setup` continues an unfinished setup. If
+you use another AI tool or the Claude desktop app, open the folder there:
+the setup starts with your first message, whatever you write.
+
+The AI asks about your subjects and exams, and then
 gets your material in together with you, step by step: your scripts or
 slides (e.g. from Moodle), your timetable (best as an .ics export from the
 campus system), your exercise sheets and your own notes (e.g. reMarkable).
@@ -76,12 +98,13 @@ continue later. Details: [ONBOARDING.md](ONBOARDING.md).
 Requirement: Node.js 18.19 or newer.
 
 ```bash
-npm install
-npm run dev
+npm start
 ```
 
-The app opens in your browser by itself (otherwise go to
-<http://localhost:5173>). Choose **Try the demo** to look around. The demo
+Without a pack of your own this starts the setup (see above). To only look
+around, run `npm install` and `npm run dev`: the app opens in your browser
+by itself (otherwise go to <http://localhost:5173>). Choose **Try the
+demo**. The demo
 lives in browser storage and has two subjects; it is only an example. For
 your own semester, do the setup above.
 

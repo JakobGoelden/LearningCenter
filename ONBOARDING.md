@@ -50,6 +50,12 @@ npm run validate    # checks the included packs
 
 If the repo is already cloned, `git pull` and `npm install` are enough.
 
+`npm start` (scripts/start.mjs) is the one command for the person: with no
+pack in `local/` it opens Claude Code with this setup already running, with
+a pack it starts the app on it. A SessionStart hook in
+`.claude/settings.json` tells you at the start of every conversation
+whether a pack exists, so the person never has to say "set me up".
+
 ## 2. Get to know the person
 
 Ask in one block, and offer examples so the answers come easily:
@@ -398,8 +404,12 @@ Suggest this routine to the person and carry it out when they ask for it:
   files into `material/`, compare the script version, create new topics,
   add new exercise sheets with `file` and `tasks`, update the timetable if it
   changed, set `lastChecked`.
-- **"Grade my open quizzes"**: grade the quizzes the person saved with
-  "Let the AI grade later" (CLAUDE.md → Grading open quizzes).
+- **"Process my new results"** (the prompt from the dashboard banner):
+  grade open quizzes, look at quizzes, dojo rounds and sheets since the
+  last sync, update notes, questions and drills, then append `ai.sync`
+  (CLAUDE.md → Processing new results).
+- **"Grade my open quizzes"**: only the quizzes the person sent to the
+  chat with "Check in chat" (CLAUDE.md → Grading open quizzes).
 - **"More questions for <subject>"**: add new prepared questions to the
   topics, especially `shaky` ones, then validate.
 - **"Check my sheet <n>"**: read `work/<subject>/<sheet>.json` against the

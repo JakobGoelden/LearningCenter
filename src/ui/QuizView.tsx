@@ -11,6 +11,9 @@ import { Markdown } from './Markdown';
 import { Cancelled, useAi } from './AiPanel';
 import { href } from './router';
 import { SCORE_LABEL, TOPIC_STATUS } from './labels';
+import { Stepper } from './Stepper';
+import { ChatStart, copyText } from './ChatStart';
+import { quizChatPrompt, quizGradeChatPrompt } from '../ai/chat';
 
 /** review: compare with the key points and grade yourself (quizzes run in the app). */
 type Phase = 'setup' | 'answer' | 'review' | 'results';
@@ -18,7 +21,9 @@ type Phase = 'setup' | 'answer' | 'review' | 'results';
 const KIND_LABEL: Record<string, string> = { why: 'Why', 'what-if': 'What if', explain: 'Explain', apply: 'Apply' };
 
 export function sessionId(type: string, subject: string): string {
-  return `${nowIso().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')}-${type}-${subject}`;
+  return `${nowIso()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d+Z$/, 'Z')}-${type}-${subject}`;
 }
 
 export interface QuizViewProps {
@@ -50,7 +55,10 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
   const [dir, setDir] = useState<'fwd' | 'back'>('fwd');
   const [flipped, setFlipped] = useState<Set<number>>(new Set());
   const [cheer, setCheer] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [ratings, setRatings] = useState<Map<number, SelfRating>>(new Map());
+  /** After the last answer: choose between checking yourself and checking in the chat. */
+  const [checkMode, setCheckMode] = useState<'choose' | 'self'>('choose');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -105,8 +113,14 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
       });
       const next: Session = { id, type: 'quiz', subject: s.id, adapter: 'app', startedAt: nowIso(), items };
       await persist(next);
-      await log({ type: 'quiz.start', subject: s.id, ref: id, data: { topics: items.map((i) => i.topicId ?? null), questions: 'prepared' } });
+      await log({
+        type: 'quiz.start',
+        subject: s.id,
+        ref: id,
+        data: { topics: items.map((i) => i.topicId ?? null), questions: 'prepared' },
+      });
       setRatings(new Map());
+      setCheckMode('choose');
       setIdx(0);
       setPhase('answer');
     });
@@ -184,7 +198,13 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
         }),
       };
       await persist(next);
-      await log({ type: 'quiz.graded', subject: s.id, ref: session.id, actor: 'ai', data: { scores: next.items.map((i) => i.score ?? null) } });
+      await log({
+        type: 'quiz.graded',
+        subject: s.id,
+        ref: session.id,
+        actor: 'ai',
+        data: { scores: next.items.map((i) => i.score ?? null) },
+      });
       setPhase('results');
     });
 
@@ -231,8 +251,22 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
         return r ? { ...it, score: SELF_SCORE[r] as Score } : it;
       }),
     };
-    void log({ type: 'quiz.graded', subject: s.id, ref: session.id, actor: 'user', data: { scores: graded.items.map((i) => i.score ?? null) } });
+    void log({
+      type: 'quiz.graded',
+      subject: s.id,
+      ref: session.id,
+      actor: 'user',
+      data: { scores: graded.items.map((i) => i.score ?? null) },
+    });
     return apply(graded);
+  };
+
+  const chatGradePrompt = () => (session ? quizGradeChatPrompt({ fs, pack: loaded.pack, session }) : '');
+  /** Copies the prompt first (needs the click), then saves the quiz as waiting for the AI. */
+  const gradeInChat = async () => {
+    const ok = await copyText(chatGradePrompt());
+    setCopied(ok);
+    await gradeLater();
   };
 
   const gradeLater = () =>
@@ -244,7 +278,7 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
 
   const canAskAi = pack.ai.adapter !== 'copy-prompt';
   const local = session?.adapter === 'app';
-  const settled = !!session && (session.applied || (session.gradeLater && local));
+  const settled = !!session && !!(session.applied || session.gradeLater);
 
   const doneRow = (sess: Session) => (
     <div class="panel row quiz-actions">
@@ -258,9 +292,14 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
             .join(' · ')}
         </span>
       ) : (
-        <span>
-          Saved for later. Your AI grades it when you ask it to <em>"Grade my open quizzes"</em>; until then your topics stay as
-          they are.
+        <span class="stack" style="gap:6px">
+          <span>
+            {copied
+              ? 'Saved. The prompt is copied: paste it into your AI chat and go through the answers together.'
+              : 'Saved. Copy the prompt and paste it into your AI chat to go through the answers together.'}{' '}
+            <span class="muted">If you do it later, the dashboard banner has the prompt too.</span>
+          </span>
+          {local && <ChatStart label={copied ? 'Copy prompt again' : 'Copy prompt'} prompt={chatGradePrompt} />}
         </span>
       )}
       {cheer && <Cheer />}
@@ -298,10 +337,8 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
       {phase === 'setup' && !busy && !preset && (
         <div class="panel stack">
           <div class="row">
-            <label class="row">
-              Number of questions
-              <input type="number" min={1} max={30} value={count} style="width:70px" onInput={(e) => setCount(Math.max(1, Number(e.currentTarget.value) || 1))} />
-            </label>
+            <span>Number of questions</span>
+            <Stepper value={count} onChange={setCount} min={1} max={30} label="Questions" />
           </div>
           {candidates.length === 0 ? (
             <div class="muted">
@@ -337,12 +374,21 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
                   </li>
                 ))}
               </ul>
-              <div>
+              <div class="start-row">
                 <button class="primary" disabled={chosen.length === 0} onClick={start}>
-                  Start quiz with {chosen.length} {chosen.length === 1 ? 'question' : 'questions'}
-                </button>{' '}
+                  Start here · {chosen.length} {chosen.length === 1 ? 'question' : 'questions'}
+                </button>
+                <ChatStart
+                  disabled={chosen.length === 0}
+                  prompt={() => quizChatPrompt({ fs, pack: loaded.pack, blocks: [{ subject: s, topics: chosen }] })}
+                />
                 {canAskAi && (
-                  <button class="ghost" disabled={chosen.length === 0} onClick={startWithAi} title="The AI writes new questions for these topics">
+                  <button
+                    class="ghost"
+                    disabled={chosen.length === 0}
+                    onClick={startWithAi}
+                    title="The AI writes new questions for these topics"
+                  >
                     or fresh questions from the AI
                   </button>
                 )}
@@ -406,95 +452,124 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
 
       {phase === 'review' && session && (
         <div class="stack">
-          <div class="panel small muted">
-            Compare your answers with the key points and grade yourself, or let your AI grade them later.
-          </div>
-          <div class="flip-grid">
-            {session.items.map((it) => {
-              const open = flipped.has(it.n);
-              const r = ratings.get(it.n);
-              const toggle = () => {
-                const f = new Set(flipped);
-                if (open) f.delete(it.n);
-                else f.add(it.n);
-                setFlipped(f);
-              };
-              return (
-                <div
-                  role="button"
-                  tabIndex={0}
-                  class={`flip-card${open ? ' open' : ''}`}
-                  style={{ '--c': s.color }}
-                  onClick={toggle}
-                  onKeyDown={(e) => {
-                    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-                      e.preventDefault();
-                      toggle();
-                    }
-                  }}
-                  aria-pressed={open}
-                  aria-label={`Question ${it.n}: ${open ? 'show the question' : 'show the key points'}`}
-                >
-                  <span class="flip-inner">
-                    <span class="flip-face front panel">
-                      <span class="row small">
-                        <span class="qnum">
-                          Question {it.n}/{N}
-                        </span>
-                        {it.topicId && <span class="badge">{topicById.get(it.topicId)?.title}</span>}
-                      </span>
-                      <Markdown text={it.prompt} />
-                      <span class="small muted answer">{it.answer || '(no answer)'}</span>
-                      <span class="flip-hint small muted">Tap to compare</span>
-                    </span>
-                    <span class={`flip-face back panel score-face-${r ? SELF_SCORE[r] : 'none'}`}>
-                      <span class="row small">
-                        <span class="qnum">
-                          Question {it.n}/{N}
-                        </span>
-                        {it.topicId && <span class="badge">{topicById.get(it.topicId)?.title}</span>}
-                      </span>
-                      <span class="small muted answer">You: {it.answer || '(no answer)'}</span>
-                      {it.solution ? (
-                        <span class="key-points">
-                          <strong class="small">Key points</strong>
-                          <Markdown text={it.solution} />
-                        </span>
-                      ) : (
-                        <span class="small muted">No key points for this question. Check it against your script or notes.</span>
-                      )}
-                      {!session.applied && !session.gradeLater && (
-                        <span class="rate" onClick={(e) => e.stopPropagation()}>
-                          {(['right', 'partly', 'wrong'] as SelfRating[]).map((k) => (
-                            <button type="button" class={`rate-${k}${r === k ? ' on' : ''}`} aria-pressed={r === k} onClick={() => rate(it.n, k)}>
-                              {k === 'right' ? '✓ Right' : k === 'partly' ? '~ Partly' : '✗ Wrong'}
-                            </button>
-                          ))}
-                        </span>
-                      )}
-                    </span>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          {settled ? (
-            doneRow(session)
-          ) : (
-            <div class="panel row quiz-actions">
-              <button class="primary" disabled={ratings.size < N} onClick={saveSelf}>
-                Save to progress{ratings.size < N ? ` (${ratings.size}/${N} graded)` : ''}
+          {session.gradeLater && !session.applied && doneRow(session)}
+          {!settled && checkMode === 'choose' ? (
+            <div class="check-choice">
+              <button class="check-option" onClick={() => setCheckMode('self')}>
+                <span class="check-option-icon" aria-hidden="true">
+                  ✓
+                </span>
+                <strong>Check myself</strong>
+                <span class="small muted">Flip the cards, compare with the key points, rate each answer.</span>
               </button>
-              <button onClick={gradeLater} title="Your answers are saved; your AI grades them when you ask it">
-                Let the AI grade later
+              <button class="check-option chat" onClick={gradeInChat}>
+                <span class="check-option-icon" aria-hidden="true">
+                  💬
+                </span>
+                <strong>Check in chat</strong>
+                <span class="small muted">Copies a prompt. Your AI goes through the answers with you, voice included.</span>
               </button>
               {canAskAi && (
-                <button class="ghost" onClick={grade}>
-                  Grade with AI now
+                <button class="ghost small check-ai-now" onClick={grade}>
+                  or let the AI grade right now
                 </button>
               )}
             </div>
+          ) : (
+            !settled && (
+              <div class="panel small muted">
+                Compare your answers with the key points and rate each one.{' '}
+                <button class="link" onClick={() => setCheckMode('choose')}>
+                  Check in chat instead
+                </button>
+              </div>
+            )
           )}
+          {(settled || checkMode === 'self') && (
+            <div class="flip-grid">
+              {session.items.map((it) => {
+                const open = flipped.has(it.n);
+                const r = ratings.get(it.n);
+                const toggle = () => {
+                  const f = new Set(flipped);
+                  if (open) f.delete(it.n);
+                  else f.add(it.n);
+                  setFlipped(f);
+                };
+                return (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    class={`flip-card${open ? ' open' : ''}`}
+                    style={{ '--c': s.color }}
+                    onClick={toggle}
+                    onKeyDown={(e) => {
+                      if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        toggle();
+                      }
+                    }}
+                    aria-pressed={open}
+                    aria-label={`Question ${it.n}: ${open ? 'show the question' : 'show the key points'}`}
+                  >
+                    <span class="flip-inner">
+                      <span class="flip-face front panel">
+                        <span class="row small">
+                          <span class="qnum">
+                            Question {it.n}/{N}
+                          </span>
+                          {it.topicId && <span class="badge">{topicById.get(it.topicId)?.title}</span>}
+                        </span>
+                        <Markdown text={it.prompt} />
+                        <span class="small muted answer">{it.answer || '(no answer)'}</span>
+                        <span class="flip-hint small muted">Tap to compare</span>
+                      </span>
+                      <span class={`flip-face back panel score-face-${r ? SELF_SCORE[r] : 'none'}`}>
+                        <span class="row small">
+                          <span class="qnum">
+                            Question {it.n}/{N}
+                          </span>
+                          {it.topicId && <span class="badge">{topicById.get(it.topicId)?.title}</span>}
+                        </span>
+                        <span class="small muted answer">You: {it.answer || '(no answer)'}</span>
+                        {it.solution ? (
+                          <span class="key-points">
+                            <strong class="small">Key points</strong>
+                            <Markdown text={it.solution} />
+                          </span>
+                        ) : (
+                          <span class="small muted">No key points for this question. Check it against your script or notes.</span>
+                        )}
+                        {!session.applied && !session.gradeLater && (
+                          <span class="rate" onClick={(e) => e.stopPropagation()}>
+                            {(['right', 'partly', 'wrong'] as SelfRating[]).map((k) => (
+                              <button
+                                type="button"
+                                class={`rate-${k}${r === k ? ' on' : ''}`}
+                                aria-pressed={r === k}
+                                onClick={() => rate(it.n, k)}
+                              >
+                                {k === 'right' ? '✓ Right' : k === 'partly' ? '~ Partly' : '✗ Wrong'}
+                              </button>
+                            ))}
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {settled
+            ? session.applied && doneRow(session)
+            : checkMode === 'self' && (
+                <div class="panel row quiz-actions">
+                  <button class="primary" disabled={ratings.size < N} onClick={saveSelf}>
+                    Save to progress{ratings.size < N ? ` (${ratings.size}/${N} graded)` : ''}
+                  </button>
+                </div>
+              )}
         </div>
       )}
 
@@ -581,7 +656,7 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
 }
 
 /** A short burst of confetti after a good round. */
-function Cheer() {
+export function Cheer() {
   const colors = ['var(--accent)', 'var(--gold)', 'var(--vermilion)', 'var(--st-solid)', '#8b5cf6'];
   return (
     <span class="cheer" aria-hidden="true">
