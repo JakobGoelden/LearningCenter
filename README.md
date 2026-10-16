@@ -10,7 +10,8 @@ the next reviews.
 
 - **Dashboard:** one banner per subject with a progress bar (share of topics
   that are solid) and, below it, flags for due reviews, open sheets and open
-  tasks. Above them, the "Today" line shows today's classes and what is due.
+  tasks. Subjects with dojos get a Dojo button right next to their banner.
+  Above them, the "Today" line shows today's classes and what is due.
   Click a banner to open the subject page with the panels Exam (format, date,
   countdown, allowed aids), Progress, Exercise sheets, Open tasks, Timetable
   and Last checks, plus the buttons Quiz, Dojo and Topics.

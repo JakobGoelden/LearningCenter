@@ -215,8 +215,8 @@ th { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
 }
 .banner:hover { border-color: var(--c, var(--accent)); box-shadow: 0 2px 12px rgb(0 0 0 / 0.08); }
 .banner:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.banner-head { display: flex; align-items: baseline; gap: 12px; }
-.banner-head h2 { flex: 1; min-width: 0; }
+.banner-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.banner-head h2 { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
 .banner .statusbar { height: 10px; }
 .chevron { font-size: 1.4rem; line-height: 1; color: var(--muted); }
 .flags { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -243,4 +243,18 @@ a.chip { text-decoration: none; display: inline-block; }
   .sheet-layout { grid-template-columns: 1fr; }
   .sheet-doc { position: static; }
   .sheet-frame { height: 70vh; }
+}
+
+/* Dojo button next to a subject banner */
+.banner-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 12px; }
+.dojo-tile {
+  display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px;
+  text-align: center; text-decoration: none; color: var(--text);
+  border-left: 4px solid var(--c, var(--accent));
+}
+.dojo-tile strong { font-size: 1.05rem; }
+.dojo-tile:hover { border-color: var(--c, var(--accent)); box-shadow: 0 2px 12px rgb(0 0 0 / 0.08); }
+.dojo-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 560px) {
+  .banner-row { grid-template-columns: minmax(0, 1fr) 96px; gap: 8px; }
 }

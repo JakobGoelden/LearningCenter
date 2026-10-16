@@ -35,7 +35,7 @@ export function Dashboard() {
       ) : (
         <div class="banners">
           {loaded.subjects.map((s) => (
-            <SubjectBanner key={s.id} subject={s} on={on} />
+            <SubjectBanner key={s.id} subject={s} on={on} dojos={loaded.dojos.filter((d) => d.subject === s.id)} />
           ))}
         </div>
       )}
