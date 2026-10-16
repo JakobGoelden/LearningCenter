@@ -21,7 +21,8 @@ personal pack: `ls local/*/pack.json`.
 - **Pack found:** work with it (part A). If `local/<pack>/SETUP.md` still has
   open items (or the pack obviously lacks subjects, timetable, scripts,
   topics or dojos), offer to continue the setup where it stopped before
-  doing anything else.
+  doing anything else. If quizzes are waiting to be graded (see "Grading
+  open quizzes"), offer to grade them.
 
 There are two kinds of tasks: **maintaining learning packs** (part A) and
 **developing the app** (part B). Answer learners in their language; quiz
@@ -70,6 +71,14 @@ The format is fully described in `schema/*.schema.json` (JSON Schema
    subject. `notes` describes scope and source (e.g. "Lecture 3, script 2.4;
    typical mistake: …"). This is the most important context for good
    questions. New topics get `status: "new"` and no `due`.
+   **Questions:** give every topic 2–4 prepared `questions`
+   (`{id, prompt, kind, answer}`). The app runs quizzes with them on its own,
+   no AI and no copied prompt needed: one question per topic per quiz, in
+   turn. `prompt` tests understanding (why, what if, explain, apply), not
+   wording; `answer` lists the key points of a good answer (Markdown bullets,
+   plus a typical mistake). The learner sees the key points after answering
+   and grades themselves, or lets you grade later. A topic without
+   questions gets a general "explain it" question.
 5. **Exam:** `format` is `written` (written exam), `talk` (presentation/oral),
    `project` or `unknown`. Do not invent a date: if it is unknown, leave out
    `date` and create an open task.
@@ -175,6 +184,25 @@ When the person clicks "Quiz" or works in a dojo, the app writes a request to
    to their progress with a click.
 5. If the person wants, keep waiting for new requests (e.g. check every few
    seconds) until they say "stop".
+
+### Grading open quizzes
+
+In the app the learner can end a quiz with "Let the AI grade later". The
+answers are then saved in `sessions/<id>.json` with `gradeLater: true`, and
+the dashboard says how many are waiting. When the person says "Grade my open
+quizzes" (or you notice open ones):
+
+1. Find the sessions with `gradeLater: true` and without `applied: true`.
+2. Grade every item by the rules in "Grading fairly": `prompt` is the
+   question, `answer` the person's answer, `solution` the key points. Write
+   `score`, `feedback` and `gaps` into each item, plus a short `summary`.
+3. Record one grade per topic (average if a topic appears more than once)
+   with `npm run review -- local/<name> <subject-id> <topic-id> <score> quiz "<session id>"`.
+4. Set `applied: true` in the session and append a `quiz.applied` event
+   with `ref` = the session id (`actor: "ai"`), so the dashboard notice
+   disappears. Validate.
+5. Tell the person the result per question in a few lines and name the
+   next due dates.
 
 ### Quizzing directly in the chat
 

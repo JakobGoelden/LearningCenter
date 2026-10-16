@@ -6,11 +6,14 @@ import { applyReview, averageScore, pickQuizTopics } from '../scheduling/schedul
 import { quizGradeRequest, quizStartRequest } from '../ai/requests';
 import { saveSession } from '../storage/repo';
 import type { Score, Session, SessionItem, Topic } from '../model/types';
+import { questionFor, SELF_SCORE, type SelfRating } from '../model/quiz';
+import { Markdown } from './Markdown';
 import { Cancelled, useAi } from './AiPanel';
 import { href } from './router';
 import { SCORE_LABEL, TOPIC_STATUS } from './labels';
 
-type Phase = 'setup' | 'answer' | 'results';
+/** review: compare with the key points and grade yourself (quizzes run in the app). */
+type Phase = 'setup' | 'answer' | 'review' | 'results';
 
 const KIND_LABEL: Record<string, string> = { why: 'Why', 'what-if': 'What if', explain: 'Explain', apply: 'Apply' };
 
@@ -47,6 +50,7 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
   const [dir, setDir] = useState<'fwd' | 'back'>('fwd');
   const [flipped, setFlipped] = useState<Set<number>>(new Set());
   const [cheer, setCheer] = useState(false);
+  const [ratings, setRatings] = useState<Map<number, SelfRating>>(new Map());
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,7 +59,7 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
 
   // Graded cards turn over one after another.
   useEffect(() => {
-    if (phase !== 'results' || !session) return;
+    if ((phase !== 'results' && phase !== 'review') || !session) return;
     const timers = session.items.map((it, i) => setTimeout(() => setFlipped((f) => new Set(f).add(it.n)), 350 + i * 220));
     return () => timers.forEach(clearTimeout);
   }, [phase]);
@@ -84,7 +88,31 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
     }
   };
 
+  /** Runs in the app with the topics' prepared questions, no AI needed. */
   const start = () =>
+    guard(async () => {
+      const id = sessionId('quiz', s.id);
+      const items: SessionItem[] = chosen.map((t, i) => {
+        const q = questionFor(t);
+        return {
+          n: i + 1,
+          topicId: t.id,
+          ...(q.kind ? { kind: q.kind } : {}),
+          ...(q.id ? { question: q.id } : {}),
+          prompt: q.prompt,
+          ...(q.answer ? { solution: q.answer } : {}),
+        };
+      });
+      const next: Session = { id, type: 'quiz', subject: s.id, adapter: 'app', startedAt: nowIso(), items };
+      await persist(next);
+      await log({ type: 'quiz.start', subject: s.id, ref: id, data: { topics: items.map((i) => i.topicId ?? null), questions: 'prepared' } });
+      setRatings(new Map());
+      setIdx(0);
+      setPhase('answer');
+    });
+
+  /** Lets the AI write fresh questions (needs the AI connection). */
+  const startWithAi = () =>
     guard(async () => {
       const id = sessionId('quiz', s.id);
       const res = await run(quizStartRequest(loaded.pack, s, chosen, id));
@@ -160,8 +188,9 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
       setPhase('results');
     });
 
-  const apply = () =>
+  const apply = (graded: Session | null = session) =>
     guard(async () => {
+      const session = graded;
       if (!session) return;
       const perTopic = new Map<string, Score[]>();
       for (const it of session.items) {
@@ -183,6 +212,70 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
       await persist({ ...session, applied: true });
       if (averageScore(Object.values(scores) as Score[]) >= 4) setCheer(true);
     });
+
+  const finish = () =>
+    guard(async () => {
+      if (!session) return;
+      await persist({ ...session, finishedAt: nowIso() });
+      setPhase('review');
+    });
+
+  const rate = (n: number, r: SelfRating) => setRatings(new Map(ratings).set(n, r));
+
+  const saveSelf = () => {
+    if (!session) return;
+    const graded: Session = {
+      ...session,
+      items: session.items.map((it) => {
+        const r = ratings.get(it.n);
+        return r ? { ...it, score: SELF_SCORE[r] as Score } : it;
+      }),
+    };
+    void log({ type: 'quiz.graded', subject: s.id, ref: session.id, actor: 'user', data: { scores: graded.items.map((i) => i.score ?? null) } });
+    return apply(graded);
+  };
+
+  const gradeLater = () =>
+    guard(async () => {
+      if (!session) return;
+      await persist({ ...session, finishedAt: nowIso(), gradeLater: true });
+      await log({ type: 'quiz.gradeLater', subject: s.id, ref: session.id, data: { answers: session.items.length } });
+    });
+
+  const canAskAi = pack.ai.adapter !== 'copy-prompt';
+  const local = session?.adapter === 'app';
+  const settled = !!session && (session.applied || (session.gradeLater && local));
+
+  const doneRow = (sess: Session) => (
+    <div class="panel row quiz-actions">
+      {sess.applied ? (
+        <span>
+          Saved. Next reviews:{' '}
+          {[...new Set(sess.items.map((i) => i.topicId).filter(Boolean))]
+            .map((id) => s.topics.find((t) => t.id === id))
+            .filter(Boolean)
+            .map((t) => `${t!.title} ${t!.due ? formatShort(t!.due) : '–'}`)
+            .join(' · ')}
+        </span>
+      ) : (
+        <span>
+          Saved for later. Your AI grades it when you ask it to <em>"Grade my open quizzes"</em>; until then your topics stay as
+          they are.
+        </span>
+      )}
+      {cheer && <Cheer />}
+      <span style="flex:1" />
+      {after ? (
+        <button class="primary" onClick={after.go}>
+          {after.label}
+        </button>
+      ) : (
+        <a class="btn" href={href({ name: 'dashboard' })}>
+          Back to dashboard
+        </a>
+      )}
+    </div>
+  );
 
   const item = session?.items[idx];
   const N = session?.items.length ?? 0;
@@ -247,7 +340,12 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
               <div>
                 <button class="primary" disabled={chosen.length === 0} onClick={start}>
                   Start quiz with {chosen.length} {chosen.length === 1 ? 'question' : 'questions'}
-                </button>
+                </button>{' '}
+                {canAskAi && (
+                  <button class="ghost" disabled={chosen.length === 0} onClick={startWithAi} title="The AI writes new questions for these topics">
+                    or fresh questions from the AI
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -277,7 +375,9 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
               {item.topicId && <span class="badge">{topicById.get(item.topicId)?.title}</span>}
               {item.kind && <span class="badge">{KIND_LABEL[item.kind] ?? item.kind}</span>}
             </div>
-            <div class="prompt">{item.prompt}</div>
+            <div class="prompt">
+              <Markdown text={item.prompt} />
+            </div>
             <textarea
               value={item.answer ?? ''}
               onInput={(e) => setAnswer(e.currentTarget.value)}
@@ -295,12 +395,106 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
                   Next
                 </button>
               ) : (
-                <button class="primary" onClick={grade}>
-                  Submit and grade
+                <button class="primary" onClick={local ? finish : grade}>
+                  {local ? 'Finish' : 'Submit and grade'}
                 </button>
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {phase === 'review' && session && (
+        <div class="stack">
+          <div class="panel small muted">
+            Compare your answers with the key points and grade yourself, or let your AI grade them later.
+          </div>
+          <div class="flip-grid">
+            {session.items.map((it) => {
+              const open = flipped.has(it.n);
+              const r = ratings.get(it.n);
+              const toggle = () => {
+                const f = new Set(flipped);
+                if (open) f.delete(it.n);
+                else f.add(it.n);
+                setFlipped(f);
+              };
+              return (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  class={`flip-card${open ? ' open' : ''}`}
+                  style={{ '--c': s.color }}
+                  onClick={toggle}
+                  onKeyDown={(e) => {
+                    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      toggle();
+                    }
+                  }}
+                  aria-pressed={open}
+                  aria-label={`Question ${it.n}: ${open ? 'show the question' : 'show the key points'}`}
+                >
+                  <span class="flip-inner">
+                    <span class="flip-face front panel">
+                      <span class="row small">
+                        <span class="qnum">
+                          Question {it.n}/{N}
+                        </span>
+                        {it.topicId && <span class="badge">{topicById.get(it.topicId)?.title}</span>}
+                      </span>
+                      <Markdown text={it.prompt} />
+                      <span class="small muted answer">{it.answer || '(no answer)'}</span>
+                      <span class="flip-hint small muted">Tap to compare</span>
+                    </span>
+                    <span class={`flip-face back panel score-face-${r ? SELF_SCORE[r] : 'none'}`}>
+                      <span class="row small">
+                        <span class="qnum">
+                          Question {it.n}/{N}
+                        </span>
+                        {it.topicId && <span class="badge">{topicById.get(it.topicId)?.title}</span>}
+                      </span>
+                      <span class="small muted answer">You: {it.answer || '(no answer)'}</span>
+                      {it.solution ? (
+                        <span class="key-points">
+                          <strong class="small">Key points</strong>
+                          <Markdown text={it.solution} />
+                        </span>
+                      ) : (
+                        <span class="small muted">No key points for this question. Check it against your script or notes.</span>
+                      )}
+                      {!session.applied && !session.gradeLater && (
+                        <span class="rate" onClick={(e) => e.stopPropagation()}>
+                          {(['right', 'partly', 'wrong'] as SelfRating[]).map((k) => (
+                            <button type="button" class={`rate-${k}${r === k ? ' on' : ''}`} aria-pressed={r === k} onClick={() => rate(it.n, k)}>
+                              {k === 'right' ? '✓ Right' : k === 'partly' ? '~ Partly' : '✗ Wrong'}
+                            </button>
+                          ))}
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          {settled ? (
+            doneRow(session)
+          ) : (
+            <div class="panel row quiz-actions">
+              <button class="primary" disabled={ratings.size < N} onClick={saveSelf}>
+                Save to progress{ratings.size < N ? ` (${ratings.size}/${N} graded)` : ''}
+              </button>
+              <button onClick={gradeLater} title="Your answers are saved; your AI grades them when you ask it">
+                Let the AI grade later
+              </button>
+              {canAskAi && (
+                <button class="ghost" onClick={grade}>
+                  Grade with AI now
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -371,33 +565,15 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
               );
             })}
           </div>
-          <div class="panel row quiz-actions">
-            {session.applied ? (
-              <span>
-                Saved. Next reviews:{' '}
-                {[...new Set(session.items.map((i) => i.topicId).filter(Boolean))]
-                  .map((id) => s.topics.find((t) => t.id === id))
-                  .filter(Boolean)
-                  .map((t) => `${t!.title} ${t!.due ? formatShort(t!.due) : '–'}`)
-                  .join(' · ')}
-              </span>
-            ) : (
-              <button class="primary" onClick={apply}>
+          {session.applied ? (
+            doneRow(session)
+          ) : (
+            <div class="panel row quiz-actions">
+              <button class="primary" onClick={() => apply()}>
                 Save to progress
               </button>
-            )}
-            {cheer && <Cheer />}
-            <span style="flex:1" />
-            {after && session.applied ? (
-              <button class="primary" onClick={after.go}>
-                {after.label}
-              </button>
-            ) : (
-              <a class="btn" href={href({ name: 'dashboard' })}>
-                Back to dashboard
-              </a>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>

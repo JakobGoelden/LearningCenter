@@ -10,7 +10,9 @@
     "time": "10:00",
     "location": "Main lecture hall",
     "durationMinutes": 120,
-    "aids": ["1 handwritten A4 sheet"]
+    "aids": [
+      "1 handwritten A4 sheet"
+    ]
   },
   "topics": [
     {
@@ -21,8 +23,30 @@
       "due": "2026-10-23",
       "intervalDays": 7,
       "history": [
-        { "date": "2026-10-13", "score": 4, "source": "quiz" },
-        { "date": "2026-10-16", "score": 5, "source": "quiz" }
+        {
+          "date": "2026-10-13",
+          "score": 4,
+          "source": "quiz"
+        },
+        {
+          "date": "2026-10-16",
+          "score": 5,
+          "source": "quiz"
+        }
+      ],
+      "questions": [
+        {
+          "id": "difference",
+          "kind": "why",
+          "prompt": "Why can an NFA be easier to write down than a DFA for the same language, even though both accept exactly the regular languages?",
+          "answer": "- An NFA may have several transitions per symbol and ε-transitions, so it can \"guess\" (e.g. where a suffix starts).\n- A DFA must track every possibility explicitly in its states.\n- Same power: every NFA can be turned into a DFA (powerset construction), possibly with exponentially many states."
+        },
+        {
+          "id": "accept",
+          "kind": "explain",
+          "prompt": "Explain when an NFA accepts a word, and how that differs from a DFA.",
+          "answer": "- DFA: exactly one run; accept if it ends in a final state.\n- NFA: accepts if **at least one** possible run ends in a final state after reading the whole word.\n- Runs that get stuck (no transition) are simply discarded."
+        }
       ]
     },
     {
@@ -32,7 +56,27 @@
       "status": "shaky",
       "due": "2026-10-14",
       "intervalDays": 1,
-      "history": [{ "date": "2026-10-13", "score": 2, "source": "dojo" }]
+      "history": [
+        {
+          "date": "2026-10-13",
+          "score": 2,
+          "source": "dojo"
+        }
+      ],
+      "questions": [
+        {
+          "id": "idea",
+          "kind": "explain",
+          "prompt": "Explain the idea of the powerset construction in your own words.",
+          "answer": "- Each DFA state is a **set** of NFA states: all states the NFA could be in after the input so far.\n- Start state: ε-closure of the NFA start state.\n- Transition on a: union of the a-successors, then ε-closure.\n- A set is final if it contains an NFA final state.\n- Only reachable sets are built."
+        },
+        {
+          "id": "blowup",
+          "kind": "what-if",
+          "prompt": "What if the NFA has n states: how many states can the DFA have at most, and why is it usually far fewer in practice?",
+          "answer": "- At most 2^n states (all subsets).\n- Built from the start state, only **reachable** subsets appear, which is usually far fewer.\n- There are languages where the exponential blow-up really happens (e.g. \"the n-th symbol from the end is a\")."
+        }
+      ]
     },
     {
       "id": "regex",
@@ -41,19 +85,67 @@
       "status": "shaky",
       "due": "2026-10-16",
       "intervalDays": 3,
-      "history": [{ "date": "2026-10-13", "score": 3, "source": "quiz" }]
+      "history": [
+        {
+          "date": "2026-10-13",
+          "score": 3,
+          "source": "quiz"
+        }
+      ],
+      "questions": [
+        {
+          "id": "to-nfa",
+          "kind": "apply",
+          "prompt": "Write a regular expression over {a, b} for all words that contain \"ab\" at least once, and say how you would check it.",
+          "answer": "- e.g. `(a|b)*ab(a|b)*`.\n- Check: a word is in the language iff it has the substring ab; test examples like ab, bab, aab (yes) and ba, bbb, ε (no)."
+        },
+        {
+          "id": "star",
+          "kind": "why",
+          "prompt": "Why does the language of a regular expression with a star always contain the empty word ε?",
+          "answer": "- r* means zero or more repetitions of r.\n- Zero repetitions give ε, so ε ∈ L(r*) for every r, even r = ∅."
+        }
+      ]
     },
     {
       "id": "minimization",
       "title": "DFA minimization",
       "notes": "Equivalence classes, table-filling algorithm, Myhill-Nerode.",
-      "status": "new"
+      "status": "new",
+      "questions": [
+        {
+          "id": "equivalent",
+          "kind": "explain",
+          "prompt": "Explain what it means for two DFA states to be equivalent and how the table-filling algorithm finds them.",
+          "answer": "- Equivalent: for every word w, both states either accept or reject after reading w.\n- Mark all pairs (final, non-final) as distinguishable.\n- Repeatedly mark a pair if some symbol leads to an already marked pair.\n- Unmarked pairs at the end are equivalent and get merged."
+        },
+        {
+          "id": "unreachable",
+          "kind": "why",
+          "prompt": "Why do you remove unreachable states before minimizing?",
+          "answer": "- They never influence which words are accepted.\n- Leaving them in can make the result not minimal (they may not merge with anything).\n- Minimal DFA = no unreachable states and no two equivalent states."
+        }
+      ]
     },
     {
       "id": "pumping",
       "title": "Pumping lemma for regular languages",
       "notes": "Proof structure, typical mistakes when choosing w and the split.",
-      "status": "new"
+      "status": "new",
+      "questions": [
+        {
+          "id": "use",
+          "kind": "explain",
+          "prompt": "Explain how you use the pumping lemma to show that a language is not regular.",
+          "answer": "- Assume L is regular with pumping length p.\n- Choose a word w ∈ L with |w| ≥ p (cleverly, depending on p).\n- For **every** split w = xyz with |xy| ≤ p and |y| ≥ 1, find an i with xy^iz ∉ L.\n- Contradiction, so L is not regular.\n- Typical mistake: picking one specific split instead of covering all of them."
+        },
+        {
+          "id": "direction",
+          "kind": "what-if",
+          "prompt": "What if a language satisfies the pumping property: does that prove it is regular?",
+          "answer": "- No. The lemma is only a necessary condition.\n- Some non-regular languages can be pumped too.\n- To prove regularity, give a DFA, NFA or regex (or use closure properties)."
+        }
+      ]
     },
     {
       "id": "history-of-automata",
@@ -63,13 +155,42 @@
     }
   ],
   "schedule": [
-    { "kind": "lecture", "weekday": "mon", "start": "10:00", "end": "12:00", "location": "Main lecture hall" },
-    { "kind": "lecture", "weekday": "thu", "start": "10:00", "end": "12:00", "location": "Main lecture hall" },
-    { "kind": "tutorial", "weekday": "wed", "start": "14:00", "end": "16:00", "location": "Room 2.031", "notes": "group B" }
+    {
+      "kind": "lecture",
+      "weekday": "mon",
+      "start": "10:00",
+      "end": "12:00",
+      "location": "Main lecture hall"
+    },
+    {
+      "kind": "lecture",
+      "weekday": "thu",
+      "start": "10:00",
+      "end": "12:00",
+      "location": "Main lecture hall"
+    },
+    {
+      "kind": "tutorial",
+      "weekday": "wed",
+      "start": "14:00",
+      "end": "16:00",
+      "location": "Room 2.031",
+      "notes": "group B"
+    }
   ],
   "sheets": [
-    { "id": "b1", "label": "B1", "due": "2026-10-20", "status": "checked" },
-    { "id": "b2", "label": "B2", "due": "2026-10-27", "status": "done" },
+    {
+      "id": "b1",
+      "label": "B1",
+      "due": "2026-10-20",
+      "status": "checked"
+    },
+    {
+      "id": "b2",
+      "label": "B2",
+      "due": "2026-10-27",
+      "status": "done"
+    },
     {
       "id": "b3",
       "label": "B3",
@@ -98,8 +219,16 @@
     }
   ],
   "openItems": [
-    { "id": "slides-vl3", "text": "Slides for lecture 3 still missing on Moodle", "createdAt": "2026-10-15" },
-    { "id": "notes-vl2", "text": "Compare lecture 2 notes with the script", "createdAt": "2026-10-14" }
+    {
+      "id": "slides-vl3",
+      "text": "Slides for lecture 3 still missing on Moodle",
+      "createdAt": "2026-10-15"
+    },
+    {
+      "id": "notes-vl2",
+      "text": "Compare lecture 2 notes with the script",
+      "createdAt": "2026-10-14"
+    }
   ],
   "checks": [
     {
@@ -117,6 +246,12 @@
       "lastChecked": "2026-10-12",
       "everyDays": 14
     },
-    { "id": "notes", "kind": "notes", "label": "Own notes", "lastChecked": "2026-10-07", "everyDays": 7 }
+    {
+      "id": "notes",
+      "kind": "notes",
+      "label": "Own notes",
+      "lastChecked": "2026-10-07",
+      "everyDays": 7
+    }
   ]
 }

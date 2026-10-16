@@ -46,6 +46,16 @@ export interface Topic {
   due?: ISODate;
   intervalDays?: number;
   history?: Review[];
+  /** Prepared quiz questions; the app asks them without an AI. */
+  questions?: TopicQuestion[];
+}
+
+export interface TopicQuestion {
+  id: string;
+  prompt: string;
+  kind?: QuestionKind;
+  /** Key points of a good answer (Markdown), shown after answering. */
+  answer?: string;
 }
 
 export interface Sheet {
@@ -203,6 +213,8 @@ export interface SessionItem {
   kind?: QuestionKind | 'task' | 'drill';
   /** Drill id, for kind 'drill'. */
   drill?: string;
+  /** Id of the prepared topic question, for quizzes run in the app. */
+  question?: string;
   prompt: string;
   answer?: string;
   score?: Score;
@@ -224,6 +236,8 @@ export interface Session {
   startedAt: ISODateTime;
   finishedAt?: ISODateTime;
   applied?: boolean;
+  /** The answers wait for the AI to grade them later. */
+  gradeLater?: boolean;
   summary?: string;
   items: SessionItem[];
 }

@@ -800,3 +800,16 @@ button.study-go { padding: 10px 20px; font-size: 1rem; }
   100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(-1 * var(--d))) rotate(200deg) scale(1); }
 }
 .setup-hint { border-left: 4px solid var(--accent); }
+
+/* Quiz run in the app: compare and grade yourself */
+.pending-grades { margin-bottom: 14px; border-left: 4px solid var(--gold); }
+.key-points { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--c, var(--accent)) 8%, transparent); }
+.key-points > :last-child > :last-child { margin-bottom: 0; }
+.flip-face .answer { max-height: 9em; overflow: auto; }
+.rate { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+.rate button { flex: 1; padding: 6px 8px; font-weight: 600; }
+.rate button.rate-right.on { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+.rate button.rate-partly.on { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+.rate button.rate-wrong.on { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+.rate button.on { animation: pop 0.3s cubic-bezier(0.2, 1.5, 0.4, 1); }
+@keyframes pop { from { transform: scale(0.85); } }

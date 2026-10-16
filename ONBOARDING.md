@@ -95,7 +95,7 @@ and write `local/<pack>/SETUP.md` with one line per item, for example:
 - [ ] Theo: script / slides
 - [ ] …
 - [ ] Timetable (.ics export from the campus system)
-- [ ] Topics per subject from the scripts
+- [ ] Topics per subject from the scripts, with quiz questions
 - [ ] Dojos with drills for every procedure
 - [ ] Pack valid, app started with the pack and checked
 - [ ] First Study round done
@@ -318,6 +318,8 @@ CLAUDE.md, part A:
    the script or slides, one exam-relevant concept per topic. In `notes`,
    put scope, source (chapter, slide) and typical mistakes. Everything gets
    `status: "new"`. Anything that is only background gets `skip`.
+   Give every topic 2–4 prepared `questions` with key points in `answer`
+   (CLAUDE.md → Topics). The app runs quizzes with them on its own.
 4. **Compare with the notes:** whatever is in the person's own notes but not
    in the script (or the other way round) becomes an open task, e.g.
    "Notes lecture 3: BCNF example missing from the script". Missing slides or
@@ -396,6 +398,10 @@ Suggest this routine to the person and carry it out when they ask for it:
   files into `material/`, compare the script version, create new topics,
   add new exercise sheets with `file` and `tasks`, update the timetable if it
   changed, set `lastChecked`.
+- **"Grade my open quizzes"**: grade the quizzes the person saved with
+  "Let the AI grade later" (CLAUDE.md → Grading open quizzes).
+- **"More questions for <subject>"**: add new prepared questions to the
+  topics, especially `shaky` ones, then validate.
 - **"Check my sheet <n>"**: read `work/<subject>/<sheet>.json` against the
   tasks and give feedback per task (grading rules in CLAUDE.md), without
   changing the answers.
