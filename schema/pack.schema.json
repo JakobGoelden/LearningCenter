@@ -33,7 +33,7 @@
         },
         "skipWeekends": { "type": "boolean", "description": "Move reviews that fall on Saturday or Sunday to Monday. Default true." },
         "questionsPerQuiz": { "type": "integer", "minimum": 1, "maximum": 30, "description": "Default number of questions per quiz. Default 5." },
-        "language": { "type": "string", "description": "Language for AI questions and feedback, e.g. 'de' or 'en'. Default 'de'." }
+        "language": { "type": "string", "description": "Language for AI questions and feedback, e.g. 'en' or 'de'. Default 'en'." }
       }
     },
     "subjects": {

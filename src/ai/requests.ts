@@ -17,8 +17,8 @@ const TEMPLATES: Record<RequestKind, string> = {
   'dojo.solution': dojoSolution,
 };
 
-const LANGUAGES: Record<string, string> = { de: 'Deutsch', en: 'English' };
-export const LEVEL_LABEL: Record<Level, string> = { easy: 'leicht', medium: 'mittel', exam: 'Klausurniveau' };
+const LANGUAGES: Record<string, string> = { de: 'German (Deutsch)', en: 'English' };
+export const LEVEL_LABEL: Record<Level, string> = { easy: 'easy', medium: 'medium', exam: 'exam level' };
 
 /** Replaces {{name}} placeholders; unknown names are left as they are. */
 export function fill(template: string, vars: Record<string, string | number | undefined>): string {
@@ -57,22 +57,22 @@ export const RESPONSE_SCHEMAS: Record<RequestKind, Record<string, unknown>> = {
 };
 
 const EXAMPLES: Record<RequestKind, unknown> = {
-  'quiz.start': { questions: [{ topicId: '<topic id>', kind: 'why', prompt: 'Warum …?' }] },
+  'quiz.start': { questions: [{ topicId: '<topic id>', kind: 'why', prompt: 'Why …?' }] },
   'quiz.grade': {
-    grades: [{ n: 1, score: 3, feedback: 'Im Kern richtig, aber …', gaps: ['…'] }],
+    grades: [{ n: 1, score: 3, feedback: 'Mostly right, but …', gaps: ['…'] }],
     summary: '…',
   },
-  'dojo.task': { task: 'Markdown-Text der Aufgabe' },
+  'dojo.task': { task: 'Markdown text of the task' },
   'dojo.check': {
     check: {
       correct: false,
       score: 3,
-      steps: [{ label: 'Schritt 1', ok: true, comment: '' }],
+      steps: [{ label: 'Step 1', ok: true, comment: '' }],
       feedback: '…',
     },
   },
   'dojo.hint': { hint: '…' },
-  'dojo.solution': { solution: 'Markdown-Text der Musterlösung' },
+  'dojo.solution': { solution: 'Markdown text of the model solution' },
 };
 
 export function newRequestId(kind: RequestKind, subject: string): string {
@@ -94,16 +94,16 @@ interface BuildArgs {
 }
 
 function build(a: BuildArgs): AiRequest {
-  const language = a.pack.settings?.language ?? 'de';
+  const language = a.pack.settings?.language ?? 'en';
   const vars = { subject: a.subject.name, language: LANGUAGES[language] ?? language, ...a.vars };
   const id = newRequestId(a.kind, a.subject.id);
   const prompt = [
     fill(system, vars).trim(),
     fill(TEMPLATES[a.kind], vars).trim(),
-    '## Kontext',
+    '## Context',
     '```json\n' + JSON.stringify(a.context, null, 2) + '\n```',
-    '## Antwortformat',
-    'Antworte ausschließlich mit einem einzigen JSON-Objekt in genau dieser Form, ohne Text davor oder danach:',
+    '## Answer format',
+    'Reply with exactly one JSON object in exactly this shape, with no text before or after it:',
     '```json\n' + JSON.stringify(EXAMPLES[a.kind], null, 2) + '\n```',
   ].join('\n\n');
   return {
@@ -142,7 +142,7 @@ export function quizStartRequest(pack: Pack, subject: Subject, topics: Topic[], 
     subject,
     kind: 'quiz.start',
     sessionId,
-    summary: `Abfrage ${subject.name}: ${topics.length} Fragen erzeugen`,
+    summary: `Quiz ${subject.name}: generate ${topics.length} questions`,
     vars: { count: topics.length },
     context: { subject: examContext(subject), count: topics.length, topics: topics.map(topicContext) },
   });
@@ -155,7 +155,7 @@ export function quizGradeRequest(pack: Pack, subject: Subject, items: SessionIte
     subject,
     kind: 'quiz.grade',
     sessionId,
-    summary: `Abfrage ${subject.name}: ${items.length} Antworten bewerten`,
+    summary: `Quiz ${subject.name}: grade ${items.length} answers`,
     context: {
       subject: examContext(subject),
       questions: items.map((i) => ({
@@ -171,19 +171,19 @@ export function quizGradeRequest(pack: Pack, subject: Subject, items: SessionIte
 }
 
 function dojoVars(pack: Pack, subject: Subject, dojo: Dojo, level: Level) {
-  const language = pack.settings?.language ?? 'de';
+  const language = pack.settings?.language ?? 'en';
   const base = {
     level: `${level} (${LEVEL_LABEL[level]})`,
     procedure: dojo.procedure,
     subject: subject.name,
-    aids: dojo.aids?.length ? dojo.aids.join(', ') : 'keine besonderen',
+    aids: dojo.aids?.length ? dojo.aids.join(', ') : 'none in particular',
     language: LANGUAGES[language] ?? language,
   };
   return {
     ...base,
     dojo: dojo.title,
     template: fill(dojo.promptTemplate, base),
-    answerFormat: dojo.answerFormat ? `Gewünschtes Antwortformat für den Lernenden: ${dojo.answerFormat}` : '',
+    answerFormat: dojo.answerFormat ? `Answer format expected from the learner: ${dojo.answerFormat}` : '',
   };
 }
 
@@ -199,7 +199,7 @@ export function dojoTaskRequest(a: DojoArgs): AiRequest {
   return build({
     ...a,
     kind: 'dojo.task',
-    summary: `Dojo ${a.dojo.title}: Aufgabe (${LEVEL_LABEL[a.level]}) erzeugen`,
+    summary: `Dojo ${a.dojo.title}: generate task (${LEVEL_LABEL[a.level]})`,
     vars: dojoVars(a.pack, a.subject, a.dojo, a.level),
     context: { subject: examContext(a.subject), dojo: a.dojo.title, procedure: a.dojo.procedure, level: a.level },
   });
@@ -209,7 +209,7 @@ export function dojoCheckRequest(a: DojoArgs & { task: string; answer: string; h
   return build({
     ...a,
     kind: 'dojo.check',
-    summary: `Dojo ${a.dojo.title}: Lösung prüfen`,
+    summary: `Dojo ${a.dojo.title}: check solution`,
     vars: dojoVars(a.pack, a.subject, a.dojo, a.level),
     context: { procedure: a.dojo.procedure, level: a.level, task: a.task, answer: a.answer, hintsUsed: a.hintsUsed },
   });
@@ -219,7 +219,7 @@ export function dojoHintRequest(a: DojoArgs & { task: string; answer: string; pr
   return build({
     ...a,
     kind: 'dojo.hint',
-    summary: `Dojo ${a.dojo.title}: Tipp`,
+    summary: `Dojo ${a.dojo.title}: hint`,
     vars: dojoVars(a.pack, a.subject, a.dojo, a.level),
     context: { procedure: a.dojo.procedure, task: a.task, answer: a.answer, previousHints: a.previousHints },
   });
@@ -229,7 +229,7 @@ export function dojoSolutionRequest(a: DojoArgs & { task: string }): AiRequest {
   return build({
     ...a,
     kind: 'dojo.solution',
-    summary: `Dojo ${a.dojo.title}: Musterlösung`,
+    summary: `Dojo ${a.dojo.title}: model solution`,
     vars: dojoVars(a.pack, a.subject, a.dojo, a.level),
     context: { procedure: a.dojo.procedure, level: a.level, task: a.task },
   });

@@ -24,7 +24,7 @@ export function SettingsView() {
       .map(Number)
       .filter((n) => Number.isInteger(n) && n > 0);
     if (values.length < 2) {
-      setNotice('Die Leiter braucht mindestens zwei Abstände in Tagen, z.B. 1, 3, 7, 14.');
+      setNotice('The ladder needs at least two intervals in days, e.g. 1, 3, 7, 14.');
       return;
     }
     void savePackSettings({ reviewLadder: [...new Set(values)].sort((a, b) => a - b) });
@@ -33,13 +33,13 @@ export function SettingsView() {
   const importInto = async () => {
     const text = await pickTextFile();
     if (!text) return;
-    if (!confirm(`Dateien aus dem Import überschreiben gleichnamige Dateien in „${fs.label}“. Fortfahren?`)) return;
+    if (!confirm(`Imported files overwrite files with the same name in "${fs.label}". Continue?`)) return;
     try {
       await importBundle(fs, JSON.parse(text));
       await reload();
-      setNotice('Import abgeschlossen.');
+      setNotice('Import finished.');
     } catch (e) {
-      setNotice(`Import fehlgeschlagen: ${(e as Error).message}`);
+      setNotice(`Import failed: ${(e as Error).message}`);
     }
   };
 
@@ -47,11 +47,11 @@ export function SettingsView() {
     <div class="stack">
       <div class="page-head">
         <a href={href({ name: 'dashboard' })}>← Dashboard</a>
-        <h1>Einstellungen</h1>
+        <h1>Settings</h1>
       </div>
 
       <section class="panel stack">
-        <h2>KI-Anbindung</h2>
+        <h2>AI connection</h2>
         {ADAPTERS.map((a) => (
           <label class="row" style="align-items:flex-start;gap:10px">
             <input type="radio" name="adapter" checked={ai.adapter === a.id} onChange={() => set({ adapter: a.id })} />
@@ -60,7 +60,7 @@ export function SettingsView() {
               <div class="small muted">{a.description}</div>
               {a.id === 'file-bridge' && !fs.sharedWithAi && (
                 <div class="small" style="color:var(--warn)">
-                  Das aktuelle Pack liegt im Browser. Für die Datei-Brücke einen Pack-Ordner öffnen.
+                  The current pack lives in the browser. Open a pack folder to use the file bridge.
                 </div>
               )}
             </span>
@@ -70,7 +70,7 @@ export function SettingsView() {
         {ai.adapter === 'api' && (
           <div class="stack" style="border-top:1px solid var(--border);padding-top:12px">
             <label class="field">
-              <span>Anbieter</span>
+              <span>Provider</span>
               <select
                 value={ai.provider}
                 onChange={(e) => {
@@ -79,29 +79,29 @@ export function SettingsView() {
                 }}
               >
                 <option value="anthropic">Anthropic (Claude)</option>
-                <option value="openai-compatible">OpenAI-kompatibel (OpenAI, OpenRouter, Ollama, …)</option>
+                <option value="openai-compatible">OpenAI-compatible (OpenAI, OpenRouter, Ollama, …)</option>
               </select>
             </label>
             {ai.provider === 'openai-compatible' && (
               <label class="field">
-                <span>Basis-URL</span>
+                <span>Base URL</span>
                 <input value={ai.baseUrl} onChange={(e) => set({ baseUrl: e.currentTarget.value })} placeholder="https://api.openai.com/v1" />
               </label>
             )}
             <label class="field">
-              <span>API-Schlüssel</span>
+              <span>API key</span>
               <input type="password" autoComplete="off" value={ai.apiKey} onChange={(e) => set({ apiKey: e.currentTarget.value.trim() })} />
               <span class="small">
-                Wird nur in diesem Browser gespeichert (localStorage), nie im Pack und nie im Export.
+                Stored only in this browser (localStorage), never in the pack or an export.
               </span>
             </label>
             <label class="field">
-              <span>Modell</span>
+              <span>Model</span>
               <input value={ai.model} onChange={(e) => set({ model: e.currentTarget.value.trim() })} />
             </label>
             {ai.provider === 'anthropic' && (
               <label class="field">
-                <span>Denktiefe (effort)</span>
+                <span>Effort</span>
                 <select value={ai.effort} onChange={(e) => set({ effort: e.currentTarget.value as Effort })}>
                   {EFFORTS.map((x) => (
                     <option value={x}>{x}</option>
@@ -114,29 +114,29 @@ export function SettingsView() {
 
         {ai.adapter === 'file-bridge' && (
           <label class="field" style="max-width:240px">
-            <span>Inbox prüfen alle … Sekunden</span>
+            <span>Check the outbox every … seconds</span>
             <input type="number" min={1} max={60} value={ai.pollSeconds} onChange={(e) => set({ pollSeconds: Math.max(1, Number(e.currentTarget.value) || 2) })} />
           </label>
         )}
       </section>
 
       <section class="panel stack">
-        <h2>Lernplan</h2>
+        <h2>Study plan</h2>
         <label class="field">
-          <span>Abstände in Tagen (Spaced Repetition)</span>
+          <span>Review intervals in days (spaced repetition)</span>
           <div class="row">
             <input value={ladder} onInput={(e) => setLadder(e.currentTarget.value)} style="flex:1" />
-            <button onClick={saveLadder}>Speichern</button>
+            <button onClick={saveLadder}>Save</button>
           </div>
-          <span class="small">Gut beantwortete Themen gehen eine Stufe weiter, unsichere bleiben bei den ersten Stufen.</span>
+          <span class="small">Topics you answer well move one step up; shaky ones stay on the first steps.</span>
         </label>
         <label class="row">
           <input type="checkbox" checked={settings.skipWeekends ?? true} onChange={(e) => savePackSettings({ skipWeekends: e.currentTarget.checked })} />
-          Keine Abfragen am Wochenende (auf Montag schieben)
+          No reviews on weekends (move them to Monday)
         </label>
         <div class="row">
           <label class="field">
-            <span>Fragen pro Abfrage</span>
+            <span>Questions per quiz</span>
             <input
               type="number"
               min={1}
@@ -146,26 +146,26 @@ export function SettingsView() {
             />
           </label>
           <label class="field">
-            <span>Sprache der KI</span>
-            <select value={settings.language ?? 'de'} onChange={(e) => savePackSettings({ language: e.currentTarget.value })}>
-              <option value="de">Deutsch</option>
+            <span>AI language</span>
+            <select value={settings.language ?? 'en'} onChange={(e) => savePackSettings({ language: e.currentTarget.value })}>
               <option value="en">English</option>
+              <option value="de">Deutsch</option>
             </select>
           </label>
         </div>
       </section>
 
       <section class="panel stack">
-        <h2>Daten</h2>
+        <h2>Data</h2>
         <div class="small muted">
-          Gespeichert in: {fs.kind === 'browser' ? 'diesem Browser (IndexedDB)' : `Ordner „${fs.label}“`}.
+          Stored in: {fs.kind === 'browser' ? 'this browser (IndexedDB)' : `folder "${fs.label}"`}.
         </div>
         <div class="row">
           <button onClick={async () => downloadText(`${loaded.pack.id}-${today()}.pack.json`, toJson(await exportBundle(fs)))}>
-            Als Datei exportieren
+            Export as file
           </button>
-          <button onClick={importInto}>Datei importieren …</button>
-          <button onClick={() => reload().then(() => setNotice('Neu geladen.'))}>Neu laden</button>
+          <button onClick={importInto}>Import file …</button>
+          <button onClick={() => reload().then(() => setNotice('Reloaded.'))}>Reload</button>
         </div>
       </section>
     </div>

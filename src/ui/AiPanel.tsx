@@ -17,7 +17,7 @@ interface Pending {
 
 export class Cancelled extends Error {
   constructor() {
-    super('Abgebrochen');
+    super('Cancelled');
     this.name = 'Cancelled';
   }
 }
@@ -103,7 +103,7 @@ function AiPanel(props: { pending: Pending; switchMode(m: AdapterId): void; brid
       await navigator.clipboard.writeText(copyPromptText(req));
       setCopied(true);
     } catch {
-      setError('Kopieren nicht erlaubt. Markiere den Text und kopiere ihn von Hand.');
+      setError('Copying is not allowed here. Select the text and copy it by hand.');
     }
   };
 
@@ -112,26 +112,26 @@ function AiPanel(props: { pending: Pending; switchMode(m: AdapterId): void; brid
       <div class="row">
         <strong style="flex:1">{req.summary}</strong>
         <button class="small ghost" onClick={cancel}>
-          Abbrechen
+          Cancel
         </button>
       </div>
 
       {mode === 'file-bridge' && (
         <div class="stack small">
           <div class="row">
-            <span class="spinner" /> Warte auf Claude Code …
+            <span class="spinner" /> Waiting for Claude Code …
           </div>
           <div>
-            Die Anfrage liegt in <code>{`${INBOX}/${req.id}.json`}</code>. Starte im Pack-Ordner{' '}
-            <code>claude "Arbeite die Inbox ab"</code>. Die Antwort erscheint hier, sobald{' '}
-            <code>{`${OUTBOX}/${req.id}.json`}</code> existiert.
+            The request is in <code>{`${INBOX}/${req.id}.json`}</code>. In the pack folder, run{' '}
+            <code>claude "Process the inbox"</code>. The answer shows up here as soon as{' '}
+            <code>{`${OUTBOX}/${req.id}.json`}</code> exists.
           </div>
         </div>
       )}
 
       {mode === 'api' && (
         <div class="row small">
-          <span class="spinner" /> Frage {ai.provider === 'anthropic' ? 'Claude' : ai.model} …
+          <span class="spinner" /> Asking {ai.provider === 'anthropic' ? 'Claude' : ai.model} …
         </div>
       )}
 
@@ -139,18 +139,18 @@ function AiPanel(props: { pending: Pending; switchMode(m: AdapterId): void; brid
         <div class="stack">
           {props.bridgeUnavailable && (
             <div class="small muted">
-              Die Datei-Brücke braucht einen geöffneten Pack-Ordner. Bis dahin geht es per Copy-Prompt.
+              The file bridge needs an open pack folder. Until then, use copy-prompt.
             </div>
           )}
           <div class="row small">
-            <span>1. Prompt kopieren und in einen KI-Chat einfügen:</span>
+            <span>1. Copy the prompt and paste it into an AI chat:</span>
             <button class="small primary" onClick={copy}>
-              {copied ? 'Kopiert ✓' : 'Prompt kopieren'}
+              {copied ? 'Copied ✓' : 'Copy prompt'}
             </button>
           </div>
           <textarea class="mono" readOnly value={req.prompt} style="min-height:100px" aria-label="Prompt" />
-          <span class="small">2. Die Antwort der KI (das JSON) hier einfügen:</span>
-          <textarea class="mono" value={pasted} onInput={(e) => setPasted(e.currentTarget.value)} aria-label="Antwort der KI" />
+          <span class="small">2. Paste the AI's answer (the JSON) here:</span>
+          <textarea class="mono" value={pasted} onInput={(e) => setPasted(e.currentTarget.value)} aria-label="AI answer" />
           <div class="row">
             <button
               class="primary"
@@ -163,7 +163,7 @@ function AiPanel(props: { pending: Pending; switchMode(m: AdapterId): void; brid
                 }
               }}
             >
-              Antwort übernehmen
+              Use answer
             </button>
           </div>
         </div>
@@ -175,17 +175,17 @@ function AiPanel(props: { pending: Pending; switchMode(m: AdapterId): void; brid
           <div class="row">
             {mode !== 'copy-prompt' && (
               <button class="small" onClick={() => setAttempt((n) => n + 1)}>
-                Nochmal
+                Retry
               </button>
             )}
             {mode !== 'copy-prompt' && (
               <button class="small" onClick={() => props.switchMode('copy-prompt')}>
-                Stattdessen Copy-Prompt
+                Use copy-prompt instead
               </button>
             )}
             {mode === 'api' && (
               <a class="btn small" href={href({ name: 'settings' })}>
-                Einstellungen
+                Settings
               </a>
             )}
           </div>

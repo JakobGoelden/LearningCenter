@@ -44,20 +44,21 @@ export function isISODate(s: unknown): s is ISODate {
   return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
 }
 
-const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-/** "Mo 19.10." */
+/** "Mon 19 Oct" */
 export function formatShort(date: ISODate): string {
-  const [, m, d] = date.split('-');
-  return `${WEEKDAYS[weekday(date)]} ${d}.${m}.`;
+  const [, m, d] = date.split('-').map(Number);
+  return `${WEEKDAYS[weekday(date)]} ${d} ${MONTHS[m - 1]}`;
 }
 
-/** "heute", "morgen", "in 5 Tagen", "vor 2 Tagen" */
+/** "today", "tomorrow", "in 5 days", "2 days ago" */
 export function relative(date: ISODate, ref: ISODate = today()): string {
   const n = diffDays(ref, date);
-  if (n === 0) return 'heute';
-  if (n === 1) return 'morgen';
-  if (n === -1) return 'gestern';
-  if (n > 0) return `in ${n} Tagen`;
-  return `vor ${-n} Tagen`;
+  if (n === 0) return 'today';
+  if (n === 1) return 'tomorrow';
+  if (n === -1) return 'yesterday';
+  if (n > 0) return `in ${n} days`;
+  return `${-n} days ago`;
 }

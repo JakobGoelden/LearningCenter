@@ -19,7 +19,7 @@ describe('ai requests', () => {
     const theo = subjects[0];
     const quiz = quizStartRequest(pack, theo, theo.topics.slice(0, 3), 's1');
     expect(check('request', quiz)).toBeNull();
-    expect(quiz.prompt).toContain('genau 3 Verständnisfragen');
+    expect(quiz.prompt).toContain('exactly 3 comprehension questions');
     expect(quiz.prompt).toContain('Theoretische Informatik');
 
     const task = dojoTaskRequest({ pack, subject: theo, dojo: dojos[0], level: 'exam', sessionId: 's2' });

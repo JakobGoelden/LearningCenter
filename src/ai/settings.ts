@@ -51,18 +51,18 @@ export function saveAiSettings(s: AiSettings) {
 export const ADAPTERS: { id: AdapterId; label: string; description: string }[] = [
   {
     id: 'file-bridge',
-    label: 'Datei-Brücke (Claude Code)',
+    label: 'File bridge (Claude Code)',
     description:
-      'Schreibt die Anfrage nach inbox/. Claude Code (oder eine andere lokale KI) beantwortet sie in outbox/. Braucht einen geöffneten Pack-Ordner.',
+      'Writes the request to inbox/. Claude Code (or another local AI) answers it in outbox/. Needs an open pack folder.',
   },
   {
     id: 'api',
     label: 'API',
-    description: 'Fragt direkt mit deinem eigenen API-Schlüssel. Der Schlüssel bleibt in diesem Browser.',
+    description: 'Asks directly with your own API key. The key stays in this browser.',
   },
   {
     id: 'copy-prompt',
     label: 'Copy-Prompt',
-    description: 'Erzeugt einen fertigen Prompt für jeden KI-Chat. Die Antwort fügst du wieder ein.',
+    description: 'Builds a ready-made prompt for any AI chat. You paste the answer back.',
   },
 ];

@@ -12,11 +12,11 @@ export function toJson(value: unknown): string {
 
 async function readJson(fs: PackFs, path: string): Promise<unknown> {
   const text = await fs.read(path);
-  if (text === null) throw new Error(`${path} fehlt.`);
+  if (text === null) throw new Error(`${path} is missing.`);
   try {
     return JSON.parse(text);
   } catch (e) {
-    throw new Error(`${path} ist kein gültiges JSON: ${(e as Error).message}`);
+    throw new Error(`${path} is not valid JSON: ${(e as Error).message}`);
   }
 }
 
@@ -119,7 +119,7 @@ export async function exportBundle(fs: PackFs): Promise<Bundle> {
 /** Writes all files of a bundle into `fs`, after validating the manifest. */
 export async function importBundle(fs: PackFs, data: unknown): Promise<void> {
   const bundle = assertValid('bundle', data, 'Bundle');
-  if (!bundle.files['pack.json']) throw new Error('Bundle enthält keine pack.json.');
+  if (!bundle.files['pack.json']) throw new Error('Bundle contains no pack.json.');
   for (const [path, text] of Object.entries(bundle.files)) await fs.write(path, text);
 }
 
