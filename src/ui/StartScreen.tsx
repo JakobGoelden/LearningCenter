@@ -42,7 +42,8 @@ export function StartScreen(props: { options: StartupOptions; onOpen(fs: PackFs)
         <div class="panel stack setup-hint">
           <strong>New here? Let an AI set you up.</strong>
           <span class="small">
-            Open this folder in Claude Code (or another AI tool) and say <em>"Set me up."</em> It gets your scripts, timetable,
+            Stop this and run <code>npm start</code> in the folder: Claude Code opens with the setup already running (in another AI
+            tool, just open the folder and write anything). It gets your scripts, timetable,
             exercise sheets and notes in together with you, builds topics and dojos from them, and starts the app with your own
             pack.
           </span>

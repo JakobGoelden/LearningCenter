@@ -19,7 +19,7 @@ const TEMPLATES: Record<RequestKind, string> = {
   'dojo.drills': dojoDrills,
 };
 
-const LANGUAGES: Record<string, string> = { de: 'German (Deutsch)', en: 'English' };
+export const LANGUAGES: Record<string, string> = { de: 'German (Deutsch)', en: 'English' };
 export const LEVEL_LABEL: Record<Level, string> = { easy: 'easy', medium: 'medium', exam: 'exam level' };
 
 /** Replaces {{name}} placeholders; unknown names are left as they are. */

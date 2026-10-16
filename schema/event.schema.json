@@ -10,7 +10,7 @@
     "ts": { "$ref": "common.schema.json#/$defs/dateTime" },
     "type": {
       "type": "string",
-      "description": "Dotted name, e.g. sheet.status, topic.status, topic.due, topic.review, openItem.done, check.done, quiz.start, quiz.answer, quiz.graded, quiz.gradeLater, quiz.applied, dojo.task, dojo.answer, dojo.check, dojo.hint, dojo.solution, ai.request, ai.response, pack.import."
+      "description": "Dotted name, e.g. sheet.status, topic.status, topic.due, topic.review, openItem.done, check.done, quiz.start, quiz.answer, quiz.graded, quiz.gradeLater, quiz.applied, dojo.task, dojo.drill.start, dojo.drill.round, dojo.applied, ai.sync (the AI processed all results before it), dojo.answer, dojo.check, dojo.hint, dojo.solution, ai.request, ai.response, pack.import."
     },
     "actor": { "enum": ["user", "ai", "app"] },
     "subject": { "$ref": "common.schema.json#/$defs/id" },

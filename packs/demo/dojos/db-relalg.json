@@ -9,6 +9,7 @@
   "topics": ["relational-algebra"],
   "promptTemplate": "Give a schema with 2–3 relations and a question. easy: selection and projection. medium: join and renaming. exam: difference or division. Notation: σ, π, ⋈, ρ, ∪, −, ÷ (ASCII stand-ins sigma, pi, join, rho, union, minus, div are fine). When checking: operator by operator from the inside out, checking attribute names and the schemas of intermediate results.",
   "answerFormat": "One expression, intermediate steps welcome.",
+  "symbols": ["relational-algebra"],
   "drills": [
     {
       "id": "selection",

@@ -5,6 +5,9 @@ import { mastery, studyPlan, type StudyBlock } from '../scheduling/scheduler';
 import type { ISODate, Topic } from '../model/types';
 import { QuizView } from './QuizView';
 import { href, navigate } from './router';
+import { Stepper } from './Stepper';
+import { ChatStart } from './ChatStart';
+import { quizChatPrompt } from '../ai/chat';
 
 /** Why a topic made it into today's study round, as short chips. */
 function reasons(t: Topic, on: ISODate, exam?: ISODate): string[] {
@@ -23,7 +26,7 @@ function reasons(t: Topic, on: ISODate, exam?: ISODate): string[] {
  * quizzed subject by subject.
  */
 export function StudyView() {
-  const { loaded } = usePack();
+  const { fs, loaded } = usePack();
   const on = today();
   const [count, setCount] = useState(loaded.pack.settings?.questionsPerQuiz ?? 5);
   // The plan is fixed once the round starts, so saving progress does not reshuffle it.
@@ -99,17 +102,8 @@ export function StudyView() {
           <div class="row">
             <span class="muted">Picked for you: due topics first, weak ones and upcoming exams weigh more.</span>
             <span class="spacer" style="flex:1" />
-            <label class="row small">
-              Questions
-              <input
-                type="number"
-                min={1}
-                max={30}
-                value={count}
-                style="width:64px"
-                onInput={(e) => setCount(Math.max(1, Math.min(30, Number(e.currentTarget.value) || 1)))}
-              />
-            </label>
+            <span class="small">Questions</span>
+            <Stepper value={count} onChange={setCount} min={1} max={30} label="Questions" />
           </div>
           {preview.map((b) => (
             <div class="study-block" style={{ '--c': b.subject.color }}>
@@ -128,7 +122,7 @@ export function StudyView() {
               </ul>
             </div>
           ))}
-          <div>
+          <div class="start-row">
             <button
               class="primary study-go"
               onClick={() => {
@@ -136,8 +130,9 @@ export function StudyView() {
                 setStep(0);
               }}
             >
-              Start studying · {total} {total === 1 ? 'question' : 'questions'}
+              Start here · {total} {total === 1 ? 'question' : 'questions'}
             </button>
+            <ChatStart prompt={() => quizChatPrompt({ fs, pack: loaded.pack, blocks: preview })} />
           </div>
         </div>
       )}
@@ -147,24 +142,29 @@ export function StudyView() {
 
 /** Dashboard call to action: how much is waiting, one click to start. */
 export function StudyCta() {
-  const { loaded } = usePack();
+  const { fs, loaded } = usePack();
   const on = today();
   const plan = useMemo(() => studyPlan(loaded.subjects, on, loaded.pack.settings?.questionsPerQuiz ?? 5), [loaded, on]);
   const due = loaded.subjects.reduce((n, s) => n + s.topics.filter((t) => t.status !== 'skip' && t.due && t.due <= on).length, 0);
   const first = plan[0];
   return (
-    <button class={`study-cta${plan.length ? '' : ' calm'}`} onClick={() => navigate({ name: 'study' })}>
-      <span class="study-cta-play" aria-hidden="true">
-        ▶
-      </span>
-      <span class="study-cta-text">
-        <strong>Study</strong>
-        <span class="small">
-          {plan.length
-            ? `${due ? `${due} ${due === 1 ? 'review' : 'reviews'} due` : 'Nothing due, new and shaky topics waiting'}${first ? ` · ${first.subject.name} first` : ''}`
-            : 'All caught up'}
+    <div class="study-cta-row">
+      <button class={`study-cta${plan.length ? '' : ' calm'}`} onClick={() => navigate({ name: 'study' })}>
+        <span class="study-cta-play" aria-hidden="true">
+          ▶
         </span>
-      </span>
-    </button>
+        <span class="study-cta-text">
+          <strong>Study</strong>
+          <span class="small">
+            {plan.length
+              ? `${due ? `${due} ${due === 1 ? 'review' : 'reviews'} due` : 'Nothing due, new and shaky topics waiting'}${first ? ` · ${first.subject.name} first` : ''}`
+              : 'All caught up'}
+          </span>
+        </span>
+      </button>
+      {plan.length > 0 && (
+        <ChatStart class="study-cta-chat" label="Study in chat" prompt={() => quizChatPrompt({ fs, pack: loaded.pack, blocks: plan })} />
+      )}
+    </div>
   );
 }

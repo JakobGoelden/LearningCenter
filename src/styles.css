@@ -802,7 +802,6 @@ button.study-go { padding: 10px 20px; font-size: 1rem; }
 .setup-hint { border-left: 4px solid var(--accent); }
 
 /* Quiz run in the app: compare and grade yourself */
-.pending-grades { margin-bottom: 14px; border-left: 4px solid var(--gold); }
 .key-points { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--c, var(--accent)) 8%, transparent); }
 .key-points > :last-child > :last-child { margin-bottom: 0; }
 .flip-face .answer { max-height: 9em; overflow: auto; }
@@ -813,3 +812,110 @@ button.study-go { padding: 10px 20px; font-size: 1rem; }
 .rate button.rate-wrong.on { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
 .rate button.on { animation: pop 0.3s cubic-bezier(0.2, 1.5, 0.4, 1); }
 @keyframes pop { from { transform: scale(0.85); } }
+
+/* Number stepper instead of the browser's spin arrows */
+.stepper { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel); box-shadow: var(--shadow); }
+.stepper-btn {
+  width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; font-size: 1.15rem; font-weight: 700; line-height: 1;
+  display: grid; place-items: center; background: transparent; touch-action: manipulation; user-select: none;
+  transition: background 0.15s, transform 0.12s;
+}
+.stepper-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.stepper-btn:active:not(:disabled) { transform: scale(0.88); }
+.stepper-btn:disabled { opacity: 0.3; }
+.stepper-value { min-width: 2.4em; text-align: center; font-variant-numeric: tabular-nums; border-radius: 8px; outline-offset: 2px; display: inline-flex; align-items: baseline; justify-content: center; gap: 1px; }
+.stepper-value b { display: inline-block; font-size: 1.05rem; font-weight: 800; animation: tick 0.22s cubic-bezier(0.2, 1.6, 0.4, 1); }
+.stepper-value small { color: var(--muted); font-size: 0.75rem; }
+.field .stepper { align-self: flex-start; }
+@keyframes tick { from { transform: translateY(-6px) scale(1.25); opacity: 0.4; } }
+
+/* Order drills: drag and drop */
+.order-list li { padding: 8px 10px; background: var(--panel); user-select: none; }
+.order-list.sortable li { cursor: grab; touch-action: none; transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s, border-color 0.2s; }
+.order-list.sortable li:hover { border-color: color-mix(in srgb, var(--vermilion) 45%, var(--border)); }
+.order-list.sortable li:focus-visible { outline: 2px solid var(--vermilion); outline-offset: 1px; }
+.order-list li.dragging { cursor: grabbing; transition: box-shadow 0.2s; z-index: 2; position: relative; box-shadow: 0 14px 30px -10px rgb(0 0 0 / 0.35); border-color: var(--vermilion); scale: 1.02; }
+.order-list.settling li { transition: none; }
+.order-list li.dropped { animation: drop-in 0.3s cubic-bezier(0.2, 1.5, 0.4, 1); }
+.order-list .grip { color: var(--muted); font-size: 1rem; line-height: 1; }
+.order-list .order-num { color: var(--muted); min-width: 1.6em; }
+.order-list li.right { background: var(--ok-bg); }
+.order-list li.wrong { background: var(--danger-bg); }
+@keyframes drop-in { from { scale: 1.04; } }
+
+/* Dojo points: counter, combo, hit effects */
+.score-counter { position: relative; display: inline-flex; align-items: baseline; gap: 3px; padding: 3px 10px; border-radius: 999px; background: var(--ink); color: #fff; font-variant-numeric: tabular-nums; }
+.score-counter .count-up { font-weight: 900; font-size: 1rem; display: inline-block; }
+.score-counter .count-up.counting { color: var(--gold); }
+.score-counter small { font-size: 0.7rem; opacity: 0.7; }
+.points-pop { position: absolute; right: 4px; top: -4px; font-weight: 900; color: var(--gold); text-shadow: 0 1px 0 rgb(0 0 0 / 0.3); pointer-events: none; animation: float-up 1.1s ease-out forwards; }
+@keyframes float-up { from { transform: translateY(0) scale(0.8); opacity: 0; } 15% { opacity: 1; transform: translateY(-6px) scale(1.15); } to { transform: translateY(-30px) scale(1); opacity: 0; } }
+.combo { display: inline-flex; align-items: center; gap: 3px; padding: 2px 9px 2px 6px; border-radius: 999px; font-weight: 800; background: var(--warn-bg); color: var(--warn); animation: pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1); }
+.combo b { margin-left: 2px; }
+.combo.warm { background: linear-gradient(135deg, var(--gold), var(--vermilion)); color: #fff; }
+.combo.hot { background: linear-gradient(135deg, var(--vermilion), #c2255c); color: #fff; box-shadow: 0 0 0 0 var(--vermilion); animation: pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1), glow 1.2s ease-in-out infinite; }
+.combo-flame { display: inline-block; animation: flicker 0.6s ease-in-out infinite alternate; transform-origin: 50% 90%; }
+@keyframes flicker { from { transform: scale(1) rotate(-4deg); } to { transform: scale(1.18) rotate(4deg); } }
+@keyframes glow { 50% { box-shadow: 0 0 14px 2px color-mix(in srgb, var(--vermilion) 60%, transparent); } }
+.dojo-mat.hit-ok { animation: hit-ok 0.6s ease-out; }
+.dojo-mat.hit-partly { animation: hit-partly 0.6s ease-out; }
+.dojo-mat.hit-wrong { animation: shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@keyframes hit-ok { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 70%, transparent), var(--shadow); } 100% { box-shadow: 0 0 0 18px transparent, var(--shadow); } }
+@keyframes hit-partly { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--warn) 60%, transparent), var(--shadow); } 100% { box-shadow: 0 0 0 14px transparent, var(--shadow); } }
+@keyframes shake { 15%, 85% { transform: translateX(-2px); } 30%, 70% { transform: translateX(5px); } 45% { transform: translateX(-7px); } 60% { transform: translateX(7px); } }
+.pts-breakdown { display: grid; justify-items: end; line-height: 1.15; flex: none; margin-left: auto; }
+.pts-breakdown b { font-size: 1.25rem; font-weight: 900; animation: pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1); }
+.pts-breakdown small { font-size: 0.72rem; opacity: 0.8; }
+.round-points { display: grid; justify-items: center; gap: 2px; min-width: 110px; position: relative; }
+.round-points .count-up { font-size: 2.6rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1; background: linear-gradient(135deg, var(--gold), var(--vermilion)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.round-points-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+.record-badge { position: relative; padding: 2px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--vermilion), #c2255c); animation: stamp-flat 0.5s 0.9s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+@keyframes stamp-flat { from { transform: scale(2); opacity: 0; } }
+.round-pts { margin-left: auto; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Formula symbol buttons */
+.symbol-bar { display: flex; flex-wrap: wrap; gap: 4px; }
+.symbol-key {
+  min-width: 34px; height: 34px; padding: 0 8px; border-radius: 8px; font-size: 1.05rem; line-height: 1;
+  font-family: 'Cambria Math', 'STIX Two Math', 'Latin Modern Math', 'Times New Roman', serif;
+  background: var(--panel); border: 1px solid var(--border); border-bottom-width: 3px; touch-action: manipulation;
+  transition: transform 0.1s, border-color 0.15s, background 0.15s;
+}
+.symbol-key:hover { border-color: color-mix(in srgb, var(--vermilion) 50%, var(--border)); background: color-mix(in srgb, var(--vermilion) 6%, var(--panel)); }
+.symbol-key:active { transform: translateY(2px); border-bottom-width: 1px; }
+
+/* Start here / Start in chat */
+.start-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chat-start { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chat-start-btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.12s; }
+.chat-start-btn:active { transform: scale(0.96); }
+.chat-start-btn.done { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); animation: pop 0.3s cubic-bezier(0.2, 1.5, 0.4, 1); }
+.chat-start-hint { animation: rise 0.25s ease-out; }
+.chat-start-manual { flex-basis: 100%; }
+.chat-start-manual textarea { min-height: 120px; font-size: 0.8rem; }
+.study-cta-row { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; margin-bottom: 14px; }
+.study-cta-row .study-cta { flex: 1 1 320px; margin-bottom: 0; }
+.study-cta-row .chat-start { flex: 0 1 auto; }
+.study-cta-row .chat-start-btn { height: 100%; padding: 10px 18px; border-radius: var(--radius); }
+
+/* Results waiting for the AI */
+.pending-results { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; border-left: 4px solid var(--gold); animation: rise 0.3s ease-out; }
+.pending-results-text { flex: 1 1 260px; display: grid; gap: 2px; }
+.pending-results-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gold); position: relative; flex: none; }
+.pending-results-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--gold); animation: ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite; }
+
+/* End of a quiz: check yourself or in the chat */
+.check-choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; animation: rise 0.3s ease-out; }
+.check-option {
+  display: grid; justify-items: start; gap: 4px; padding: 18px; text-align: left; border-radius: var(--radius);
+  background: var(--panel); border: 1px solid var(--border); box-shadow: var(--shadow); white-space: normal;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s, border-color 0.18s;
+}
+.check-option:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); border-color: var(--c, var(--accent)); }
+.check-option:active { transform: translateY(0) scale(0.98); }
+.check-option strong { font-size: 1.1rem; }
+.check-option-icon { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-size: 1.15rem; font-weight: 800; color: #fff; background: var(--ok); }
+.check-option.chat .check-option-icon { background: linear-gradient(135deg, var(--accent), #8b5cf6); }
+.check-ai-now { grid-column: 1 / -1; justify-self: start; }
+button.link { padding: 0; border: 0; background: none; box-shadow: none; color: var(--accent); text-decoration: underline; font: inherit; cursor: pointer; }
+.round-list li { grid-template-columns: 22px 1fr auto; }
