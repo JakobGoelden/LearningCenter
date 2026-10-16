@@ -1,9 +1,24 @@
 # CLAUDE.md
 
 Guide for AI assistants (Claude Code, Codex, Cursor, …) in this repo.
-**Setting up a new person?** Then start with [ONBOARDING.md](ONBOARDING.md)
-(installation, finding sources like Moodle and reMarkable, creating a pack,
-starting the app).
+
+## Start here, in every new conversation
+
+Before you answer anything else, check whether the person already has a
+personal pack: `ls local/*/pack.json`.
+
+- **No pack yet:** the person is new. Do **not** just start the demo, explain
+  the repo or wait for instructions. Greet them in one or two sentences,
+  say what you are going to do together, and start the guided setup in
+  [ONBOARDING.md](ONBOARDING.md) right away, even if they only said "hi",
+  "what is this?" or "start the app". You lead: get their scripts, their
+  timetable, their exercise sheets and notes into a pack together with them,
+  then build topics and dojos from that material. `packs/demo` is only an
+  example to look at; it is never the result of a setup.
+- **Pack found:** work with it (part A). If `local/<pack>/SETUP.md` still has
+  open items (or the pack obviously lacks subjects, timetable, scripts,
+  topics or dojos), offer to continue the setup where it stopped before
+  doing anything else.
 
 There are two kinds of tasks: **maintaining learning packs** (part A) and
 **developing the app** (part B). Answer learners in their language; quiz
