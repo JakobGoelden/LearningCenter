@@ -10,6 +10,7 @@ import { Header } from './Header';
 import { Dashboard } from './Dashboard';
 import { TopicsView } from './TopicsView';
 import { SubjectView } from './SubjectView';
+import { SheetView } from './SheetView';
 import { QuizView } from './QuizView';
 import { DojoView } from './DojoView';
 import { SettingsView } from './SettingsView';
@@ -70,6 +71,7 @@ function Shell() {
       )}
       {route.name === 'dashboard' && <Dashboard />}
       {route.name === 'subject' && <SubjectView subjectId={route.subject} />}
+      {route.name === 'sheet' && <SheetView key={`${route.subject}/${route.sheet}`} subjectId={route.subject} sheetId={route.sheet} />}
       {route.name === 'topics' && <TopicsView subjectId={route.subject} />}
       {route.name === 'quiz' && <QuizView key={route.subject} subjectId={route.subject} />}
       {route.name === 'dojo' && <DojoView key={`${route.subject}/${route.dojo}`} subjectId={route.subject} dojoId={route.dojo} />}

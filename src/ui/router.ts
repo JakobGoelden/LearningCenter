@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 export type Route =
   | { name: 'dashboard' }
   | { name: 'subject'; subject: string }
+  | { name: 'sheet'; subject: string; sheet: string }
   | { name: 'topics'; subject: string }
   | { name: 'quiz'; subject: string }
   | { name: 'dojo'; subject: string; dojo?: string }
@@ -16,6 +17,8 @@ export function parseRoute(hash: string): Route {
     case 'topics':
     case 'quiz':
       return a ? { name, subject: a } : { name: 'dashboard' };
+    case 'sheet':
+      return a && b ? { name, subject: a, sheet: b } : { name: 'dashboard' };
     case 'dojo':
       return a ? { name, subject: a, dojo: b || undefined } : { name: 'dashboard' };
     case 'settings':
@@ -34,6 +37,8 @@ export function href(route: Route): string {
     case 'topics':
     case 'quiz':
       return `#/${route.name}/${encodeURIComponent(route.subject)}`;
+    case 'sheet':
+      return `#/sheet/${encodeURIComponent(route.subject)}/${encodeURIComponent(route.sheet)}`;
     case 'dojo':
       return `#/dojo/${encodeURIComponent(route.subject)}${route.dojo ? `/${encodeURIComponent(route.dojo)}` : ''}`;
     default:

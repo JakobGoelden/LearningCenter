@@ -1,4 +1,6 @@
-import type { CheckKind, ExamFormat, SheetStatus, TopicStatus } from '../model/types';
+import type { CheckKind, ExamFormat, SheetStatus, TopicStatus, Weekday } from '../model/types';
+
+export { CLASS_LABEL as CLASS_KIND } from '../model/derive';
 
 export const EXAM_FORMAT: Record<ExamFormat, string> = {
   written: 'Written exam',
@@ -20,10 +22,14 @@ export const SHEET_STATUS: Record<SheetStatus, string> = {
   checked: 'checked',
 };
 
-export const NEXT_SHEET_STATUS: Record<SheetStatus, SheetStatus> = {
-  open: 'done',
-  done: 'checked',
-  checked: 'open',
+export const WEEKDAY_LABEL: Record<Weekday, string> = {
+  mon: 'Mon',
+  tue: 'Tue',
+  wed: 'Wed',
+  thu: 'Thu',
+  fri: 'Fri',
+  sat: 'Sat',
+  sun: 'Sun',
 };
 
 export const CHECK_KIND: Record<CheckKind, string> = {

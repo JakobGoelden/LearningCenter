@@ -41,6 +41,10 @@
       "status": "new"
     }
   ],
+  "schedule": [
+    { "kind": "lecture", "weekday": "tue", "start": "08:15", "end": "09:45", "location": "Lecture hall 3" },
+    { "kind": "lab", "weekday": "fri", "start": "12:00", "end": "13:30", "location": "PC pool", "notes": "every other week" }
+  ],
   "sheets": [
     { "id": "b1", "label": "B1", "due": "2026-10-21", "status": "done" },
     { "id": "b2", "label": "B2", "due": "2026-10-28", "status": "open" }

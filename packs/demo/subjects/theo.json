@@ -62,10 +62,40 @@
       "status": "skip"
     }
   ],
+  "schedule": [
+    { "kind": "lecture", "weekday": "mon", "start": "10:00", "end": "12:00", "location": "Main lecture hall" },
+    { "kind": "lecture", "weekday": "thu", "start": "10:00", "end": "12:00", "location": "Main lecture hall" },
+    { "kind": "tutorial", "weekday": "wed", "start": "14:00", "end": "16:00", "location": "Room 2.031", "notes": "group B" }
+  ],
   "sheets": [
     { "id": "b1", "label": "B1", "due": "2026-10-20", "status": "checked" },
     { "id": "b2", "label": "B2", "due": "2026-10-27", "status": "done" },
-    { "id": "b3", "label": "B3", "due": "2026-11-03", "status": "open" }
+    {
+      "id": "b3",
+      "label": "B3",
+      "due": "2026-11-03",
+      "status": "open",
+      "tasks": [
+        {
+          "id": "1",
+          "label": "Task 1",
+          "points": 4,
+          "text": "Let N be the NFA over {a,b} with states q0 (start), q1, q2 (final) and transitions q0 -a-> q0, q0 -b-> q0, q0 -a-> q1, q1 -b-> q2.\n\nConstruct the equivalent DFA with the powerset construction. Give only reachable states."
+        },
+        {
+          "id": "2",
+          "label": "Task 2",
+          "points": 2,
+          "text": "Which language does N accept? Describe it in one sentence and give a regular expression for it."
+        },
+        {
+          "id": "3",
+          "label": "Task 3",
+          "points": 2,
+          "text": "Why can the powerset construction produce up to 2^n states? Give an example language where this blow-up really happens."
+        }
+      ]
+    }
   ],
   "openItems": [
     { "id": "slides-vl3", "text": "Slides for lecture 3 still missing on Moodle", "createdAt": "2026-10-15" },

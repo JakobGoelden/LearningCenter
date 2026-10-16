@@ -230,3 +230,17 @@ th { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
 /* Subject page */
 .subject-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); align-items: start; }
 .subject-grid .panel { display: grid; gap: 8px; }
+
+/* Exercise sheet page */
+a.chip { text-decoration: none; display: inline-block; }
+.segmented { display: flex; gap: 4px; }
+.sheet-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.sheet-doc { position: sticky; top: 12px; }
+.sheet-frame { width: 100%; height: 78vh; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+.task + .task { border-top: 1px solid var(--border); padding-top: 12px; }
+.task textarea { min-height: 120px; }
+@media (max-width: 860px) {
+  .sheet-layout { grid-template-columns: 1fr; }
+  .sheet-doc { position: static; }
+  .sheet-frame { height: 70vh; }
+}

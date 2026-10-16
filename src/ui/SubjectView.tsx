@@ -3,7 +3,8 @@ import { usePack } from '../state/context';
 import { overview } from '../model/derive';
 import { diffDays, formatShort, relative, today } from '../lib/dates';
 import { uniqueId } from '../lib/download';
-import { CHECK_KIND, EXAM_FORMAT, NEXT_SHEET_STATUS, SHEET_STATUS } from './labels';
+import { CHECK_KIND, CLASS_KIND, EXAM_FORMAT, SHEET_STATUS, WEEKDAY_LABEL } from './labels';
+import type { Weekday } from '../model/types';
 import { href } from './router';
 import { StatusBar } from './StatusBar';
 
@@ -20,14 +21,10 @@ export function SubjectView({ subjectId }: { subjectId: string }) {
   const countdown =
     o.examInDays === null ? null : o.examInDays < 0 ? 'over' : o.examInDays === 0 ? 'today' : `in ${o.examInDays} days`;
 
-  const cycleSheet = (id: string) => {
-    const next = NEXT_SHEET_STATUS[s.sheets!.find((x) => x.id === id)!.status];
-    return updateSubject(
-      s.id,
-      (subj) => ({ ...subj, sheets: subj.sheets?.map((sh) => (sh.id === id ? { ...sh, status: next } : sh)) }),
-      { type: 'sheet.status', ref: id, data: { to: next } },
-    );
-  };
+  const DAYS = Object.keys(WEEKDAY_LABEL) as Weekday[];
+  const schedule = [...(s.schedule ?? [])].sort(
+    (a, b) => DAYS.indexOf(a.weekday) - DAYS.indexOf(b.weekday) || a.start.localeCompare(b.start),
+  );
 
   const toggleItem = (id: string, done: boolean) =>
     updateSubject(
@@ -138,17 +135,17 @@ export function SubjectView({ subjectId }: { subjectId: string }) {
                 {s.sheets!.map((sh) => {
                   const late = sh.status === 'open' && sh.due && diffDays(on, sh.due) < 0;
                   return (
-                    <button
+                    <a
                       class={`chip ${sh.status}${late ? ' late' : ''}`}
-                      title={`${sh.label}: ${SHEET_STATUS[sh.status]}${sh.due ? `, due ${formatShort(sh.due)}` : ''} (click to advance)`}
-                      onClick={() => cycleSheet(sh.id)}
+                      title={`${sh.label}: ${SHEET_STATUS[sh.status]}${sh.due ? `, due ${formatShort(sh.due)}` : ''}`}
+                      href={href({ name: 'sheet', subject: s.id, sheet: sh.id })}
                     >
                       {sh.label}
-                    </button>
+                    </a>
                   );
                 })}
               </div>
-              <span class="small muted">Click to advance: open → done → checked</span>
+              <span class="small muted">Click a sheet to open and solve it. Grey = open, amber = done, green = checked.</span>
             </>
           ) : (
             <div class="small muted">No sheets.</div>
@@ -180,6 +177,27 @@ export function SubjectView({ subjectId }: { subjectId: string }) {
             />
           </form>
         </section>
+
+        {schedule.length > 0 && (
+          <section class="panel">
+            <h3>Timetable</h3>
+            <ul class="list small">
+              {schedule.map((c) => (
+                <li>
+                  <span style="min-width:2.5em">{WEEKDAY_LABEL[c.weekday]}</span>
+                  <span style="min-width:6.5em">
+                    {c.start}–{c.end}
+                  </span>
+                  <span class="grow">
+                    {CLASS_KIND[c.kind]}
+                    {c.location && <span class="muted"> · {c.location}</span>}
+                    {c.notes && <span class="muted"> · {c.notes}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {(s.checks?.length ?? 0) > 0 && (
           <section class="panel">
