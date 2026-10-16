@@ -73,7 +73,7 @@ function Shell() {
       {route.name === 'subject' && <SubjectView subjectId={route.subject} />}
       {route.name === 'sheet' && <SheetView key={`${route.subject}/${route.sheet}`} subjectId={route.subject} sheetId={route.sheet} />}
       {route.name === 'topics' && <TopicsView subjectId={route.subject} />}
-      {route.name === 'quiz' && <QuizView key={route.subject} subjectId={route.subject} />}
+      {route.name === 'quiz' && <QuizView key={`${route.subject}/${route.ahead ?? ''}`} subjectId={route.subject} ahead={route.ahead} />}
       {route.name === 'dojo' && <DojoView key={`${route.subject}/${route.dojo}`} subjectId={route.subject} dojoId={route.dojo} />}
       {route.name === 'settings' && <SettingsView />}
       {route.name === 'log' && <LogView />}

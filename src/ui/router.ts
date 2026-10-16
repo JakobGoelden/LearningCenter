@@ -5,7 +5,8 @@ export type Route =
   | { name: 'subject'; subject: string }
   | { name: 'sheet'; subject: string; sheet: string }
   | { name: 'topics'; subject: string }
-  | { name: 'quiz'; subject: string }
+  /** `ahead`: review ahead, topics due by that date count as due. */
+  | { name: 'quiz'; subject: string; ahead?: string }
   | { name: 'dojo'; subject: string; dojo?: string }
   | { name: 'settings' }
   | { name: 'log' };
@@ -15,8 +16,9 @@ export function parseRoute(hash: string): Route {
   switch (name) {
     case 'subject':
     case 'topics':
-    case 'quiz':
       return a ? { name, subject: a } : { name: 'dashboard' };
+    case 'quiz':
+      return a ? { name, subject: a, ahead: /^\d{4}-\d{2}-\d{2}$/.test(b ?? '') ? b : undefined } : { name: 'dashboard' };
     case 'sheet':
       return a && b ? { name, subject: a, sheet: b } : { name: 'dashboard' };
     case 'dojo':
@@ -35,8 +37,9 @@ export function href(route: Route): string {
       return '#/';
     case 'subject':
     case 'topics':
-    case 'quiz':
       return `#/${route.name}/${encodeURIComponent(route.subject)}`;
+    case 'quiz':
+      return `#/quiz/${encodeURIComponent(route.subject)}${route.ahead ? `/${route.ahead}` : ''}`;
     case 'sheet':
       return `#/sheet/${encodeURIComponent(route.subject)}/${encodeURIComponent(route.sheet)}`;
     case 'dojo':
