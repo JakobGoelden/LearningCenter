@@ -2,12 +2,14 @@ import { usePack } from '../state/context';
 import { today } from '../lib/dates';
 import { Calendar } from './Calendar';
 import { SubjectBanner } from './SubjectBanner';
+import { StudyCta } from './StudyView';
 
 export function Dashboard() {
   const { loaded } = usePack();
   const on = today();
   return (
     <>
+      {loaded.subjects.length > 0 && <StudyCta />}
       <Calendar loaded={loaded} today={on} />
       {loaded.subjects.length === 0 ? (
         <div class="panel muted">

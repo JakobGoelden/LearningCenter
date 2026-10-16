@@ -25,6 +25,9 @@ export function Header() {
       </span>
       <span class="spacer" />
       <nav>
+        <a class="btn small primary" href={href({ name: 'study' })}>
+          Study
+        </a>
         <a class="btn small" href={href({ name: 'log' })}>
           History
         </a>

@@ -15,6 +15,7 @@ import { QuizView } from './QuizView';
 import { DojoView } from './DojoView';
 import { SettingsView } from './SettingsView';
 import { LogView } from './LogView';
+import { StudyView } from './StudyView';
 
 type Open = { fs: PackFs; loaded: LoadedPack };
 
@@ -55,6 +56,9 @@ export function App() {
   );
 }
 
+/** Remounting <main> per page replays the page entrance. */
+const routeKey = (r: ReturnType<typeof useRoute>) => Object.values(r).join('/');
+
 function Shell() {
   const route = useRoute();
   const { notice, setNotice } = usePack();
@@ -69,14 +73,17 @@ function Shell() {
           </button>
         </div>
       )}
-      {route.name === 'dashboard' && <Dashboard />}
-      {route.name === 'subject' && <SubjectView subjectId={route.subject} />}
-      {route.name === 'sheet' && <SheetView key={`${route.subject}/${route.sheet}`} subjectId={route.subject} sheetId={route.sheet} />}
-      {route.name === 'topics' && <TopicsView subjectId={route.subject} />}
-      {route.name === 'quiz' && <QuizView key={`${route.subject}/${route.ahead ?? ''}`} subjectId={route.subject} ahead={route.ahead} />}
-      {route.name === 'dojo' && <DojoView key={`${route.subject}/${route.dojo}`} subjectId={route.subject} dojoId={route.dojo} />}
-      {route.name === 'settings' && <SettingsView />}
-      {route.name === 'log' && <LogView />}
+      <main key={routeKey(route)} class="page">
+        {route.name === 'dashboard' && <Dashboard />}
+        {route.name === 'subject' && <SubjectView subjectId={route.subject} />}
+        {route.name === 'sheet' && <SheetView key={`${route.subject}/${route.sheet}`} subjectId={route.subject} sheetId={route.sheet} />}
+        {route.name === 'topics' && <TopicsView subjectId={route.subject} />}
+        {route.name === 'quiz' && <QuizView key={`${route.subject}/${route.ahead ?? ''}`} subjectId={route.subject} ahead={route.ahead} />}
+        {route.name === 'dojo' && <DojoView key={`${route.subject}/${route.dojo}`} subjectId={route.subject} dojoId={route.dojo} />}
+        {route.name === 'settings' && <SettingsView />}
+        {route.name === 'log' && <LogView />}
+        {route.name === 'study' && <StudyView />}
+      </main>
     </div>
   );
 }

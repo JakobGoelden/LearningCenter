@@ -24,8 +24,15 @@ the next reviews.
   your solutions task by task. The sheet (PDF, image or text) shows on the
   left, your answers save themselves into the pack. Mark it done → checked
   when you are finished.
-- **Quiz:** The AI asks questions that test understanding ("Question n/N"),
-  grades them from 0 to 5 and explains gaps. Then spaced repetition takes
+- **Study:** one button on the dashboard (and in the header) for when you
+  don't want to choose. It picks the most pressing topics across all
+  subjects: due ones first, the longer overdue the higher, weak topics
+  (low recent scores) and subjects with an exam in the next three weeks
+  weigh more, then shaky and new topics fill up. It quizzes them subject by
+  subject.
+- **Quiz:** The AI asks questions that test understanding, one card at a
+  time ("Question n/N"), grades them from 0 to 5 and explains gaps; the
+  graded cards flip over to show score and feedback. Then spaced repetition takes
   over: topics you know well move on 1 → 3 → 7 → 14 → 21 days, shaky ones
   stay short, and nothing is scheduled on weekends.
 - **Dojos:** practice rooms for procedures like NFA → DFA, SQL by hand or

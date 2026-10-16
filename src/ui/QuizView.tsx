@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'preact/hooks';
+import type { ComponentChildren } from 'preact';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { formatShort, nowIso, today } from '../lib/dates';
 import { applyReview, averageScore, pickQuizTopics } from '../scheduling/scheduler';
@@ -17,7 +18,18 @@ export function sessionId(type: string, subject: string): string {
   return `${nowIso().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')}-${type}-${subject}`;
 }
 
-export function QuizView({ subjectId, ahead }: { subjectId: string; ahead?: string }) {
+export interface QuizViewProps {
+  subjectId: string;
+  ahead?: string;
+  /** Preset topic ids: skip the setup and start right away (Study mode). */
+  topics?: string[];
+  /** Replaces the page head (Study mode shows its own). */
+  head?: ComponentChildren;
+  /** Shown after saving instead of "Back to dashboard", e.g. the next Study block. */
+  next?: { label: string; go: () => void };
+}
+
+export function QuizView({ subjectId, ahead, topics: preset, head, next: after }: QuizViewProps) {
   const pack = usePack();
   const { fs, loaded, log, updateSubject, setNotice } = pack;
   const s = pack.subject(subjectId);
@@ -32,11 +44,27 @@ export function QuizView({ subjectId, ahead }: { subjectId: string; ahead?: stri
   const [phase, setPhase] = useState<Phase>('setup');
   const [session, setSession] = useState<Session | null>(null);
   const [idx, setIdx] = useState(0);
+  const [dir, setDir] = useState<'fwd' | 'back'>('fwd');
+  const [flipped, setFlipped] = useState<Set<number>>(new Set());
+  const [cheer, setCheer] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (preset?.length && s) start();
+  }, []);
+
+  // Graded cards turn over one after another.
+  useEffect(() => {
+    if (phase !== 'results' || !session) return;
+    const timers = session.items.map((it, i) => setTimeout(() => setFlipped((f) => new Set(f).add(it.n)), 350 + i * 220));
+    return () => timers.forEach(clearTimeout);
+  }, [phase]);
+
   if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
-  const chosen = candidates.filter((t) => !excluded.has(t.id)).slice(0, count);
   const topicById = new Map(s.topics.map((t) => [t.id, t]));
+  const chosen = preset
+    ? preset.map((id) => topicById.get(id)).filter((t): t is Topic => !!t)
+    : candidates.filter((t) => !excluded.has(t.id)).slice(0, count);
 
   const persist = async (next: Session) => {
     setSession(next);
@@ -66,16 +94,31 @@ export function QuizView({ subjectId, ahead }: { subjectId: string; ahead?: stri
         ...(q.kind ? { kind: q.kind } : {}),
         prompt: q.prompt,
       }));
-      const next: Session = { id, type: 'quiz', subject: s.id, adapter: pack.ai.adapter, startedAt: nowIso(), items };
+      const next: Session = {
+        id,
+        type: 'quiz',
+        subject: s.id,
+        adapter: pack.ai.adapter,
+        startedAt: nowIso(),
+        items,
+      };
       await persist(next);
-      await log({ type: 'quiz.start', subject: s.id, ref: id, data: { topics: items.map((i) => i.topicId ?? null) } });
+      await log({
+        type: 'quiz.start',
+        subject: s.id,
+        ref: id,
+        data: { topics: items.map((i) => i.topicId ?? null) },
+      });
       setIdx(0);
       setPhase('answer');
     });
 
   const setAnswer = (answer: string) => {
     if (!session) return;
-    setSession({ ...session, items: session.items.map((it, i) => (i === idx ? { ...it, answer } : it)) });
+    setSession({
+      ...session,
+      items: session.items.map((it, i) => (i === idx ? { ...it, answer } : it)),
+    });
   };
 
   const go = (to: number) =>
@@ -83,7 +126,17 @@ export function QuizView({ subjectId, ahead }: { subjectId: string; ahead?: stri
       if (!session) return;
       await persist(session);
       const it = session.items[idx];
-      await log({ type: 'quiz.answer', subject: s.id, ref: session.id, data: { n: it.n, topicId: it.topicId ?? null, chars: it.answer?.length ?? 0 } });
+      await log({
+        type: 'quiz.answer',
+        subject: s.id,
+        ref: session.id,
+        data: {
+          n: it.n,
+          topicId: it.topicId ?? null,
+          chars: it.answer?.length ?? 0,
+        },
+      });
+      setDir(to < idx ? 'back' : 'fwd');
       setIdx(to);
     });
 
@@ -128,6 +181,7 @@ export function QuizView({ subjectId, ahead }: { subjectId: string; ahead?: stri
         { type: 'quiz.applied', ref: session.id, data: { scores } },
       );
       await persist({ ...session, applied: true });
+      if (averageScore(Object.values(scores) as Score[]) >= 4) setCheer(true);
     });
 
   const item = session?.items[idx];
@@ -135,18 +189,20 @@ export function QuizView({ subjectId, ahead }: { subjectId: string; ahead?: stri
 
   return (
     <div class="stack">
-      <div class="page-head subject-head" style={{ '--c': s.color }}>
-        <a href={href({ name: 'dashboard' })}>← Dashboard</a>
-        <h1>Quiz: {s.name}</h1>
-        <span class="spacer" />
-        <a class="btn small" href={href({ name: 'topics', subject: s.id })}>
-          Topics
-        </a>
-      </div>
+      {head ?? (
+        <div class="page-head subject-head" style={{ '--c': s.color }}>
+          <a href={href({ name: 'dashboard' })}>← Dashboard</a>
+          <h1>Quiz: {s.name}</h1>
+          <span class="spacer" />
+          <a class="btn small" href={href({ name: 'topics', subject: s.id })}>
+            Topics
+          </a>
+        </div>
+      )}
       {error && <div class="error">{error}</div>}
       {panel}
 
-      {phase === 'setup' && !busy && (
+      {phase === 'setup' && !busy && !preset && (
         <div class="panel stack">
           <div class="row">
             <label class="row">
@@ -198,37 +254,52 @@ export function QuizView({ subjectId, ahead }: { subjectId: string; ahead?: stri
         </div>
       )}
 
-      {phase === 'answer' && item && !busy && (
-        <div class="panel stack">
-          <div class="row small">
-            <span class="qnum">
-              Question {item.n}/{N}
-            </span>
-            {item.topicId && <span class="badge">{topicById.get(item.topicId)?.title}</span>}
-            {item.kind && <span class="badge">{KIND_LABEL[item.kind] ?? item.kind}</span>}
+      {phase === 'setup' && !busy && preset && error && (
+        <div class="panel row">
+          <button class="primary" onClick={start}>
+            Try again
+          </button>
+        </div>
+      )}
+
+      {phase === 'answer' && item && session && !busy && (
+        <div class={`quiz-deck left-${Math.min(N - idx - 1, 2)}`} style={{ '--c': s.color }}>
+          <div class="quiz-dots" aria-hidden="true">
+            {session.items.map((it, i) => (
+              <span class={i === idx ? 'now' : it.answer?.trim() ? 'done' : ''} />
+            ))}
           </div>
-          <div class="prompt">{item.prompt}</div>
-          <textarea
-            value={item.answer ?? ''}
-            onInput={(e) => setAnswer(e.currentTarget.value)}
-            placeholder="Your answer, in your own words …"
-            aria-label={`Answer to question ${item.n}`}
-            autoFocus
-          />
-          <div class="row">
-            <button disabled={idx === 0} onClick={() => go(idx - 1)}>
-              Back
-            </button>
-            <span class="spacer" style="flex:1" />
-            {idx < N - 1 ? (
-              <button class="primary" onClick={() => go(idx + 1)}>
-                Next
+          <div key={idx} class={`panel stack quiz-card ${dir}`}>
+            <div class="row small">
+              <span class="qnum">
+                Question {item.n}/{N}
+              </span>
+              {item.topicId && <span class="badge">{topicById.get(item.topicId)?.title}</span>}
+              {item.kind && <span class="badge">{KIND_LABEL[item.kind] ?? item.kind}</span>}
+            </div>
+            <div class="prompt">{item.prompt}</div>
+            <textarea
+              value={item.answer ?? ''}
+              onInput={(e) => setAnswer(e.currentTarget.value)}
+              placeholder="Your answer, in your own words …"
+              aria-label={`Answer to question ${item.n}`}
+              autoFocus
+            />
+            <div class="row">
+              <button disabled={idx === 0} onClick={() => go(idx - 1)}>
+                Back
               </button>
-            ) : (
-              <button class="primary" onClick={grade}>
-                Submit and grade
-              </button>
-            )}
+              <span class="spacer" style="flex:1" />
+              {idx < N - 1 ? (
+                <button class="primary" onClick={() => go(idx + 1)}>
+                  Next
+                </button>
+              ) : (
+                <button class="primary" onClick={grade}>
+                  Submit and grade
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -236,36 +307,71 @@ export function QuizView({ subjectId, ahead }: { subjectId: string; ahead?: stri
       {phase === 'results' && session && (
         <div class="stack">
           {session.summary && <div class="panel">{session.summary}</div>}
-          {session.items.map((it) => (
-            <div class="panel stack">
-              <div class="row small">
-                <span class="qnum">
-                  Question {it.n}/{N}
-                </span>
-                {it.topicId && <span class="badge">{topicById.get(it.topicId)?.title}</span>}
-                {it.score !== undefined && (
-                  <span class={`score score-${it.score}`}>
-                    {it.score}/5 · {SCORE_LABEL[it.score]}
+          <div class="flip-grid">
+            {session.items.map((it) => {
+              const open = flipped.has(it.n);
+              const toggle = () => {
+                const f = new Set(flipped);
+                if (open) f.delete(it.n);
+                else f.add(it.n);
+                setFlipped(f);
+              };
+              return (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  class={`flip-card${open ? ' open' : ''}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggle();
+                    }
+                  }}
+                  style={{ '--c': s.color }}
+                  onClick={toggle}
+                  aria-pressed={open}
+                  aria-label={`Question ${it.n}: ${open ? 'show your answer' : 'show the grade'}`}
+                >
+                  <span class="flip-inner">
+                    <span class="flip-face front panel">
+                      <span class="row small">
+                        <span class="qnum">
+                          Question {it.n}/{N}
+                        </span>
+                        {it.topicId && <span class="badge">{topicById.get(it.topicId)?.title}</span>}
+                      </span>
+                      <strong>{it.prompt}</strong>
+                      <span class="small muted answer">{it.answer || '(no answer)'}</span>
+                      <span class="flip-hint small muted">Tap to see the grade</span>
+                    </span>
+                    <span class={`flip-face back panel score-face-${it.score ?? 'none'}`}>
+                      <span class="row small">
+                        <span class="qnum">
+                          Question {it.n}/{N}
+                        </span>
+                        {it.score !== undefined && (
+                          <span class={`score score-${it.score}`}>
+                            {it.score}/5 · {SCORE_LABEL[it.score]}
+                          </span>
+                        )}
+                      </span>
+                      <span class="small muted">{it.prompt}</span>
+                      {it.feedback && <span>{it.feedback}</span>}
+                      {it.gaps && (
+                        <ul class="small">
+                          {it.gaps.map((g) => (
+                            <li>{g}</li>
+                          ))}
+                        </ul>
+                      )}
+                      <span class="flip-hint small muted">Tap to see your answer</span>
+                    </span>
                   </span>
-                )}
-              </div>
-              <div>
-                <strong>{it.prompt}</strong>
-              </div>
-              <div class="small muted" style="white-space:pre-wrap">
-                {it.answer || '(no answer)'}
-              </div>
-              {it.feedback && <div>{it.feedback}</div>}
-              {it.gaps && (
-                <ul class="small">
-                  {it.gaps.map((g) => (
-                    <li>{g}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))}
-          <div class="panel row">
+                </div>
+              );
+            })}
+          </div>
+          <div class="panel row quiz-actions">
             {session.applied ? (
               <span>
                 Saved. Next reviews:{' '}
@@ -280,13 +386,38 @@ export function QuizView({ subjectId, ahead }: { subjectId: string; ahead?: stri
                 Save to progress
               </button>
             )}
+            {cheer && <Cheer />}
             <span style="flex:1" />
-            <a class="btn" href={href({ name: 'dashboard' })}>
-              Back to dashboard
-            </a>
+            {after && session.applied ? (
+              <button class="primary" onClick={after.go}>
+                {after.label}
+              </button>
+            ) : (
+              <a class="btn" href={href({ name: 'dashboard' })}>
+                Back to dashboard
+              </a>
+            )}
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+/** A short burst of confetti after a good round. */
+function Cheer() {
+  const colors = ['var(--accent)', 'var(--gold)', 'var(--vermilion)', 'var(--st-solid)', '#8b5cf6'];
+  return (
+    <span class="cheer" aria-hidden="true">
+      {Array.from({ length: 16 }, (_, i) => (
+        <i
+          style={{
+            '--a': `${i * 22.5 + (i % 2) * 9}deg`,
+            '--d': `${38 + (i % 3) * 16}px`,
+            background: colors[i % colors.length],
+          }}
+        />
+      ))}
+    </span>
   );
 }

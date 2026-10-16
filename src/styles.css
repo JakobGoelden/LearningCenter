@@ -690,3 +690,112 @@ button.primary:hover:not(:disabled), .btn.primary:hover {
 .calendar > :nth-child(3), .banners > :nth-child(3), .subject-grid > :nth-child(3), .cards > :nth-child(3) { animation-delay: 0.1s; }
 .banners > :nth-child(n + 4), .subject-grid > :nth-child(n + 4), .cards > :nth-child(n + 4) { animation-delay: 0.15s; }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+
+/* ===========================================================================
+   Motion: hover, press and page transitions
+   =========================================================================== */
+button:hover:not(:disabled), .btn:hover { transform: translateY(-1px); }
+button:active:not(:disabled), .btn:active { transform: translateY(0) scale(0.97); }
+textarea, input, select { transition: border-color 0.15s, box-shadow 0.2s; }
+textarea:focus, input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+.list li { transition: background 0.15s; border-radius: 8px; }
+.list li:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.banner .chevron { transition: transform 0.2s; }
+.banner:hover .chevron { transform: translateX(4px); }
+.page-head > a:first-child { transition: transform 0.15s; display: inline-block; }
+.page-head > a:first-child:hover { transform: translateX(-3px); }
+
+/* Study: the one-click button on the dashboard */
+.study-cta {
+  position: relative; overflow: hidden; display: flex; align-items: center; gap: 14px; width: 100%;
+  margin-bottom: 14px; padding: 14px 18px; border: 0; border-radius: var(--radius); text-align: left; color: #fff;
+  background: linear-gradient(120deg, var(--accent), #8b5cf6 60%, var(--vermilion));
+  background-size: 160% 100%; box-shadow: 0 10px 28px -12px color-mix(in srgb, var(--accent) 80%, transparent);
+  transition: background-position 0.5s, transform 0.15s, box-shadow 0.2s;
+}
+.study-cta:hover:not(:disabled) { background-position: 100% 0; transform: translateY(-2px); box-shadow: 0 16px 34px -12px color-mix(in srgb, #8b5cf6 80%, transparent); }
+.study-cta.calm { background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 55%, var(--panel)), color-mix(in srgb, #8b5cf6 45%, var(--panel))); }
+.study-cta::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
+}
+.study-cta:hover::after { animation: sheen 0.9s ease-out; }
+.study-cta-play {
+  position: relative; display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%;
+  background: rgb(255 255 255 / 0.2); font-size: 1rem; padding-left: 3px;
+}
+.study-cta:not(.calm) .study-cta-play::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgb(255 255 255 / 0.6);
+  animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes ping { 75%, 100% { transform: scale(1.6); opacity: 0; } }
+.study-cta-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.study-cta-text strong { font-size: 1.15rem; letter-spacing: 0.01em; }
+.study-cta-text .small { opacity: 0.9; }
+.study-plan .study-block { border-left: 4px solid var(--c, var(--accent)); padding-left: 12px; }
+.study-block h3::before { display: none; }
+.study-block h3 { margin: 0 0 4px; }
+.chip.hot { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+button.study-go { padding: 10px 20px; font-size: 1rem; }
+.study-done { align-items: center; text-align: center; padding: 32px 16px; }
+.study-done h2 { margin: 0; }
+.study-done-mark {
+  display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; font-size: 2.2rem; font-weight: 800;
+  color: #fff; background: var(--st-solid); box-shadow: 0 10px 30px -10px var(--st-solid);
+  animation: stamp 0.5s cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+
+/* Quiz as a deck of cards */
+.quiz-deck { position: relative; display: grid; gap: 10px; isolation: isolate; margin-bottom: 12px; }
+.quiz-dots { display: flex; gap: 6px; justify-content: center; }
+.quiz-dots span { width: 8px; height: 8px; border-radius: 999px; background: var(--border); transition: width 0.3s, background 0.3s; }
+.quiz-dots span.done { background: color-mix(in srgb, var(--c, var(--accent)) 55%, var(--border)); }
+.quiz-dots span.now { width: 24px; background: var(--c, var(--accent)); }
+.panel.quiz-card { position: relative; border-top: 4px solid var(--c, var(--accent)); background: var(--panel); }
+/* The cards still to come peek out underneath. */
+.quiz-deck::before, .quiz-deck::after {
+  content: ''; position: absolute; left: 14px; right: 14px; bottom: -6px; height: 40px; z-index: -1;
+  border-radius: 0 0 var(--radius) var(--radius); background: var(--panel); border: 1px solid var(--border); opacity: 0.7;
+}
+.quiz-deck::after { left: 28px; right: 28px; bottom: -12px; opacity: 0.45; }
+.quiz-deck.left-0::before, .quiz-deck.left-0::after, .quiz-deck.left-1::after { display: none; }
+.quiz-card.fwd { animation: card-in-right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.quiz-card.back { animation: card-in-left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes card-in-right { from { opacity: 0; transform: translateX(48px) rotate(2deg); } }
+@keyframes card-in-left { from { opacity: 0; transform: translateX(-48px) rotate(-2deg); } }
+
+/* Graded cards flip over */
+.flip-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+.flip-card { perspective: 1200px; cursor: pointer; border-radius: var(--radius); outline: none; }
+.flip-card:focus-visible { box-shadow: 0 0 0 3px var(--accent); }
+.flip-inner {
+  display: grid; height: 100%; transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+.flip-card.open .flip-inner { transform: rotateY(180deg); }
+.flip-card:hover .flip-inner { translate: 0 -2px; }
+.panel.flip-face {
+  grid-area: 1 / 1; display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  background: var(--panel); backdrop-filter: none; border-top: 4px solid var(--c, var(--accent));
+}
+.flip-face.back { transform: rotateY(180deg); }
+.flip-face.back.score-face-0, .flip-face.back.score-face-1, .flip-face.back.score-face-2 { border-top-color: var(--danger); }
+.flip-face.back.score-face-3 { border-top-color: var(--st-shaky); }
+.flip-face.back.score-face-4, .flip-face.back.score-face-5 { border-top-color: var(--st-solid); }
+.flip-face .answer { white-space: pre-wrap; }
+.flip-face ul { margin: 0; padding-left: 18px; }
+.flip-hint { margin-top: auto; opacity: 0.7; }
+
+/* Confetti after a good round */
+.quiz-actions { position: relative; }
+.cheer { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.cheer i {
+  position: absolute; left: 0; top: 0; width: 7px; height: 11px; border-radius: 2px; opacity: 0;
+  animation: burst 1.1s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+@keyframes burst {
+  0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(0.6); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(-1 * var(--d))) rotate(200deg) scale(1); }
+}
