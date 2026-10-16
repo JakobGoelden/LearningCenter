@@ -33,6 +33,8 @@ the next reviews.
 - **Here or in the chat:** every start button (Study, Quiz, Dojo) has a
   partner **Start in chat** that copies a prompt for your AI chat, handy
   when you want to answer by voice. The AI records the grades in your pack.
+  Exercise sheets have **Work on it in chat** too: your AI guides you
+  through the tasks with hints and saves the answers you settle on.
 - **Results banner:** what you do in the app is saved right away. As long
   as your AI has not looked at the new results, the dashboard shows a
   banner with a prompt to copy; the AI grades what is open, updates your

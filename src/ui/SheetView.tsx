@@ -7,6 +7,8 @@ import { Markdown } from './Markdown';
 import { SHEET_STATUS } from './labels';
 import { href } from './router';
 import { BackLink } from './BackLink';
+import { ChatStart } from './ChatStart';
+import { sheetChatPrompt } from '../ai/chat';
 
 /** Answer key used when the sheet lists no tasks. */
 const WHOLE_SHEET = '_';
@@ -17,7 +19,7 @@ const extOf = (s: string) => s.slice(s.lastIndexOf('.') + 1).toLowerCase();
 
 /** One exercise sheet: the sheet itself next to an editor for the learner's solutions. */
 export function SheetView({ subjectId, sheetId }: { subjectId: string; sheetId: string }) {
-  const { fs, subject, updateSubject, log, setNotice } = usePack();
+  const { fs, loaded, subject, updateSubject, log, setNotice } = usePack();
   const s = subject(subjectId);
   const sheet = s?.sheets?.find((x) => x.id === sheetId);
   const [work, setWork] = useState<SheetWork | null>(null);
@@ -57,6 +59,22 @@ export function SheetView({ subjectId, sheetId }: { subjectId: string; sheetId: 
 
   // Save what is still pending when leaving the page.
   useEffect(() => () => void flush(), []);
+
+  // Back from the AI chat: it may have written answers into the work file.
+  useEffect(() => {
+    const reload = () => {
+      if (document.visibilityState !== 'visible' || pending.current) return;
+      loadWork(fs, subjectId, sheetId)
+        .then((w) => !pending.current && setWork(w))
+        .catch(() => {});
+    };
+    window.addEventListener('focus', reload);
+    document.addEventListener('visibilitychange', reload);
+    return () => {
+      window.removeEventListener('focus', reload);
+      document.removeEventListener('visibilitychange', reload);
+    };
+  }, [fs, subjectId, sheetId]);
 
   if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
   if (!sheet) return <div class="error">{s.name} has no sheet "{sheetId}".</div>;
@@ -107,6 +125,16 @@ export function SheetView({ subjectId, sheetId }: { subjectId: string; sheetId: 
         {hasDoc && <SheetDocument sheet={sheet} />}
 
         <section class="panel stack">
+          <div class="sheet-chat">
+            <div class="sheet-chat-text">
+              <strong>Work on it with your AI</strong>
+              <span class="small muted">
+                Talk it through in your AI chat, voice included. It guides you with questions and hints instead of handing you the solution,
+                and saves the answers you settle on here.
+              </span>
+            </div>
+            <ChatStart label="Work on it in chat" prompt={() => sheetChatPrompt({ fs, pack: loaded.pack, subject: s, sheet, work })} />
+          </div>
           <div class="row">
             <h3 style="flex:1">Your solutions</h3>
             <span class="small muted" aria-live="polite">
