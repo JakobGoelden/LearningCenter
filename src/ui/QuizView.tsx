@@ -135,7 +135,7 @@ export function QuizView({ subjectId, ahead }: { subjectId: string; ahead?: stri
 
   return (
     <div class="stack">
-      <div class="page-head subject-head" data-kanji="問" style={{ '--c': s.color }}>
+      <div class="page-head subject-head" style={{ '--c': s.color }}>
         <a href={href({ name: 'dashboard' })}>← Dashboard</a>
         <h1>Quiz: {s.name}</h1>
         <span class="spacer" />

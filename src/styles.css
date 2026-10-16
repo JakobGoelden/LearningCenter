@@ -55,6 +55,9 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+/* Keep scrolling, but hide the page scroll bar. */
+html { scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -635,16 +638,6 @@ button.dojo-go {
    =========================================================================== */
 :root { --serif-jp: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif CJK JP', 'Noto Serif JP', serif; }
 
-/* Faint kanji watermark in a panel or page head corner (data-kanji). */
-[data-kanji] { position: relative; overflow: hidden; isolation: isolate; }
-[data-kanji]::after {
-  content: attr(data-kanji); position: absolute; z-index: -1; right: 10px; top: -6px; pointer-events: none;
-  font-family: var(--serif-jp); font-weight: 900; font-size: 4.6rem; line-height: 1; letter-spacing: -0.05em;
-  color: color-mix(in srgb, var(--c, var(--accent)) 13%, transparent);
-}
-.calendar [data-kanji]::after { font-size: 5.5rem; color: color-mix(in srgb, var(--accent) 9%, transparent); }
-.cal-long[data-kanji]::after { top: auto; bottom: -14px; }
-.subject-head[data-kanji]::after { top: 50%; right: 34%; transform: translateY(-50%) rotate(-8deg); font-size: 4.4rem; }
 .page-head.subject-head:not([style]) { --c: var(--accent); }
 
 /* Headings inside panels get a small brush stroke. */
