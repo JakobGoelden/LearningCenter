@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/JakobGoelden/LearningCenter/schema/response.schema.json",
   "title": "AI response (outbox/<id>.json)",
-  "description": "The field required depends on the request kind: quiz.start → questions, quiz.grade → grades, dojo.task → task, dojo.check → check, dojo.hint → hint, dojo.solution → solution.",
+  "description": "The field required depends on the request kind: quiz.start → questions, quiz.grade → grades, dojo.task → task, dojo.check → check, dojo.hint → hint, dojo.solution → solution, dojo.drills → drills.",
   "type": "object",
   "required": ["requestId", "kind"],
   "additionalProperties": false,
@@ -52,6 +52,7 @@
     },
     "hint": { "type": "string" },
     "solution": { "type": "string" },
+    "drills": { "type": "array", "items": { "$ref": "dojo.schema.json#/$defs/drill" }, "description": "New prepared exercises for the dojo." },
     "summary": { "type": "string", "description": "Optional overall comment." }
   },
   "$defs": {

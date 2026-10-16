@@ -11,7 +11,7 @@
     "id": { "$ref": "common.schema.json#/$defs/id" },
     "subject": { "$ref": "common.schema.json#/$defs/id" },
     "title": { "type": "string" },
-    "procedure": { "type": "string", "description": "The algorithm or method, e.g. 'Potenzmengenkonstruktion NFA → DFA'." },
+    "procedure": { "type": "string", "description": "The algorithm or method, e.g. 'Powerset construction NFA → DFA'." },
     "description": { "type": "string" },
     "levels": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/level" }, "minItems": 1 },
     "topics": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/id" }, "description": "Topic ids in the subject that this dojo trains." },
@@ -20,6 +20,114 @@
       "type": "string",
       "description": "Instructions for the AI. Placeholders: {{level}}, {{procedure}}, {{subject}}, {{aids}}, {{language}}."
     },
-    "answerFormat": { "type": "string", "description": "How the learner should write the answer, e.g. a transition table." }
+    "answerFormat": { "type": "string", "description": "How the learner should write the answer, e.g. a transition table." },
+    "drills": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/drill" },
+      "description": "Prepared exercises that run in the app as a timed practice round and are graded without an AI."
+    }
+  },
+  "$defs": {
+    "automaton": {
+      "type": "object",
+      "required": ["states", "start", "final", "transitions"],
+      "additionalProperties": false,
+      "properties": {
+        "states": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "start": { "type": "string" },
+        "final": { "type": "array", "items": { "type": "string" } },
+        "transitions": {
+          "type": "array",
+          "items": { "type": "array", "prefixItems": [{ "type": "string" }, { "type": "string" }, { "type": "string" }], "minItems": 3, "maxItems": 3 },
+          "description": "[from, symbol, to]. Use \"ε\" as the symbol for ε-transitions."
+        }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 1,
+      "description": "The correct language, as a regular expression or an automaton. Answers are correct when they describe the same language.",
+      "properties": {
+        "regex": { "type": "string", "description": "Single-character symbols, | union, * + ? postfix, parentheses, ε for the empty word, ∅ for the empty language." },
+        "automaton": { "$ref": "#/$defs/automaton" }
+      }
+    },
+    "drill": {
+      "type": "object",
+      "required": ["id", "kind", "prompt"],
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/id" },
+        "kind": { "enum": ["choice", "input", "number", "order", "automaton", "regex", "self"] },
+        "level": { "$ref": "common.schema.json#/$defs/level" },
+        "topic": { "$ref": "common.schema.json#/$defs/id" },
+        "prompt": { "type": "string", "minLength": 1, "description": "The question or task (Markdown)." },
+        "explanation": { "type": "string", "description": "Shown after answering: why the answer is right (Markdown)." },
+        "seconds": { "type": "integer", "minimum": 5, "description": "Time limit. Default: 60/120/240 s for easy/medium/exam, doubled for automaton, regex and self." }
+      },
+      "unevaluatedProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "kind": { "const": "choice" },
+            "options": { "type": "array", "items": { "type": "string" }, "minItems": 2 },
+            "correct": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 1, "description": "Indexes into options (0-based). Several = pick all of them." }
+          },
+          "required": ["options", "correct"]
+        },
+        {
+          "properties": {
+            "kind": { "const": "input" },
+            "accept": { "type": "array", "items": { "type": "string" }, "minItems": 1, "description": "Accepted answers. Compared without case, extra spaces or spaces around punctuation." },
+            "caseSensitive": { "type": "boolean" }
+          },
+          "required": ["accept"]
+        },
+        {
+          "properties": {
+            "kind": { "const": "number" },
+            "answer": { "type": "number" },
+            "tolerance": { "type": "number", "minimum": 0 },
+            "unit": { "type": "string" }
+          },
+          "required": ["answer"]
+        },
+        {
+          "properties": {
+            "kind": { "const": "order" },
+            "items": { "type": "array", "items": { "type": "string" }, "minItems": 2, "description": "In the correct order; the app shuffles them." }
+          },
+          "required": ["items"]
+        },
+        {
+          "properties": {
+            "kind": { "const": "automaton" },
+            "alphabet": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 1 }, "minItems": 1 },
+            "reference": { "$ref": "#/$defs/reference" },
+            "given": { "$ref": "#/$defs/automaton", "description": "An automaton shown with the task, e.g. the NFA to convert." },
+            "deterministic": { "type": "boolean", "description": "Answer must be a DFA." },
+            "minimal": { "type": "boolean", "description": "Answer must have as few states as the minimal complete DFA." }
+          },
+          "required": ["alphabet", "reference"]
+        },
+        {
+          "properties": {
+            "kind": { "const": "regex" },
+            "alphabet": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 1 }, "minItems": 1 },
+            "reference": { "$ref": "#/$defs/reference" },
+            "given": { "$ref": "#/$defs/automaton", "description": "An automaton shown with the task, e.g. the DFA to turn into a regex." }
+          },
+          "required": ["alphabet", "reference"]
+        },
+        {
+          "properties": {
+            "kind": { "const": "self" },
+            "solution": { "type": "string", "minLength": 1, "description": "Model solution the learner compares with (Markdown)." }
+          },
+          "required": ["solution"]
+        }
+      ]
+    }
   }
 }

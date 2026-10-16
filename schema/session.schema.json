@@ -26,7 +26,8 @@
         "properties": {
           "n": { "type": "integer", "minimum": 1 },
           "topicId": { "$ref": "common.schema.json#/$defs/id" },
-          "kind": { "enum": ["why", "what-if", "explain", "apply", "task"] },
+          "kind": { "enum": ["why", "what-if", "explain", "apply", "task", "drill"] },
+          "drill": { "$ref": "common.schema.json#/$defs/id", "description": "Id of the prepared drill, for kind drill." },
           "prompt": { "type": "string" },
           "answer": { "type": "string" },
           "score": { "$ref": "common.schema.json#/$defs/score" },

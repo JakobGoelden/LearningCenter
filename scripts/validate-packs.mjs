@@ -6,6 +6,7 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
+import { drillProblems } from '../src/dojo/drills.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const schemaDir = join(root, 'schema');
@@ -34,6 +35,18 @@ function checkFile(path, name) {
     return null;
   }
   return data;
+}
+
+// Checks what the schema cannot: unique ids, known topics, answers that fit
+// the options, and reference expressions/automata that actually work.
+function checkDrills(where, dojo, topics) {
+  const ids = new Set();
+  for (const drill of dojo.drills ?? []) {
+    if (ids.has(drill.id)) fail(`${where}: duplicate drill id "${drill.id}"`);
+    ids.add(drill.id);
+    if (drill.topic && topics && !topics.has(drill.topic)) fail(`${where}: drill "${drill.id}" has unknown topic "${drill.topic}"`);
+    for (const p of drillProblems(drill)) fail(`${where}: drill "${drill.id}" ${p}`);
+  }
 }
 
 function checkPack(dir) {
@@ -75,6 +88,7 @@ function checkPack(dir) {
     for (const t of d.topics ?? []) {
       if (!topicIds.get(d.subject)?.has(t)) fail(`dojos/${id}.json: unknown topic "${t}"`);
     }
+    checkDrills(`dojos/${id}.json`, d, topicIds.get(d.subject));
   }
   const sessions = join(dir, 'sessions');
   if (existsSync(sessions)) {
@@ -105,7 +119,10 @@ for (const d of dirs) checkPack(d);
 if (!args.length) {
   const lib = join(root, 'packs', 'dojo-library');
   console.log(`• ${lib}`);
-  for (const f of readdirSync(lib).filter((f) => f.endsWith('.json'))) checkFile(join(lib, f), 'dojo');
+  for (const f of readdirSync(lib).filter((f) => f.endsWith('.json'))) {
+    const d = checkFile(join(lib, f), 'dojo');
+    if (d) checkDrills(`dojo-library/${f}`, d, null);
+  }
 }
 
 if (failures) {

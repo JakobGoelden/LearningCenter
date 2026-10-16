@@ -21,6 +21,6 @@
     "prompt": { "type": "string", "description": "Complete, self-contained instructions. An AI can answer from this field alone." }
   },
   "$defs": {
-    "kind": { "enum": ["quiz.start", "quiz.grade", "dojo.task", "dojo.check", "dojo.hint", "dojo.solution"] }
+    "kind": { "enum": ["quiz.start", "quiz.grade", "dojo.task", "dojo.check", "dojo.hint", "dojo.solution", "dojo.drills"] }
   }
 }
