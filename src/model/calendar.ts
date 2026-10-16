@@ -95,6 +95,8 @@ export interface CalendarWeek {
   start: ISODate;
   week: number;
   reviews: number;
+  /** Subject id → reviews due that week. */
+  reviewsBy: Record<string, number>;
   sheets: CalendarEntry[];
   exams: CalendarEntry[];
   /** Lecture-free: the week is outside the semester. */
@@ -102,8 +104,9 @@ export interface CalendarWeek {
 }
 
 /**
- * Weeks from the current one up to the end of the semester or the last exam
- * or deadline, whichever is later (at least `minWeeks`, at most `maxWeeks`).
+ * Weeks from the current one up to two weeks after the end of the semester or
+ * the last exam or deadline, whichever is later (at least `minWeeks`, at most
+ * `maxWeeks`).
  */
 export function longTermWeeks(loaded: LoadedPack, today: ISODate, minWeeks = 8, maxWeeks = 30): CalendarWeek[] {
   const first = weekStart(today);
@@ -112,17 +115,21 @@ export function longTermWeeks(loaded: LoadedPack, today: ISODate, minWeeks = 8, 
     if (s.exam.date && s.exam.date > last) last = s.exam.date;
     for (const sh of s.sheets ?? []) if (sh.status === 'open' && sh.due && sh.due > last) last = sh.due;
   }
-  const count = Math.min(maxWeeks, Math.max(minWeeks, Math.floor(diffDays(first, last) / 7) + 1));
+  // Two more weeks so the end of lectures and the exam period stay visible.
+  const count = Math.min(maxWeeks, Math.max(minWeeks, Math.floor(diffDays(first, last) / 7) + 3));
   const sem = loaded.pack.semester;
   return Array.from({ length: count }, (_, i) => {
     const start = addDays(first, i * 7);
     const days = Array.from({ length: 7 }, (_, d) => addDays(start, d)).filter((d) => d >= today);
     const entries = days.flatMap((d) => entriesOn(loaded, d, today));
     const end = addDays(start, 6);
+    const reviewsBy: Record<string, number> = {};
+    for (const e of entries) if (e.kind === 'reviews') reviewsBy[e.subject.id] = (reviewsBy[e.subject.id] ?? 0) + (e.topics?.length ?? 0);
     return {
       start,
       week: isoWeek(start),
-      reviews: entries.filter((e) => e.kind === 'reviews').reduce((n, e) => n + (e.topics?.length ?? 0), 0),
+      reviews: Object.values(reviewsBy).reduce((a, b) => a + b, 0),
+      reviewsBy,
       sheets: entries.filter((e) => e.kind === 'sheet'),
       exams: entries.filter((e) => e.kind === 'exam'),
       outside: !!sem && ((!!sem.end && start > sem.end) || (!!sem.start && end < sem.start)),
