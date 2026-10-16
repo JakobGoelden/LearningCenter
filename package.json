@@ -1,0 +1,31 @@
+{
+  "name": "learningcenter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A general, AI-friendly study dashboard driven by open JSON learning packs.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=18.19"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "validate": "node scripts/validate-packs.mjs"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "preact": "^10.29.8"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.6",
+    "@types/node": "^18.19.130",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.4",
+    "vitest": "^3.2.7"
+  }
+}
