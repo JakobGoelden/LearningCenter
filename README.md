@@ -11,7 +11,12 @@ the next reviews.
 - **Dashboard:** one banner per subject with a progress bar (share of topics
   that are solid) and, below it, flags for due reviews, open sheets and open
   tasks. Subjects with dojos get a Dojo button right next to their banner.
-  Above them, the "Today" line shows today's classes and what is due.
+  Above them, a calendar: **Today** (top left) lists today's classes and
+  what is due, **This week** (top right) shows your timetable as a week grid
+  with reviews, sheet deadlines and exams on their day, so you see when you
+  have time to study, and **Long term** shows every week until the end of
+  the semester with review load, deadlines and exams. Click a future day's
+  reviews to review ahead; click a week to show it in the week view.
   Click a banner to open the subject page with the panels Exam (format, date,
   countdown, allowed aids), Progress, Exercise sheets, Open tasks, Timetable
   and Last checks, plus the buttons Quiz, Dojo and Topics.
