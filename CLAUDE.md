@@ -1,204 +1,208 @@
 # CLAUDE.md
 
-Anleitung für KI-Assistenten (Claude Code, Codex, Cursor, …) in diesem Repo.
-**Neue Person einrichten?** Dann zuerst [ONBOARDING.md](ONBOARDING.md)
-(Installation, Quellen wie Moodle und reMarkable finden, Pack anlegen, starten).
+Guide for AI assistants (Claude Code, Codex, Cursor, …) in this repo.
+**Setting up a new person?** Then start with [ONBOARDING.md](ONBOARDING.md)
+(installation, finding sources like Moodle and reMarkable, creating a pack,
+starting the app).
 
-Es gibt zwei Arten von Aufgaben: **Lernpacks pflegen** (Teil A) und **die App
-weiterentwickeln** (Teil B). Antworte Lernenden in ihrer Sprache (Standard:
-Deutsch); Code, Bezeichner und Commit-Messages auf Englisch.
+There are two kinds of tasks: **maintaining learning packs** (part A) and
+**developing the app** (part B). Answer learners in their language; quiz
+questions and feedback follow the pack's `settings.language` (default `en`).
+Code, identifiers and commit messages are in English.
 
 ---
 
-## A. Lernpacks pflegen
+## A. Maintaining learning packs
 
-### Datenschutz zuerst
+### Privacy first
 
-- Persönliche Packs liegen in `local/<name>/`. Der Ordner ist per `.gitignore`
-  ausgeschlossen. **Nie** persönliche Daten committen und nie in `packs/`
-  schreiben: `packs/demo`, `packs/empty` und `packs/dojo-library` sind
-  öffentliche Beispiele für alle Nutzer des Repos.
-- Liegt ein Pack außerhalb des Repos, gelten dieselben Regeln.
+- Personal packs live in `local/<name>/`. That folder is excluded via
+  `.gitignore`. **Never** commit personal data and never write to `packs/`:
+  `packs/demo`, `packs/empty` and `packs/dojo-library` are public examples for
+  everyone who uses the repo.
+- If a pack lives outside the repo, the same rules apply.
 
-### Aufbau eines Packs
+### Structure of a pack
 
 ```
 local/<name>/
-  pack.json              Manifest: Titel, Semester, Einstellungen, Fächer- und Dojo-IDs
-  subjects/<id>.json     ein Fach: Prüfung, Themen (mit Verlauf), Blätter, offene Punkte, Checks
-  dojos/<id>.json        Dojo-Definitionen (reine Daten)
-  sessions/<id>.json     Protokolle von Abfragen und Dojos
-  log/events.jsonl       Ereignis-Log, eine JSON-Zeile pro Ereignis, nur anhängen
-  material/<fach-id>/    heruntergeladene Skripte, Folien, Blätter (optional)
-  notes/<fach-id>/       eigene Notizen als PDF/Markdown, z.B. reMarkable-Export (optional)
-  inbox/<id>.json        Anfragen der App (Datei-Brücke)
-  outbox/<id>.json       deine Antworten darauf
+  pack.json              manifest: title, semester, settings, subject and dojo IDs
+  subjects/<id>.json     one subject: exam, topics (with history), sheets, open tasks, checks
+  dojos/<id>.json        dojo definitions (pure data)
+  sessions/<id>.json     logs of quizzes and dojos
+  log/events.jsonl       event log, one JSON line per event, append only
+  material/<subject-id>/ downloaded scripts, slides, sheets (optional)
+  notes/<subject-id>/    own notes as PDF/Markdown, e.g. reMarkable export (optional)
+  inbox/<id>.json        requests from the app (file bridge)
+  outbox/<id>.json       your answers to them
 ```
 
-Das Format ist in `schema/*.schema.json` vollständig beschrieben (JSON Schema
-2020-12, mit Beschreibungen pro Feld). Das Schema ist maßgeblich.
+The format is fully described in `schema/*.schema.json` (JSON Schema
+2020-12, with a description per field). The schema is authoritative.
 
-### Ein Pack anlegen
+### Creating a pack
 
-1. `cp -r packs/empty local/<name>` (Name als Slug, z.B. `wise26`).
-2. `pack.json`: `id`, `title`, `semester` setzen. `subjects` und `dojos` listen
-   die IDs in Anzeigereihenfolge; jede ID braucht eine passende Datei.
-3. Pro Fach `subjects/<id>.json`. IDs sind Slugs (`a-z0-9._-`) und müssen mit
-   dem Dateinamen übereinstimmen. `example.json` löschen und aus `pack.json`
-   entfernen.
-4. **Themen:** ein prüfungsrelevantes Konzept pro Thema, typischerweise 8–30
-   pro Fach. `notes` beschreibt Umfang und Quelle (z.B. „VL 3, Skript 2.4;
-   typischer Fehler: …“). Das ist der wichtigste Kontext für gute Fragen.
-   Neue Themen bekommen `status: "new"` und kein `due`.
-5. **Prüfung:** `format` ist `written` (Klausur), `talk` (Vortrag/mündlich),
-   `project` oder `unknown`. Kein Datum erfinden: Ist es unbekannt, `date`
-   weglassen und einen offenen Punkt anlegen.
-6. **Checks:** `material` (z.B. Moodle), `script` (Skript-Version in
-   `version`), `notes` (eigene Mitschrift). `everyDays` markiert sie als
-   veraltet, wenn sie zu lange nicht geprüft wurden. `url` sagt, wo man
-   nachsieht (Link zum Kurs oder Pfad im Pack wie `material/db/`).
-7. Prüfen: `npm run validate -- local/<name>`. Nach **jeder** Änderung erneut.
+1. `cp -r packs/empty local/<name>` (name as a slug, e.g. `wise26`).
+2. `pack.json`: set `id`, `title`, `semester`. `subjects` and `dojos` list
+   the IDs in display order; every ID needs a matching file.
+3. One `subjects/<id>.json` per subject. IDs are slugs (`a-z0-9._-`) and must
+   match the file name. Delete `example.json` and remove it from `pack.json`.
+4. **Topics:** one exam-relevant concept per topic, typically 8–30 per
+   subject. `notes` describes scope and source (e.g. "Lecture 3, script 2.4;
+   typical mistake: …"). This is the most important context for good
+   questions. New topics get `status: "new"` and no `due`.
+5. **Exam:** `format` is `written` (written exam), `talk` (presentation/oral),
+   `project` or `unknown`. Do not invent a date: if it is unknown, leave out
+   `date` and create an open task.
+6. **Checks:** `material` (e.g. Moodle), `script` (script version in
+   `version`), `notes` (own notes). `everyDays` marks them as outdated if
+   they have not been checked for too long. `url` says where to look (link to
+   the course or a path in the pack like `material/db/`).
+7. Validate: `npm run validate -- local/<name>`. Again after **every** change.
 
-### Beim Bearbeiten
+### When editing
 
-- JSON mit 2 Leerzeichen einrücken, die `$schema`-Zeile behalten.
-- `history` eines Themas nie löschen oder umschreiben, nur anhängen.
-- Jede inhaltliche Änderung als Ereignis anhängen, z.B.
-  `{"ts":"2026-10-16T09:00:00Z","type":"topic.add","actor":"ai","subject":"db","ref":"normal-forms","data":{"title":"Normalformen"}}`.
-  Gängige Typen: `topic.add`, `topic.status`, `topic.due`, `topic.review`,
+- Indent JSON with 2 spaces, keep the `$schema` line.
+- Never delete or rewrite a topic's `history`, only append.
+- Append every content change as an event, e.g.
+  `{"ts":"2026-10-16T09:00:00Z","type":"topic.add","actor":"ai","subject":"db","ref":"normal-forms","data":{"title":"Normal forms"}}`.
+  Common types: `topic.add`, `topic.status`, `topic.due`, `topic.review`,
   `sheet.status`, `openItem.add`, `openItem.done`, `check.done`, `exam.update`,
   `quiz.start`, `quiz.answer`, `quiz.graded`, `quiz.applied`, `dojo.task`,
   `dojo.check`, `ai.request`, `ai.response`.
-- Läuft die App gerade, merkt sie Änderungen an `pack.json`, `subjects/` und
-  `dojos/` innerhalb weniger Sekunden und lädt neu.
+- If the app is running, it notices changes to `pack.json`, `subjects/` and
+  `dojos/` within a few seconds and reloads.
 
-### Termine und Spaced Repetition
+### Due dates and spaced repetition
 
-Dieselben Regeln wie in der App (`src/scheduling/scheduler.ts`). Die Leiter
-steht in `pack.json` → `settings.reviewLadder` (Standard `1, 3, 7, 14, 21, 35, 60`
-Tage).
+Same rules as in the app (`src/scheduling/scheduler.ts`). The ladder is in
+`pack.json` → `settings.reviewLadder` (default `1, 3, 7, 14, 21, 35, 60`
+days).
 
-| Bewertung | Neuer Abstand | Status |
+| Grade | New interval | Status |
 | --- | --- | --- |
-| 4–5 | eine Stufe höher, mindestens Stufe 2 (3 Tage); war das Thema `shaky`, höchstens Stufe 3 (7 Tage) | `solid` |
-| 3 | Stufe 1 oder 2 (1 bzw. 3 Tage) | `shaky` |
-| 0–2 | Stufe 1 (1 Tag) | `shaky` |
+| 4–5 | one step up, at least step 2 (3 days); if the topic was `shaky`, at most step 3 (7 days) | `solid` |
+| 3 | step 1 or 2 (1 or 3 days) | `shaky` |
+| 0–2 | step 1 (1 day) | `shaky` |
 
-- `due` = Datum der Abfrage + Abstand. Fällt es auf Sa/So und ist
-  `settings.skipWeekends` nicht `false`, auf Montag schieben.
-- `skip` („nicht abfragen“) wird nie fällig und nie abgefragt.
-- **Bewertungen immer mit dem Skript eintragen**, damit die Regeln exakt
-  gleich bleiben:
-  `npm run review -- local/<name> <fach-id> <thema-id> <score> [quiz|dojo|manual] ["Notiz"]`
-  Das Skript ergänzt `history`, setzt `status`, `due`, `intervalDays` und
-  schreibt ein Ereignis ins Log.
-- Termine von Hand setzen nur, wenn die Person es ausdrücklich will (z.B.
-  „frag mich Normalformen erst nach der Übung am Donnerstag ab“).
+- `due` = date of the quiz + interval. If it falls on Sat/Sun and
+  `settings.skipWeekends` is not `false`, move it to Monday.
+- `skip` ("do not quiz") is never due and never quizzed.
+- **Always record grades with the script**, so the rules stay exactly the
+  same:
+  `npm run review -- local/<name> <subject-id> <topic-id> <score> [quiz|dojo|manual] ["note"]`
+  The script appends to `history`, sets `status`, `due`, `intervalDays` and
+  writes an event to the log.
+- Only set due dates by hand if the person explicitly wants it (e.g.
+  "don't quiz me on normal forms until after the exercise class on Thursday").
 
-### Fair bewerten (Skala 0–5)
+### Grading fairly (scale 0–5)
 
-| Score | Bedeutung |
+| Score | Meaning |
 | --- | --- |
-| 0 | keine Antwort oder „weiß nicht“ |
-| 1 | falsch |
-| 2 | große Lücken |
-| 3 | im Kern richtig, mit Lücken |
-| 4 | richtig |
-| 5 | richtig und gut begründet |
+| 0 | no answer or "don't know" |
+| 1 | wrong |
+| 2 | big gaps |
+| 3 | right at the core, with gaps |
+| 4 | right |
+| 5 | right and well reasoned |
 
-- Verständnis zählt, nicht Wortlaut. Richtige Ideen in eigenen Worten bekommen
-  volle Punkte; Tippfehler, Notation und Formatierung sind egal, solange der
-  Inhalt eindeutig ist.
-- Lücken konkret benennen: was fehlt, warum es wichtig ist, wie es richtig
-  wäre (1–3 Sätze). Keine Belehrungen ohne Bezug zur Antwort.
-- Bei Rechenverfahren Folgefehler nur einmal anrechnen.
-- Im Zweifel nachfragen statt raten, aber höchstens einmal pro Frage.
+- Understanding counts, not wording. Right ideas in the person's own words get
+  full marks; typos, notation and formatting do not matter as long as the
+  content is clear.
+- Name gaps concretely: what is missing, why it matters, what would be right
+  (1–3 sentences). No lecturing that is unrelated to the answer.
+- For calculation procedures, count follow-on errors only once.
+- When in doubt, ask instead of guessing, but at most once per question.
 
-### Inbox abarbeiten (Datei-Brücke)
+### Processing the inbox (file bridge)
 
-Die App schreibt bei Klick auf „Abfrage“ oder im Dojo eine Anfrage nach
-`inbox/<id>.json` (Schema: `schema/request.schema.json`). Auftrag wie
-„Arbeite die Inbox ab“ bedeutet:
+When the person clicks "Quiz" or works in a dojo, the app writes a request to
+`inbox/<id>.json` (schema: `schema/request.schema.json`).
+"Process the inbox" means:
 
-1. Alle Dateien in `inbox/` lesen, älteste zuerst (die ID beginnt mit einem
-   Zeitstempel).
-2. Das Feld `prompt` enthält die vollständige Aufgabe samt Kontext und
-   gewünschtem Antwortformat. Danach richten; `context` enthält dieselben
-   Daten strukturiert.
-3. Antwort nach `outbox/<id>.json` schreiben, gleiche `id`, mit
-   `requestId` und `kind` aus der Anfrage plus dem Feld für die Anfrageart:
+1. Read all files in `inbox/`, oldest first (the ID starts with a
+   timestamp).
+2. The `prompt` field contains the complete task including context and the
+   expected answer format. Follow it; `context` holds the same data in
+   structured form.
+3. Write the answer to `outbox/<id>.json`, same `id`, with `requestId` and
+   `kind` from the request plus the field for the request type:
 
-   | `kind` | Feld |
+   | `kind` | Field |
    | --- | --- |
-   | `quiz.start` | `questions: [{topicId, kind, prompt}]` (genau `count` Fragen) |
+   | `quiz.start` | `questions: [{topicId, kind, prompt}]` (exactly `count` questions) |
    | `quiz.grade` | `grades: [{n, score, feedback, gaps}]`, optional `summary` |
    | `dojo.task` | `task` (Markdown) |
    | `dojo.check` | `check: {correct, score, steps: [{label, ok, comment}], feedback}` |
    | `dojo.hint` | `hint` |
    | `dojo.solution` | `solution` (Markdown) |
 
-   Gegen `schema/response.schema.json` prüfen.
-4. Die Inbox-Datei **nicht** löschen und **keine** Themen ändern: Die App
-   liest die Antwort, räumt beide Dateien weg, und die Person übernimmt das
-   Ergebnis per Klick in den Lernstand.
-5. Wenn die Person es möchte, weiter auf neue Anfragen warten (z.B. alle paar
-   Sekunden nachsehen), bis sie „stopp“ sagt.
+   Validate against `schema/response.schema.json`.
+4. Do **not** delete the inbox file and do **not** change any topics: the app
+   reads the answer, cleans up both files, and the person applies the result
+   to their progress with a click.
+5. If the person wants, keep waiting for new requests (e.g. check every few
+   seconds) until they say "stop".
 
-### Abfrage direkt im Chat
+### Quizzing directly in the chat
 
-Bei „Frag mich <Fach> ab“ ohne App:
+For "Quiz me on <subject>" without the app:
 
-1. Themen wählen wie die App: zuerst fällige/überfällige (`due` ≤ heute,
-   ältestes zuerst), dann `shaky`, dann `new`; nie `skip`. Standard:
-   `settings.questionsPerQuiz` Fragen, eine pro Thema.
-2. Fragen einzeln stellen, nummeriert als „Frage n/N“. Fragetypen mischen:
-   Warum, Was wäre wenn, mit eigenen Worten erklären, auf ein Beispiel anwenden.
-3. Nach jeder Antwort kurz bewerten (Score + Lücken). Am Ende eine
-   Zusammenfassung.
-4. Ergebnisse mit `npm run review` eintragen (`source` = `quiz`) und optional
-   ein Protokoll `sessions/<id>.json` schreiben (Schema
-   `session.schema.json`, `id` z.B. `20261016T090000Z-quiz-db`).
-5. Nächste Termine nennen.
+1. Pick topics like the app does: first due/overdue ones (`due` ≤ today,
+   oldest first), then `shaky`, then `new`; never `skip`. Default:
+   `settings.questionsPerQuiz` questions, one per topic.
+2. Ask the questions one at a time, numbered as "Question n/N". Mix question
+   types: why, what if, explain in your own words, apply to an example.
+3. After each answer, grade briefly (score + gaps). Give a summary at the end.
+4. Record the results with `npm run review` (`source` = `quiz`) and optionally
+   write a log `sessions/<id>.json` (schema `session.schema.json`, `id` e.g.
+   `20261016T090000Z-quiz-db`).
+5. Name the next due dates.
+
+Ask in the pack's language (`settings.language`, default `en`). A person who
+wants German questions can set Settings → Study plan → AI language to Deutsch
+(or `settings.language: "de"` in `pack.json`).
 
 ### Dojos
 
-Ein Dojo ist eine Datei `dojos/<id>.json` (Schema `dojo.schema.json`) und
-braucht keinen Code. `promptTemplate` beschreibt, wie Aufgaben für die Niveaus
-`easy`, `medium`, `exam` aussehen und wie Schritt für Schritt geprüft wird;
-Platzhalter: `{{level}}`, `{{procedure}}`, `{{subject}}`, `{{aids}}`,
-`{{language}}`. `topics` verknüpft das Dojo mit Themen, deren Lernstand nach
-dem Prüfen aktualisiert werden kann. Vorlagen: `packs/dojo-library/` und
-`packs/demo/dojos/`. Neue Dojos auch in `pack.json` → `dojos` eintragen.
+A dojo is a file `dojos/<id>.json` (schema `dojo.schema.json`) and needs no
+code. `promptTemplate` describes what tasks look like for the levels `easy`,
+`medium`, `exam` and how to check them step by step; placeholders:
+`{{level}}`, `{{procedure}}`, `{{subject}}`, `{{aids}}`, `{{language}}`.
+`topics` links the dojo to topics whose progress can be updated after a
+check. Templates: `packs/dojo-library/` and `packs/demo/dojos/`. Also add new
+dojos to `pack.json` → `dojos`.
 
-Im Chat: Aufgabe nach `promptTemplate` stellen, Lösung abwarten, Schritt für
-Schritt prüfen, Tipp oder Musterlösung nur auf Wunsch.
+In the chat: set a task following `promptTemplate`, wait for the solution,
+check it step by step, give a hint or model solution only on request.
 
-### Den Stand nachvollziehen
+### Understanding the current state
 
-`log/events.jsonl` zeigt, was die Person geklickt und beantwortet hat;
-`sessions/` enthält die Fragen, Antworten und Bewertungen. Für einen Überblick
-(„Wie steht es um DB?“) Themenstatus, fällige Termine, überfällige Blätter,
-veraltete Checks und offene Punkte zusammenfassen.
+`log/events.jsonl` shows what the person clicked and answered; `sessions/`
+holds the questions, answers and grades. For an overview ("How am I doing in
+databases?"), summarize topic status, due dates, overdue sheets, outdated
+checks and open tasks.
 
 ---
 
-## B. Die App weiterentwickeln
+## B. Developing the app
 
-- Stack: Vite 6, TypeScript (strict), Preact, Ajv. Kein Backend. Node ≥ 18.19.
-- Befehle: `npm run dev`, `npm run build`, `npm test`, `npm run typecheck`,
-  `npm run validate`. Mit `LC_PACK_DIR=local/<name> npm run dev` liest und
-  schreibt die App einen Pack-Ordner über den Dev-Server (jeder Browser).
-- Struktur:
-  - `schema/` JSON-Schemas (Quelle der Wahrheit für das Format)
-  - `src/model/` Typen (Spiegel des Schemas), Validierung, abgeleitete Ansichten
-  - `src/scheduling/` Spaced Repetition
-  - `src/storage/` `PackFs`-Backends (Ordner, Dev-Server, Browser), Laden/Speichern, Export
-  - `src/ai/` Anfragen bauen, Antworten prüfen, Adapter (Datei-Brücke, API, Copy-Prompt)
-  - `src/ui/` Preact-Komponenten
-  - `prompts/` Prompt-Vorlagen (Markdown mit `{{platzhaltern}}`)
-  - `tools/vite-pack-fs.ts` Dev-Server-Dateizugriff
-  - `scripts/` Node-Skripte (`validate-packs.mjs`, `review.ts`)
-- Formatänderungen immer zusammen in `schema/`, `src/model/types.ts`, Demo-
-  und Leer-Pack und dieser Datei. `npm test` und `npm run validate` müssen
-  grün sein.
-- UI-Texte auf Deutsch, Code und Bezeichner auf Englisch.
+- Stack: Vite 6, TypeScript (strict), Preact, Ajv. No backend. Node ≥ 18.19.
+- Commands: `npm run dev`, `npm run build`, `npm test`, `npm run typecheck`,
+  `npm run validate`. With `LC_PACK_DIR=local/<name> npm run dev` the app
+  reads and writes a pack folder through the dev server (any browser).
+- Structure:
+  - `schema/` JSON schemas (source of truth for the format)
+  - `src/model/` types (mirror of the schema), validation, derived views
+  - `src/scheduling/` spaced repetition
+  - `src/storage/` `PackFs` backends (folder, dev server, browser), loading/saving, export
+  - `src/ai/` building requests, checking answers, adapters (file bridge, API, Copy-Prompt)
+  - `src/ui/` Preact components
+  - `prompts/` prompt templates (Markdown with `{{placeholders}}`)
+  - `tools/vite-pack-fs.ts` dev server file access
+  - `scripts/` Node scripts (`validate-packs.mjs`, `review.ts`)
+- Always make format changes together in `schema/`, `src/model/types.ts`, the
+  demo and empty packs, and this file. `npm test` and `npm run validate` must
+  pass.
+- UI texts in English, code and identifiers in English.
