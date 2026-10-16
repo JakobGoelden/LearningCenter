@@ -258,3 +258,31 @@ a.chip { text-decoration: none; display: inline-block; }
 @media (max-width: 560px) {
   .banner-row { grid-template-columns: minmax(0, 1fr) 96px; gap: 8px; }
 }
+
+/* Dojo practice rounds */
+.timer { font-weight: 700; min-width: 3.2em; text-align: right; }
+.timer.urgent { color: var(--danger); }
+.timebar { height: 4px; background: var(--panel-2); border-radius: 999px; overflow: hidden; }
+.timebar > div { height: 100%; background: var(--accent); transition: width 0.25s linear; }
+.options { display: grid; gap: 6px; }
+.option {
+  display: flex; gap: 10px; align-items: baseline; padding: 8px 12px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--panel);
+}
+.option p { margin: 0; }
+.option.picked { border-color: var(--accent); }
+.option.right { border-color: var(--ok); background: var(--ok-bg); }
+.option.wrong { border-color: var(--danger); background: var(--danger-bg); }
+.order-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.order-list li { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; }
+.order-list li.right { border-color: var(--ok); }
+.order-list li.wrong { border-color: var(--danger); }
+.verdict { padding: 8px 12px; border-radius: 8px; }
+.verdict.ok { background: var(--ok-bg); color: var(--ok); }
+.verdict.partly { background: var(--warn-bg); color: var(--warn); }
+.verdict.wrong { background: var(--danger-bg); color: var(--danger); }
+.panel-inset { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+table.automaton { border-collapse: collapse; }
+table.automaton th, table.automaton td { padding: 3px 6px; text-align: center; }
+table.automaton input:not([type]) { width: 7em; }
+table.automaton.readonly td, table.automaton.readonly th { border: 1px solid var(--border); padding: 4px 10px; }

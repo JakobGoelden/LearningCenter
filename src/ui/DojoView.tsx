@@ -1,21 +1,23 @@
-import { useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { nowIso, today } from '../lib/dates';
 import { applyReview } from '../scheduling/scheduler';
-import { dojoCheckRequest, dojoHintRequest, dojoSolutionRequest, dojoTaskRequest, LEVEL_LABEL } from '../ai/requests';
-import { saveSession } from '../storage/repo';
-import type { Level, Session, SessionItem } from '../model/types';
+import { dojoCheckRequest, dojoDrillsRequest, dojoHintRequest, dojoSolutionRequest, dojoTaskRequest, LEVEL_LABEL } from '../ai/requests';
+import { saveDojo, saveSession } from '../storage/repo';
+import type { Level, Score, Session, SessionItem } from '../model/types';
 import { Cancelled, useAi } from './AiPanel';
 import { Markdown } from './Markdown';
 import { href } from './router';
 import { sessionId } from './QuizView';
 import { SCORE_LABEL } from './labels';
+import { DrillPractice, type RoundSummary } from './DrillRound';
+import { roundScore } from '../dojo/drills';
 
 const ALL_LEVELS: Level[] = ['easy', 'medium', 'exam'];
 
 export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: string }) {
   const pack = usePack();
-  const { fs, loaded, log, updateSubject, setNotice } = pack;
+  const { fs, loaded, log, updateSubject, setNotice, reload } = pack;
   const s = pack.subject(subjectId);
   const dojos = loaded.dojos.filter((d) => d.subject === subjectId);
   const dojo = dojos.find((d) => d.id === dojoId);
@@ -23,6 +25,8 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
   const levels = dojo?.levels?.length ? dojo.levels : ALL_LEVELS;
   const [level, setLevel] = useState<Level>(levels[Math.min(1, levels.length - 1)]);
   const [session, setSession] = useState<Session | null>(null);
+  /** Session file of the last practice round, linked from the topic reviews. */
+  const drillSessionId = useRef('');
   const [error, setError] = useState<string | null>(null);
 
   if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
@@ -153,15 +157,118 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
       await persist({ ...session, applied: true });
     });
 
+  const saveRound = async (summary: RoundSummary) => {
+    const id = sessionId('drill', s.id);
+    drillSessionId.current = id;
+    const next: Session = {
+      id,
+      type: 'dojo',
+      subject: s.id,
+      dojo: dojo.id,
+      ...(summary.level !== 'all' ? { level: summary.level } : {}),
+      startedAt: nowIso(),
+      finishedAt: nowIso(),
+      items: summary.outcomes.map((o, i) => ({
+        n: i + 1,
+        kind: 'drill',
+        drill: o.drill.id,
+        ...(o.drill.topic ? { topicId: o.drill.topic } : {}),
+        prompt: o.drill.prompt,
+        answer: o.answer,
+        score: o.result.score,
+        ...(o.result.feedback ? { feedback: o.result.feedback } : {}),
+      })),
+    };
+    try {
+      await saveSession(fs, next);
+    } catch (e) {
+      setNotice(`Could not save the session: ${(e as Error).message}`);
+    }
+    await log({
+      type: 'dojo.drill.round',
+      subject: s.id,
+      ref: id,
+      data: { dojo: dojo.id, score: summary.score, right: summary.outcomes.filter((o) => o.result.correct).length, of: summary.outcomes.length },
+    });
+  };
+
+  /** One review per trained topic: the drills' own topics, else the dojo's. */
+  const applyRound = async (summary: RoundSummary) => {
+    const byTopic = new Map<string, number[]>();
+    for (const o of summary.outcomes) {
+      for (const t of o.drill.topic ? [o.drill.topic] : (dojo.topics ?? [])) {
+        if (!byTopic.has(t)) byTopic.set(t, []);
+        byTopic.get(t)!.push(o.result.score);
+      }
+    }
+    const scores = Object.fromEntries(
+      [...byTopic].map(([t, list]) => [t, roundScore(list.map((score) => ({ correct: score === 5, score: score as Score, feedback: '' })))]),
+    );
+    await updateSubject(
+      s.id,
+      (subj) => ({
+        ...subj,
+        topics: subj.topics.map((t) =>
+          t.id in scores
+            ? applyReview(t, { date: today(), score: scores[t.id], source: 'dojo', ...(drillSessionId.current ? { sessionId: drillSessionId.current } : {}) }, loaded.pack.settings)
+            : t,
+        ),
+      }),
+      { type: 'dojo.applied', ref: drillSessionId.current || dojo.id, data: { scores } },
+    );
+  };
+  const NEW_DRILLS = 5;
+  const writeDrills = () =>
+    guard(async () => {
+      const res = await run(dojoDrillsRequest({ ...base, sessionId: sessionId('drills', s.id), count: NEW_DRILLS }));
+      const taken = new Set((dojo.drills ?? []).map((d) => d.id));
+      const added = res.drills!.map((d) => {
+        let id = d.id;
+        for (let n = 2; taken.has(id); n++) id = `${d.id}-${n}`;
+        taken.add(id);
+        return { ...d, id };
+      });
+      await saveDojo(fs, { ...dojo, drills: [...(dojo.drills ?? []), ...added] });
+      await log({ type: 'dojo.drills.add', subject: s.id, ref: dojo.id, actor: 'ai', data: { ids: added.map((d) => d.id) } });
+      await reload();
+      setNotice(`Added ${added.length} new exercises to "${dojo.title}".${res.summary ? ` ${res.summary}` : ''}`);
+    });
+
+  const trainsTopics = (dojo.drills ?? []).some((d) => d.topic && s.topics.some((t) => t.id === d.topic)) || !!dojo.topics?.length;
+
   return (
     <div class="stack">
       {head(dojo.title)}
-      <div class="panel stack">
-        <div class="small muted">
-          {s.name} · {dojo.procedure}
-          {dojo.aids?.length ? ` · Aids: ${dojo.aids.join(', ')}` : ''}
+      <div class="small muted">
+        {s.name} · {dojo.procedure}
+        {dojo.aids?.length ? ` · Aids: ${dojo.aids.join(', ')}` : ''}
+      </div>
+      {dojo.description && <div>{dojo.description}</div>}
+
+      {dojo.drills?.length ? (
+        <DrillPractice
+          dojo={dojo}
+          onStart={(round, lvl) => void log({ type: 'dojo.drill.start', subject: s.id, ref: dojo.id, data: { count: round.length, level: lvl } })}
+          onFinish={saveRound}
+          onApply={trainsTopics ? applyRound : undefined}
+        />
+      ) : (
+        <div class="panel small muted">
+          This dojo has no prepared exercises yet. Let the AI write some, or practise with AI-generated tasks below.
         </div>
-        {dojo.description && <div>{dojo.description}</div>}
+      )}
+      <div class="row small">
+        <button class="small" onClick={writeDrills} disabled={busy}>
+          + {NEW_DRILLS} new exercises with AI
+        </button>
+        <span class="muted">They are saved in the dojo, so the next rounds run without the AI.</span>
+      </div>
+
+      <div class="panel stack">
+        <div class="row">
+          <h3 style="flex:1">Free practice with AI</h3>
+          <span class="small muted">The AI writes a fresh task and checks your solution step by step.</span>
+        </div>
         <div class="row">
           <span class="small">Level</span>
           {levels.map((l) => (
