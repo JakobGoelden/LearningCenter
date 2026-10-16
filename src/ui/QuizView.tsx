@@ -2,7 +2,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { formatShort, nowIso, today } from '../lib/dates';
-import { applyReview, averageScore, pickQuizTopics } from '../scheduling/scheduler';
+import { applyReview, averageScore, isDue, pickQuizTopics } from '../scheduling/scheduler';
 import { quizGradeRequest, quizStartRequest } from '../ai/requests';
 import { saveSession } from '../storage/repo';
 import type { Score, Session, SessionItem, Topic } from '../model/types';
@@ -44,11 +44,12 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
   const s = pack.subject(subjectId);
   const { run, busy, panel } = useAi();
   const on = today();
-  const defaultCount = loaded.pack.settings?.questionsPerQuiz ?? 5;
-  const [count, setCount] = useState(defaultCount);
   // Reviewing ahead: topics due by `ahead` are picked as if that day had come.
   const pickOn = ahead && ahead > on ? ahead : on;
-  const candidates = useMemo(() => (s ? pickQuizTopics(s.topics, pickOn, 30) : []), [s, pickOn]);
+  const candidates = useMemo(() => (s ? pickQuizTopics(s.topics, pickOn, s.topics.length) : []), [s, pickOn]);
+  const due = candidates.filter((t) => isDue(t, pickOn)).length;
+  // Everything due by default, else the usual quiz size.
+  const [count, setCount] = useState(Math.max(1, Math.min(candidates.length, due || (loaded.pack.settings?.questionsPerQuiz ?? 5))));
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [phase, setPhase] = useState<Phase>('setup');
   const [session, setSession] = useState<Session | null>(null);
@@ -339,7 +340,12 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
         <div class="panel stack">
           <div class="row">
             <span>Number of questions</span>
-            <Stepper value={count} onChange={setCount} min={1} max={30} label="Questions" />
+            <Stepper value={count} onChange={setCount} min={1} max={Math.max(1, candidates.length)} label="Questions" />
+            {due > 0 && count !== due && (
+              <button class="small all-due" onClick={() => setCount(due)}>
+                All due ({due})
+              </button>
+            )}
           </div>
           {candidates.length === 0 ? (
             <div class="muted">
