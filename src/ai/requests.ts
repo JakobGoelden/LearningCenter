@@ -199,6 +199,7 @@ export function quizGradeRequest(pack: Pack, subject: Subject, items: SessionIte
         topic: i.topicId ? topics.get(i.topicId)?.title : undefined,
         topicNotes: i.topicId ? topics.get(i.topicId)?.notes : undefined,
         question: i.prompt,
+        ...(i.solution ? { keyPoints: i.solution } : {}),
         answer: i.answer ?? '',
       })),
     },

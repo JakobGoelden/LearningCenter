@@ -62,6 +62,11 @@ function checkPack(dir) {
     for (const t of s.topics) {
       if (ids.has(t.id)) fail(`subjects/${id}.json: duplicate topic id "${t.id}"`);
       ids.add(t.id);
+      const qids = new Set();
+      for (const q of t.questions ?? []) {
+        if (qids.has(q.id)) fail(`subjects/${id}.json: topic "${t.id}" has duplicate question id "${q.id}"`);
+        qids.add(q.id);
+      }
     }
     topicIds.set(id, ids);
     const sheetIds = new Set();

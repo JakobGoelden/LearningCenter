@@ -48,7 +48,23 @@
         "status": { "$ref": "common.schema.json#/$defs/topicStatus" },
         "due": { "$ref": "common.schema.json#/$defs/date", "description": "Next review date." },
         "intervalDays": { "type": "integer", "minimum": 0, "description": "Interval that produced 'due'." },
-        "history": { "type": "array", "items": { "$ref": "#/$defs/review" } }
+        "history": { "type": "array", "items": { "$ref": "#/$defs/review" } },
+        "questions": {
+          "type": "array",
+          "description": "Prepared quiz questions. The app asks them without an AI (one per topic per quiz, in turn), the learner grades themselves or lets the AI grade later. Write 2–4 per topic.",
+          "items": { "$ref": "#/$defs/question" }
+        }
+      }
+    },
+    "question": {
+      "type": "object",
+      "required": ["id", "prompt"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/id", "description": "Unique within the topic." },
+        "prompt": { "type": "string", "minLength": 1, "description": "The question (Markdown). Tests understanding, not recall of wording." },
+        "kind": { "enum": ["why", "what-if", "explain", "apply"] },
+        "answer": { "type": "string", "description": "Key points of a good answer (Markdown), shown to the learner after answering and used for grading." }
       }
     },
     "review": {

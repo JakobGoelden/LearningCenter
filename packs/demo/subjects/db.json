@@ -4,7 +4,11 @@
   "name": "Databases",
   "short": "DB",
   "color": "#1f8a70",
-  "exam": { "format": "unknown", "notes": "Written or oral, announced in lecture 4.", "aids": [] },
+  "exam": {
+    "format": "unknown",
+    "notes": "Written or oral, announced in lecture 4.",
+    "aids": []
+  },
   "topics": [
     {
       "id": "er-model",
@@ -14,9 +18,35 @@
       "due": "2026-10-30",
       "intervalDays": 14,
       "history": [
-        { "date": "2026-10-05", "score": 4, "source": "quiz" },
-        { "date": "2026-10-09", "score": 4, "source": "quiz" },
-        { "date": "2026-10-16", "score": 5, "source": "quiz" }
+        {
+          "date": "2026-10-05",
+          "score": 4,
+          "source": "quiz"
+        },
+        {
+          "date": "2026-10-09",
+          "score": 4,
+          "source": "quiz"
+        },
+        {
+          "date": "2026-10-16",
+          "score": 5,
+          "source": "quiz"
+        }
+      ],
+      "questions": [
+        {
+          "id": "cardinality",
+          "kind": "explain",
+          "prompt": "Explain the difference between a 1:n and an n:m relationship in the ER model and how each turns into tables.",
+          "answer": "- 1:n: each entity on the n side is related to at most one on the 1 side; becomes a foreign key on the n side.\n- n:m: both sides many; needs its own table with both keys (and the relationship's attributes)."
+        },
+        {
+          "id": "weak",
+          "kind": "why",
+          "prompt": "Why does a weak entity need an identifying relationship?",
+          "answer": "- It has no key of its own (only a partial key).\n- Its key is formed together with the key of the owner entity via the identifying relationship.\n- Example: a room is identified by building + room number."
+        }
       ]
     },
     {
@@ -26,30 +56,107 @@
       "status": "shaky",
       "due": "2026-10-15",
       "intervalDays": 1,
-      "history": [{ "date": "2026-10-14", "score": 2, "source": "dojo" }]
+      "history": [
+        {
+          "date": "2026-10-14",
+          "score": 2,
+          "source": "dojo"
+        }
+      ],
+      "questions": [
+        {
+          "id": "join",
+          "kind": "explain",
+          "prompt": "Explain what a natural join does, and what happens if the two relations have no attribute in common.",
+          "answer": "- Combines tuples that agree on all attributes with the same name; common attributes appear once.\n- With no common attribute it becomes the Cartesian product."
+        },
+        {
+          "id": "selection-projection",
+          "kind": "apply",
+          "prompt": "Write a relational algebra expression for the names of all students in semester 3, given Student(id, name, semester).",
+          "answer": "- π_name(σ_semester=3(Student)).\n- Selection first filters the rows, projection then keeps the name column; duplicates disappear in set semantics."
+        }
+      ]
     },
     {
       "id": "sql-basics",
       "title": "SQL: SELECT, JOIN, GROUP BY",
       "notes": "Evaluation order, HAVING vs. WHERE, NULL semantics.",
-      "status": "new"
+      "status": "new",
+      "questions": [
+        {
+          "id": "where-having",
+          "kind": "why",
+          "prompt": "Why can you not use an aggregate like COUNT(*) in WHERE, and where does such a condition go instead?",
+          "answer": "- WHERE filters single rows before grouping; aggregates only exist per group.\n- Conditions on aggregates go into HAVING, which filters groups after GROUP BY."
+        },
+        {
+          "id": "left-join",
+          "kind": "what-if",
+          "prompt": "What if you replace an INNER JOIN by a LEFT JOIN: which extra rows can appear in the result?",
+          "answer": "- All rows of the left table are kept.\n- Rows without a match get NULL in the columns of the right table.\n- Typical use: also list customers without orders."
+        }
+      ]
     },
     {
       "id": "normal-forms",
       "title": "Normal forms (1NF–BCNF)",
       "notes": "Functional dependencies, keys, decomposition.",
-      "status": "new"
+      "status": "new",
+      "questions": [
+        {
+          "id": "3nf",
+          "kind": "explain",
+          "prompt": "Explain what 3NF requires and give an example of a violation.",
+          "answer": "- 2NF plus: no non-key attribute depends transitively on a key (no FD between non-key attributes).\n- Example: Student(id, zip, city) with zip → city; city depends on id only via zip.\n- Fix: split into Student(id, zip) and Zip(zip, city)."
+        },
+        {
+          "id": "bcnf",
+          "kind": "why",
+          "prompt": "Why is BCNF stricter than 3NF, and what can you lose when you decompose into BCNF?",
+          "answer": "- BCNF: the left side of every non-trivial FD is a superkey; 3NF also allows FDs whose right side is a key attribute (prime).\n- A BCNF decomposition is always lossless but not always dependency-preserving."
+        }
+      ]
     }
   ],
   "schedule": [
-    { "kind": "lecture", "weekday": "tue", "start": "08:15", "end": "09:45", "location": "Lecture hall 3" },
-    { "kind": "lab", "weekday": "fri", "start": "12:00", "end": "13:30", "location": "PC pool", "notes": "every other week" }
+    {
+      "kind": "lecture",
+      "weekday": "tue",
+      "start": "08:15",
+      "end": "09:45",
+      "location": "Lecture hall 3"
+    },
+    {
+      "kind": "lab",
+      "weekday": "fri",
+      "start": "12:00",
+      "end": "13:30",
+      "location": "PC pool",
+      "notes": "every other week"
+    }
   ],
   "sheets": [
-    { "id": "b1", "label": "B1", "due": "2026-10-21", "status": "done" },
-    { "id": "b2", "label": "B2", "due": "2026-10-28", "status": "open" }
+    {
+      "id": "b1",
+      "label": "B1",
+      "due": "2026-10-21",
+      "status": "done"
+    },
+    {
+      "id": "b2",
+      "label": "B2",
+      "due": "2026-10-28",
+      "status": "open"
+    }
   ],
-  "openItems": [{ "id": "exam-form", "text": "Ask about the exam format in lecture 4", "createdAt": "2026-10-16" }],
+  "openItems": [
+    {
+      "id": "exam-form",
+      "text": "Ask about the exam format in lecture 4",
+      "createdAt": "2026-10-16"
+    }
+  ],
   "checks": [
     {
       "id": "moodle",
@@ -58,6 +165,11 @@
       "lastChecked": "2026-10-16",
       "everyDays": 3
     },
-    { "id": "notes", "kind": "notes", "label": "Own notes", "everyDays": 7 }
+    {
+      "id": "notes",
+      "kind": "notes",
+      "label": "Own notes",
+      "everyDays": 7
+    }
   ]
 }

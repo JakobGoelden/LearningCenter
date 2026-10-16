@@ -4,19 +4,40 @@
   "name": "Example subject",
   "short": "EX",
   "color": "#3b6fd4",
-  "exam": { "format": "unknown", "aids": [] },
+  "exam": {
+    "format": "unknown",
+    "aids": []
+  },
   "topics": [
     {
       "id": "first-topic",
       "title": "First topic",
       "notes": "What it is about, and the source (e.g. lecture 1, script chapter 2).",
-      "status": "new"
+      "status": "new",
+      "questions": [
+        {
+          "id": "q1",
+          "kind": "explain",
+          "prompt": "Explain the first topic in your own words and give an example.",
+          "answer": "- The key points a good answer must contain.\n- A typical mistake to avoid."
+        }
+      ]
     }
   ],
   "sheets": [],
   "openItems": [],
   "checks": [
-    { "id": "moodle", "kind": "material", "label": "Moodle course", "everyDays": 3 },
-    { "id": "notes", "kind": "notes", "label": "Own notes", "everyDays": 7 }
+    {
+      "id": "moodle",
+      "kind": "material",
+      "label": "Moodle course",
+      "everyDays": 3
+    },
+    {
+      "id": "notes",
+      "kind": "notes",
+      "label": "Own notes",
+      "everyDays": 7
+    }
   ]
 }

@@ -16,6 +16,7 @@
     "startedAt": { "$ref": "common.schema.json#/$defs/dateTime" },
     "finishedAt": { "$ref": "common.schema.json#/$defs/dateTime" },
     "applied": { "type": "boolean", "description": "True once scores were written into the topics' history." },
+    "gradeLater": { "type": "boolean", "description": "The learner asked the AI to grade the answers later (CLAUDE.md: Grading open quizzes). Open while applied is not true." },
     "summary": { "type": "string" },
     "items": {
       "type": "array",
@@ -28,6 +29,7 @@
           "topicId": { "$ref": "common.schema.json#/$defs/id" },
           "kind": { "enum": ["why", "what-if", "explain", "apply", "task", "drill"] },
           "drill": { "$ref": "common.schema.json#/$defs/id", "description": "Id of the prepared drill, for kind drill." },
+          "question": { "$ref": "common.schema.json#/$defs/id", "description": "Id of the prepared topic question, for quizzes run in the app." },
           "prompt": { "type": "string" },
           "answer": { "type": "string" },
           "score": { "$ref": "common.schema.json#/$defs/score" },

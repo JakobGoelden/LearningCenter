@@ -30,9 +30,14 @@ the next reviews.
   (low recent scores) and subjects with an exam in the next three weeks
   weigh more, then shaky and new topics fill up. It quizzes them subject by
   subject.
-- **Quiz:** The AI asks questions that test understanding, one card at a
-  time ("Question n/N"), grades them from 0 to 5 and explains gaps; the
-  graded cards flip over to show score and feedback. Then spaced repetition takes
+- **Quiz:** runs right in the app, no copied prompts: each topic has
+  prepared questions that test understanding (written by the AI when it
+  sets up your pack), shown one card at a time. At the end the cards flip
+  over to show the key points, and you grade yourself (right / partly /
+  wrong), or choose **Let the AI grade later**: your AI grades the answers
+  0–5 with feedback the next time you ask it to. With an API key or the
+  file bridge you can also have the AI grade right away or write fresh
+  questions. Then spaced repetition takes
   over: topics you know well move on 1 → 3 → 7 → 14 → 21 days, shaky ones
   stay short, and nothing is scheduled on weekends.
 - **Dojos:** practice rooms for procedures like NFA → DFA, SQL by hand or
