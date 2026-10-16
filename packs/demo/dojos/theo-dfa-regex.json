@@ -8,5 +8,128 @@
   "levels": ["easy", "medium", "exam"],
   "topics": ["regex"],
   "promptTemplate": "Create a DFA of {{level}} difficulty (easy: 2–3 states, medium: 3–4, exam: 4 with loops) to convert into a regular expression by state elimination. Do not state the elimination order. When checking: equivalence of the result matters more than its form; check each elimination step on its own.",
-  "answerFormat": "Elimination steps one after another, the regular expression at the end."
+  "answerFormat": "Elimination steps one after another, the regular expression at the end.",
+  "drills": [
+    {
+      "id": "elim-rule",
+      "kind": "choice",
+      "level": "easy",
+      "topic": "regex",
+      "prompt": "In state elimination you remove state q. It has a self-loop labelled r, an incoming edge p → q labelled s and an outgoing edge q → t labelled u. What is the new label on p → t (ignoring an existing direct edge)?",
+      "options": ["`s r u`", "`s r* u`", "`s|r|u`", "`(s u)*`"],
+      "correct": [1],
+      "explanation": "From p you go to q (s), loop any number of times (r*), then leave to t (u)."
+    },
+    {
+      "id": "regex-even-a",
+      "kind": "regex",
+      "level": "easy",
+      "topic": "regex",
+      "prompt": "Give a regular expression for the language of this DFA.",
+      "alphabet": ["a", "b"],
+      "given": {
+        "states": ["q0", "q1"],
+        "start": "q0",
+        "final": ["q0"],
+        "transitions": [["q0", "a", "q1"], ["q0", "b", "q0"], ["q1", "a", "q0"], ["q1", "b", "q1"]]
+      },
+      "reference": {
+        "automaton": {
+          "states": ["q0", "q1"],
+          "start": "q0",
+          "final": ["q0"],
+          "transitions": [["q0", "a", "q1"], ["q0", "b", "q0"], ["q1", "a", "q0"], ["q1", "b", "q1"]]
+        }
+      },
+      "explanation": "It accepts the words with an even number of a's, e.g. `b*(ab*ab*)*`."
+    },
+    {
+      "id": "regex-ends-ab",
+      "kind": "regex",
+      "level": "medium",
+      "topic": "regex",
+      "prompt": "Give a regular expression for the language of this DFA.",
+      "alphabet": ["a", "b"],
+      "given": {
+        "states": ["q0", "q1", "q2"],
+        "start": "q0",
+        "final": ["q2"],
+        "transitions": [
+          ["q0", "a", "q1"],
+          ["q0", "b", "q0"],
+          ["q1", "a", "q1"],
+          ["q1", "b", "q2"],
+          ["q2", "a", "q1"],
+          ["q2", "b", "q0"]
+        ]
+      },
+      "reference": {
+        "automaton": {
+          "states": ["q0", "q1", "q2"],
+          "start": "q0",
+          "final": ["q2"],
+          "transitions": [
+            ["q0", "a", "q1"],
+            ["q0", "b", "q0"],
+            ["q1", "a", "q1"],
+            ["q1", "b", "q2"],
+            ["q2", "a", "q1"],
+            ["q2", "b", "q0"]
+          ]
+        }
+      },
+      "explanation": "The DFA accepts exactly the words ending in ab: `(a|b)*ab`."
+    },
+    {
+      "id": "regex-no-bb",
+      "kind": "regex",
+      "level": "exam",
+      "topic": "regex",
+      "prompt": "Give a regular expression for the language of this DFA. Hint: eliminate s1 first.",
+      "alphabet": ["a", "b"],
+      "given": {
+        "states": ["s0", "s1", "d"],
+        "start": "s0",
+        "final": ["s0", "s1"],
+        "transitions": [
+          ["s0", "a", "s0"],
+          ["s0", "b", "s1"],
+          ["s1", "a", "s0"],
+          ["s1", "b", "d"],
+          ["d", "a", "d"],
+          ["d", "b", "d"]
+        ]
+      },
+      "reference": {
+        "automaton": {
+          "states": ["s0", "s1", "d"],
+          "start": "s0",
+          "final": ["s0", "s1"],
+          "transitions": [
+            ["s0", "a", "s0"],
+            ["s0", "b", "s1"],
+            ["s1", "a", "s0"],
+            ["s1", "b", "d"],
+            ["d", "a", "d"],
+            ["d", "b", "d"]
+          ]
+        }
+      },
+      "explanation": "It accepts the words without two b's in a row, e.g. `(a|ba)*(b|ε)`."
+    },
+    {
+      "id": "elim-steps",
+      "kind": "order",
+      "level": "medium",
+      "topic": "regex",
+      "prompt": "Put the steps of state elimination in order.",
+      "items": [
+        "Add a new start state and a new single final state, joined with ε-edges.",
+        "Pick a state that is neither the new start nor the new final state.",
+        "Replace every path through it by a direct edge labelled in · loop* · out.",
+        "Merge parallel edges with |.",
+        "Repeat until only start and final state are left: the edge label is the expression."
+      ]
+    }
+  ]
 }

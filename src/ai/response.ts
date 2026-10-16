@@ -1,5 +1,6 @@
-import { assertValid } from '../model/validate';
-import type { AiRequest, AiResponse, RequestKind } from '../model/types';
+import { assertValid, check } from '../model/validate';
+import { drillProblems, normalizeDrill } from '../dojo/drills';
+import type { AiRequest, AiResponse, Drill, RequestKind } from '../model/types';
 
 const REQUIRED_FIELD: Record<RequestKind, keyof AiResponse> = {
   'quiz.start': 'questions',
@@ -8,6 +9,7 @@ const REQUIRED_FIELD: Record<RequestKind, keyof AiResponse> = {
   'dojo.check': 'check',
   'dojo.hint': 'hint',
   'dojo.solution': 'solution',
+  'dojo.drills': 'drills',
 };
 
 /** Pulls the first JSON object out of model text (handles ```json fences and chatter). */
@@ -34,6 +36,21 @@ export function finalizeResponse(req: AiRequest, raw: unknown): AiResponse {
     clean.questions = (clean.questions as Record<string, unknown>[]).map((q) =>
       Object.fromEntries(Object.entries(q).filter(([, v]) => v !== '')),
     );
+  }
+  // Keep the usable drills and drop broken ones instead of failing the whole answer.
+  const dropped: string[] = [];
+  if (Array.isArray(clean.drills)) {
+    const usable: Drill[] = [];
+    for (const raw of clean.drills as Record<string, unknown>[]) {
+      const d = normalizeDrill(raw);
+      const shell = { id: 'x', subject: 'x', title: 'x', procedure: 'x', promptTemplate: 'x', drills: [d] };
+      const problems = check('dojo', shell) ? ['does not match the drill format'] : drillProblems(d as unknown as Drill);
+      if (problems.length) dropped.push(`${String(d.id ?? '?')}: ${problems[0]}`);
+      else usable.push(d as unknown as Drill);
+    }
+    if (!usable.length) throw new Error(`None of the exercises were usable. ${dropped.slice(0, 3).join('; ')}`);
+    clean.drills = usable;
+    if (dropped.length) clean.summary = `Skipped ${dropped.length} broken exercise(s): ${dropped.join('; ')}`;
   }
   const res = assertValid('response', clean, 'AI answer');
   const field = REQUIRED_FIELD[req.kind];

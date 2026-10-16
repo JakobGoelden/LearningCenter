@@ -13,7 +13,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "validate": "node scripts/validate-packs.mjs",
+    "validate": "vite-node scripts/validate-packs.mjs --",
     "review": "vite-node scripts/review.ts --"
   },
   "dependencies": {

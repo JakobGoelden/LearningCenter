@@ -149,6 +149,7 @@ When the person clicks "Quiz" or works in a dojo, the app writes a request to
    | `dojo.check` | `check: {correct, score, steps: [{label, ok, comment}], feedback}` |
    | `dojo.hint` | `hint` |
    | `dojo.solution` | `solution` (Markdown) |
+   | `dojo.drills` | `drills` (exactly `count` new drills, format see Dojos → Drills) |
 
    Validate against `schema/response.schema.json`.
 4. Do **not** delete the inbox file and do **not** change any topics: the app
@@ -188,6 +189,58 @@ dojos to `pack.json` → `dojos`.
 
 In the chat: set a task following `promptTemplate`, wait for the solution,
 check it step by step, give a hint or model solution only on request.
+
+#### Drills (practice rounds in the app)
+
+`drills` in a dojo file are prepared exercises that run and get graded in the
+app without an AI: the learner picks a level and a count, answers against a
+timer, sees right/wrong with an explanation after each one and a result at
+the end, and can save the round to their progress (right = 5, partly = 3,
+wrong = 1, time up = 0, applied per `topic` of the drill, otherwise to the
+dojo's `topics`). The button "+ 5 new exercises with AI" sends a
+`dojo.drills` request and appends the answer to the dojo file.
+
+Every drill has `id` (slug, unique in the dojo), `kind`, `prompt` (Markdown
+with all data, tables as Markdown tables), and optionally `level`
+(`easy`/`medium`/`exam`), `topic` (topic id of the subject), `explanation`
+(shown after answering: why the answer is right) and `seconds` (time limit;
+default 60/120/240 by level, doubled for `automaton`, `regex`, `self`).
+
+| `kind` | Fields | Graded by |
+| --- | --- | --- |
+| `choice` | `options` (2–6), `correct` (0-based indexes, one or more) | exact set of picked options; partly if one off in a multi-answer question |
+| `input` | `accept` (all accepted spellings), `caseSensitive?` | match ignoring case, extra spaces and spaces around punctuation |
+| `number` | `answer`, `tolerance?` (default 0), `unit?` | within tolerance; `0,5` and `1.000,5` are understood |
+| `order` | `items` in the right order (the app shuffles) | exact order; partly if at most two items are misplaced (4+ items) |
+| `regex` | `alphabet` (single characters), `reference`, `given?` | same language as `reference`, shortest counterexample otherwise |
+| `automaton` | `alphabet`, `reference`, `given?`, `deterministic?`, `minimal?` | same language; checks DFA/minimality if asked |
+| `self` | `solution` (Markdown) | learner compares and rates right/partly/wrong |
+
+`reference` is exactly one of `{"regex": "..."}` or `{"automaton": {...}}`;
+an automaton is `{states, start, final, transitions: [[from, symbol, to]]}`
+with `ε` for ε-transitions. Regex syntax: `|`, juxtaposition, `* + ?`,
+parentheses, `ε` (or `eps`), `∅`. `given` shows an automaton as a table in
+the task (e.g. "turn this NFA into a DFA").
+
+Writing good drills (for you as an AI):
+
+- Pick the kind that lets the app check the real skill: a result as a number
+  (`number`), a canonical short answer (`input`), a constructed language
+  (`regex`/`automaton`), steps of a procedure (`order`), concepts and typical
+  mistakes (`choice`). Use `self` only for proofs and explanations.
+- One clearly right answer. For `input`, list every form you would accept
+  (e.g. `{q0,q1}` and `{q1,q0}`); if there are too many, use `choice` or
+  `number` instead.
+- Wrong `choice` options are typical mistakes from the material, not
+  nonsense.
+- Mix levels: `easy` checks one step or a definition, `medium` a whole small
+  run of the procedure, `exam` the size and wording of an exam task.
+- Work out every answer yourself and double-check it: a wrong answer key is
+  worse than no drill. `npm run validate -- local/<name>` checks the format,
+  that references parse and that ids and topics exist.
+- Examples for many kinds: `packs/demo/dojos/` (automata, SQL, relational
+  algebra) and `packs/dojo-library/` (subnetting, fragmentation, routing,
+  continuity).
 
 ### Understanding the current state
 

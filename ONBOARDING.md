@@ -212,6 +212,24 @@ Then follow CLAUDE.md, part A:
    material. First look for templates in `packs/dojo-library/` and
    `packs/demo/dojos/`, otherwise write a new one (`schema/dojo.schema.json`).
    Put the exam's allowed aids (e.g. the allowed calculator) into `aids`.
+   Then fill each dojo with **drills**, the prepared exercises the app runs
+   on its own as a timed practice round (format and rules: CLAUDE.md →
+   Dojos → Drills). Aim for 8–15 per dojo across `easy`, `medium` and
+   `exam`, taken from the person's material (sheet tasks, old exams, script
+   examples) where possible. Ideas by subject type:
+   - Calculations (subnetting, statistics, physics): `number` with a
+     sensible `tolerance` and `unit`, `input` for addresses or short results.
+   - Formal languages: `automaton` (build a DFA/NFA, determinize, minimize)
+     and `regex` (write a regex for a language or an automaton), graded by
+     language equivalence.
+   - Procedures with fixed steps (algorithms, proofs by induction,
+     normalization): `order` for the steps, `choice` for the decisions in
+     between.
+   - Concepts and definitions (any subject): `choice` with typical mistakes
+     as wrong options.
+   - Languages and vocabulary: `input` with all accepted spellings.
+   - Proofs, essays, explanations: `self` with a model solution.
+   Double-check every answer key before writing it.
 6. Log everything you create as an event in `log/events.jsonl`
    (`actor: "ai"`).
 7. `npm run validate -- local/<pack>` must report "All packs valid.".
@@ -251,6 +269,10 @@ Suggest this routine to the person and carry it out when they ask for it:
 - **"Compare my notes"**: read new notes against the script and the topics,
   gaps become open tasks, new concepts become topics.
 - **"Quiz me on <subject>"** and **"Dojo <procedure>"**: see CLAUDE.md.
+- **"More exercises for <dojo>"**: write new drills into the dojo file
+  (different from the existing ones, focused on topics that are `shaky`),
+  then validate. In the app the button "+ 5 new exercises with AI" does the
+  same through the AI connection.
 - **"How am I doing?"**: due and overdue topics, exams in the next two
   weeks, open sheets, outdated checks.
 

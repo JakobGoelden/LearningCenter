@@ -6,5 +6,45 @@
   "procedure": "Sequence criterion: prove continuity or disprove it with two test sequences",
   "levels": ["easy", "medium", "exam"],
   "promptTemplate": "Give a function f: ℝ → ℝ (piecewise defined if needed) and a point x0. easy: an obvious jump. medium: a root or absolute value term. exam: a parameter for which continuity holds or fails, argued with test sequences. When checking: choice of sequences (do they converge to x0?), limits of the function values, conclusion.",
-  "answerFormat": "Claim, test sequences, limit calculation, conclusion."
+  "answerFormat": "Claim, test sequences, limit calculation, conclusion.",
+  "drills": [
+    {
+      "id": "jump",
+      "kind": "choice",
+      "level": "easy",
+      "prompt": "f(x) = 1 for x ≥ 0 and f(x) = 0 for x < 0. Is f continuous at 0?",
+      "options": ["Yes", "No"],
+      "correct": [1],
+      "explanation": "Take x_n = −1/n → 0: f(x_n) = 0 does not converge to f(0) = 1."
+    },
+    {
+      "id": "criterion",
+      "kind": "choice",
+      "level": "medium",
+      "prompt": "Sequence criterion: f is continuous at x0 if and only if …",
+      "options": [
+        "for **every** sequence x_n → x0, f(x_n) → f(x0).",
+        "for **some** sequence x_n → x0, f(x_n) → f(x0).",
+        "f(x_n) converges for every convergent sequence x_n.",
+        "f is bounded near x0."
+      ],
+      "correct": [0],
+      "explanation": "One sequence is enough to disprove continuity, but proving it needs all sequences."
+    },
+    {
+      "id": "fill-gap",
+      "kind": "number",
+      "level": "medium",
+      "prompt": "f(x) = (x² − 1)/(x − 1) for x ≠ 1 and f(1) = c. For which c is f continuous at 1?",
+      "answer": 2,
+      "explanation": "For x ≠ 1, f(x) = x + 1, which tends to 2."
+    },
+    {
+      "id": "prove-square",
+      "kind": "self",
+      "level": "exam",
+      "prompt": "Show with the sequence criterion that f(x) = x² is continuous at x0 = 2.",
+      "solution": "Let x_n be any sequence with x_n → 2. By the limit rules for products, x_n · x_n → 2 · 2 = 4 = f(2). Since this holds for every such sequence, f is continuous at 2."
+    }
+  ]
 }

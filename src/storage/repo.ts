@@ -59,6 +59,11 @@ export async function saveSubject(fs: PackFs, subject: Subject) {
   );
 }
 
+export async function saveDojo(fs: PackFs, dojo: Dojo) {
+  assertValid('dojo', dojo, `dojos/${dojo.id}.json`);
+  await fs.write(`dojos/${dojo.id}.json`, toJson({ $schema: `../${SCHEMA_ROOT}dojo.schema.json`, ...dojo }));
+}
+
 export async function saveSession(fs: PackFs, session: Session) {
   assertValid('session', session, `sessions/${session.id}.json`);
   await fs.write(

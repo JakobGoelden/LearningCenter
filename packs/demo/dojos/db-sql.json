@@ -8,5 +8,62 @@
   "levels": ["easy", "medium", "exam"],
   "topics": ["sql-basics"],
   "promptTemplate": "Give a small schema (2–3 tables, each with at most 5 rows of sample data as a table) and a question in plain language. easy: SELECT/WHERE. medium: JOIN and GROUP BY. exam: subquery or HAVING, with a NULL trap. The learner writes the SQL query and the result. When checking: evaluate the learner's query on the sample data and compare with the model solution; steps: FROM/JOIN, WHERE, GROUP BY, HAVING, SELECT, ORDER BY.",
-  "answerFormat": "SQL query, then the result table."
+  "answerFormat": "SQL query, then the result table.",
+  "drills": [
+    {
+      "id": "eval-order",
+      "kind": "order",
+      "level": "easy",
+      "topic": "sql-basics",
+      "prompt": "Put the clauses of a SELECT query in their **logical evaluation order**.",
+      "items": ["FROM / JOIN", "WHERE", "GROUP BY", "HAVING", "SELECT", "ORDER BY"],
+      "explanation": "That is why a column alias from SELECT cannot be used in WHERE, but can be used in ORDER BY."
+    },
+    {
+      "id": "filter-groups",
+      "kind": "choice",
+      "level": "easy",
+      "topic": "sql-basics",
+      "prompt": "Which clause filters **groups** after aggregation?",
+      "options": ["WHERE", "HAVING", "ORDER BY", "FROM"],
+      "correct": [1],
+      "explanation": "WHERE filters rows before grouping, HAVING filters groups after it."
+    },
+    {
+      "id": "distinct",
+      "kind": "input",
+      "level": "easy",
+      "topic": "sql-basics",
+      "prompt": "Which keyword after SELECT removes duplicate rows from the result?",
+      "accept": ["DISTINCT", "SELECT DISTINCT"]
+    },
+    {
+      "id": "count-null",
+      "kind": "number",
+      "level": "medium",
+      "topic": "sql-basics",
+      "prompt": "Table `Emp(id, dept, salary)`:\n\n| id | dept | salary |\n| --- | --- | --- |\n| 1 | A | 3000 |\n| 2 | A | NULL |\n| 3 | B | 4000 |\n| 4 | B | 2000 |\n\nWhat does `SELECT COUNT(salary) FROM Emp;` return?",
+      "answer": 3,
+      "explanation": "COUNT(column) skips NULL values. COUNT(*) would return 4."
+    },
+    {
+      "id": "avg-null",
+      "kind": "number",
+      "level": "exam",
+      "topic": "sql-basics",
+      "prompt": "Table `Emp(id, dept, salary)`:\n\n| id | dept | salary |\n| --- | --- | --- |\n| 1 | A | 3000 |\n| 2 | A | NULL |\n| 3 | B | 4000 |\n| 4 | B | 2000 |\n\nWhat does `SELECT AVG(salary) FROM Emp WHERE dept = 'A';` return?",
+      "answer": 3000,
+      "explanation": "AVG ignores NULL: the only salary in A is 3000, so the average is 3000, not 1500."
+    },
+    {
+      "id": "not-equal-null",
+      "kind": "choice",
+      "level": "exam",
+      "topic": "sql-basics",
+      "prompt": "Table `Emp(id, dept, salary)`:\n\n| id | dept | salary |\n| --- | --- | --- |\n| 1 | A | 3000 |\n| 2 | A | NULL |\n| 3 | B | 4000 |\n| 4 | B | 2000 |\n\nHow many rows does `SELECT * FROM Emp WHERE salary <> 3000;` return?",
+      "options": ["1", "2", "3", "4"],
+      "correct": [1],
+      "explanation": "Rows 3 and 4. For row 2, NULL <> 3000 is UNKNOWN, and WHERE keeps only TRUE."
+    }
+  ]
 }

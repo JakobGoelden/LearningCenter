@@ -5,6 +5,7 @@ import dojoTask from '../../prompts/dojo-task.md?raw';
 import dojoCheck from '../../prompts/dojo-check.md?raw';
 import dojoHint from '../../prompts/dojo-hint.md?raw';
 import dojoSolution from '../../prompts/dojo-solution.md?raw';
+import dojoDrills from '../../prompts/dojo-drills.md?raw';
 import { nowIso } from '../lib/dates';
 import type { AiRequest, Dojo, Level, Pack, RequestKind, SessionItem, Subject, Topic } from '../model/types';
 
@@ -15,6 +16,7 @@ const TEMPLATES: Record<RequestKind, string> = {
   'dojo.check': dojoCheck,
   'dojo.hint': dojoHint,
   'dojo.solution': dojoSolution,
+  'dojo.drills': dojoDrills,
 };
 
 const LANGUAGES: Record<string, string> = { de: 'German (Deutsch)', en: 'English' };
@@ -54,6 +56,32 @@ export const RESPONSE_SCHEMAS: Record<RequestKind, Record<string, unknown>> = {
   }),
   'dojo.hint': obj({ hint: str }),
   'dojo.solution': obj({ solution: str }),
+  // One flat shape for every drill kind, since structured outputs need fixed
+  // fields; unused fields come back empty and normalizeDrill drops them.
+  'dojo.drills': obj({
+    drills: arr(
+      obj({
+        id: str,
+        kind: { type: 'string', enum: ['choice', 'input', 'number', 'order', 'regex', 'automaton', 'self'] },
+        level: { type: 'string', enum: ['easy', 'medium', 'exam'] },
+        topic: str,
+        prompt: str,
+        explanation: str,
+        options: arr(str),
+        correct: arr({ type: 'integer' }),
+        accept: arr(str),
+        answer: { type: 'number' },
+        tolerance: { type: 'number' },
+        unit: str,
+        items: arr(str),
+        alphabet: arr(str),
+        referenceRegex: str,
+        deterministic: { type: 'boolean' },
+        minimal: { type: 'boolean' },
+        solution: str,
+      }),
+    ),
+  }),
 };
 
 const EXAMPLES: Record<RequestKind, unknown> = {
@@ -73,6 +101,13 @@ const EXAMPLES: Record<RequestKind, unknown> = {
   },
   'dojo.hint': { hint: '…' },
   'dojo.solution': { solution: 'Markdown text of the model solution' },
+  'dojo.drills': {
+    drills: [
+      { id: 'example-choice', kind: 'choice', level: 'easy', topic: '', prompt: '…', explanation: '…', options: ['…', '…', '…'], correct: [1] },
+      { id: 'example-number', kind: 'number', level: 'medium', topic: '<topic id>', prompt: '…', explanation: '…', answer: 42, tolerance: 0, unit: '' },
+      { id: 'example-regex', kind: 'regex', level: 'exam', topic: '', prompt: '…', explanation: '…', alphabet: ['a', 'b'], referenceRegex: '(a|b)*abb' },
+    ],
+  },
 };
 
 export function newRequestId(kind: RequestKind, subject: string): string {
@@ -232,5 +267,21 @@ export function dojoSolutionRequest(a: DojoArgs & { task: string }): AiRequest {
     summary: `Dojo ${a.dojo.title}: model solution`,
     vars: dojoVars(a.pack, a.subject, a.dojo, a.level),
     context: { procedure: a.dojo.procedure, level: a.level, task: a.task },
+  });
+}
+
+export function dojoDrillsRequest(a: DojoArgs & { count: number }): AiRequest {
+  return build({
+    ...a,
+    kind: 'dojo.drills',
+    summary: `Dojo ${a.dojo.title}: write ${a.count} new exercises`,
+    vars: { ...dojoVars(a.pack, a.subject, a.dojo, a.level), count: a.count },
+    context: {
+      subject: examContext(a.subject),
+      topics: a.subject.topics.filter((t) => t.status !== 'skip').map((t) => ({ id: t.id, title: t.title, notes: t.notes })),
+      dojo: { title: a.dojo.title, procedure: a.dojo.procedure, description: a.dojo.description, topics: a.dojo.topics },
+      existingDrills: (a.dojo.drills ?? []).map((d) => ({ id: d.id, kind: d.kind, level: d.level, prompt: d.prompt.slice(0, 160) })),
+      count: a.count,
+    },
   });
 }

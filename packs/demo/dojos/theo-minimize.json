@@ -8,5 +8,98 @@
   "levels": ["easy", "medium", "exam"],
   "topics": ["minimization"],
   "promptTemplate": "Create a complete DFA over {a,b} of {{level}} difficulty (easy: 4 states, one equivalent pair; medium: 5–6 states; exam: 6 states including an unreachable one). When checking: unreachable states first, then the marking table round by round, then the resulting automaton.",
-  "answerFormat": "Marking table as a triangular matrix, then the minimal DFA as a transition table."
+  "answerFormat": "Marking table as a triangular matrix, then the minimal DFA as a transition table.",
+  "drills": [
+    {
+      "id": "remove-first",
+      "kind": "choice",
+      "level": "easy",
+      "topic": "minimization",
+      "prompt": "Which states do you remove before running the table-filling algorithm?",
+      "options": ["Unreachable states", "Final states", "States with self-loops", "The start state"],
+      "correct": [0],
+      "explanation": "Unreachable states never influence the language, so they are dropped first."
+    },
+    {
+      "id": "distinguishable",
+      "kind": "choice",
+      "level": "medium",
+      "topic": "minimization",
+      "prompt": "When are two states p and q of a DFA distinguishable?",
+      "options": [
+        "When some word leads from exactly one of them to a final state.",
+        "When they have different names.",
+        "When they have different numbers of outgoing transitions.",
+        "When one of them is the start state."
+      ],
+      "correct": [0],
+      "explanation": "That is the definition; table filling finds such words step by step, starting with the empty word (final vs. non-final)."
+    },
+    {
+      "id": "count-min",
+      "kind": "number",
+      "level": "medium",
+      "topic": "minimization",
+      "prompt": "How many states does the minimal DFA for this automaton have?\n\n| State | a | b |\n| --- | --- | --- |\n| → A | B | C |\n| *B | B | D |\n| C | B | C |\n| D | B | D |",
+      "answer": 2,
+      "explanation": "A, C and D are all non-final and go to B on a and to a non-final state on b, so they are equivalent. What is left: {A,C,D} and B. The language: words ending in a."
+    },
+    {
+      "id": "minimize-ends-a",
+      "kind": "automaton",
+      "level": "exam",
+      "topic": "minimization",
+      "prompt": "Give the **minimal DFA** for this automaton.",
+      "alphabet": ["a", "b"],
+      "given": {
+        "states": ["A", "B", "C", "D"],
+        "start": "A",
+        "final": ["B"],
+        "transitions": [
+          ["A", "a", "B"],
+          ["A", "b", "C"],
+          ["B", "a", "B"],
+          ["B", "b", "D"],
+          ["C", "a", "B"],
+          ["C", "b", "C"],
+          ["D", "a", "B"],
+          ["D", "b", "D"]
+        ]
+      },
+      "reference": {
+        "automaton": {
+          "states": ["A", "B", "C", "D"],
+          "start": "A",
+          "final": ["B"],
+          "transitions": [
+            ["A", "a", "B"],
+            ["A", "b", "C"],
+            ["B", "a", "B"],
+            ["B", "b", "D"],
+            ["C", "a", "B"],
+            ["C", "b", "C"],
+            ["D", "a", "B"],
+            ["D", "b", "D"]
+          ]
+        }
+      },
+      "deterministic": true,
+      "minimal": true,
+      "explanation": "A, C and D merge into one state. Two states remain: a non-final start state and a final state for 'last symbol was a'."
+    },
+    {
+      "id": "table-filling-steps",
+      "kind": "order",
+      "level": "medium",
+      "topic": "minimization",
+      "prompt": "Put the steps of the table-filling algorithm in order.",
+      "items": [
+        "Remove unreachable states.",
+        "Mark all pairs of one final and one non-final state.",
+        "Mark a pair if some symbol leads it to an already marked pair.",
+        "Repeat the previous step until nothing changes.",
+        "Merge all pairs that are still unmarked."
+      ]
+    }
+  ]
 }

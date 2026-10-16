@@ -148,7 +148,46 @@ export interface Dojo {
   aids?: string[];
   promptTemplate: string;
   answerFormat?: string;
+  /** Prepared exercises that run and get graded in the app. */
+  drills?: Drill[];
 }
+
+/** Plain-data finite automaton; see src/dojo/automata.ts. */
+export interface AutomatonData {
+  states: string[];
+  start: string;
+  final: string[];
+  transitions: [string, string, string][];
+}
+
+interface DrillBase {
+  id: string;
+  level?: Level;
+  /** Topic id in the dojo's subject, if the drill trains one topic. */
+  topic?: string;
+  /** Markdown. */
+  prompt: string;
+  /** Shown after answering (Markdown). */
+  explanation?: string;
+  /** Time limit; defaults depend on level and kind. */
+  seconds?: number;
+}
+
+export interface LanguageReference {
+  regex?: string;
+  automaton?: AutomatonData;
+}
+
+export type Drill = DrillBase &
+  (
+    | { kind: 'choice'; options: string[]; correct: number[] }
+    | { kind: 'input'; accept: string[]; caseSensitive?: boolean }
+    | { kind: 'number'; answer: number; tolerance?: number; unit?: string }
+    | { kind: 'order'; items: string[] }
+    | { kind: 'automaton'; alphabet: string[]; reference: LanguageReference; given?: AutomatonData; deterministic?: boolean; minimal?: boolean }
+    | { kind: 'regex'; alphabet: string[]; reference: LanguageReference; given?: AutomatonData }
+    | { kind: 'self'; solution: string }
+  );
 
 export interface Step {
   label: string;
@@ -161,7 +200,9 @@ export type QuestionKind = 'why' | 'what-if' | 'explain' | 'apply';
 export interface SessionItem {
   n: number;
   topicId?: string;
-  kind?: QuestionKind | 'task';
+  kind?: QuestionKind | 'task' | 'drill';
+  /** Drill id, for kind 'drill'. */
+  drill?: string;
   prompt: string;
   answer?: string;
   score?: Score;
@@ -202,7 +243,8 @@ export type RequestKind =
   | 'dojo.task'
   | 'dojo.check'
   | 'dojo.hint'
-  | 'dojo.solution';
+  | 'dojo.solution'
+  | 'dojo.drills';
 
 export interface AiRequest {
   $schema?: string;
@@ -229,6 +271,7 @@ export interface AiResponse {
   check?: { correct?: boolean; score: Score; steps?: Step[]; feedback: string };
   hint?: string;
   solution?: string;
+  drills?: Drill[];
   summary?: string;
 }
 

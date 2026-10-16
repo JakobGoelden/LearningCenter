@@ -7,5 +7,47 @@
   "levels": ["easy", "medium", "exam"],
   "aids": ["no calculator"],
   "promptTemplate": "Give an IPv4 network and requirements for the subnets. easy: subnets of equal size. medium: VLSM with 3 subnets. exam: VLSM with 4–5 subnets and transfer networks. Asked for: network address, prefix, broadcast, first/last host per subnet. When checking: each row on its own, check for overlaps and order (largest first).",
-  "answerFormat": "Table: subnet | network address/prefix | first host | last host | broadcast."
+  "answerFormat": "Table: subnet | network address/prefix | first host | last host | broadcast.",
+  "drills": [
+    {
+      "id": "network-address",
+      "kind": "input",
+      "level": "medium",
+      "prompt": "What is the network address of `192.168.10.77/26`?",
+      "accept": ["192.168.10.64"],
+      "explanation": "/26 means blocks of 64 addresses: 0, 64, 128, 192. 77 lies in the block starting at 64."
+    },
+    {
+      "id": "broadcast",
+      "kind": "input",
+      "level": "medium",
+      "prompt": "What is the broadcast address of `192.168.10.77/26`?",
+      "accept": ["192.168.10.127"],
+      "explanation": "The block 64–127: the last address is the broadcast."
+    },
+    {
+      "id": "hosts-27",
+      "kind": "number",
+      "level": "easy",
+      "prompt": "How many usable host addresses does a /27 subnet have?",
+      "answer": 30,
+      "explanation": "2^(32−27) = 32 addresses, minus network and broadcast address."
+    },
+    {
+      "id": "prefix-for-50",
+      "kind": "number",
+      "level": "medium",
+      "prompt": "What is the longest prefix length (smallest subnet) that still fits 50 hosts?",
+      "answer": 26,
+      "explanation": "A /26 has 64 − 2 = 62 usable addresses; a /27 only 30."
+    },
+    {
+      "id": "mask-21",
+      "kind": "input",
+      "level": "exam",
+      "prompt": "Write the subnet mask of a /21 in dotted decimal notation.",
+      "accept": ["255.255.248.0"],
+      "explanation": "21 = 8 + 8 + 5 ones: the third byte is 11111000 = 248."
+    }
+  ]
 }

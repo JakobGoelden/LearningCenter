@@ -8,5 +8,75 @@
   "levels": ["easy", "medium", "exam"],
   "topics": ["regex"],
   "promptTemplate": "Create a regular expression over {a,b} for the Thompson construction. easy: one concatenation and one star. medium: union, concatenation and star nested. exam: exam level with two levels of nesting. When checking: check the sub-automata from the inside out and that each has exactly one start and one final state.",
-  "answerFormat": "Transitions as a list 'q0 --a--> q1', ε as 'eps'."
+  "answerFormat": "Transitions as a list 'q0 --a--> q1', ε as 'eps'.",
+  "drills": [
+    {
+      "id": "thompson-symbol",
+      "kind": "choice",
+      "level": "easy",
+      "topic": "regex",
+      "prompt": "How many states does Thompson's construction create for a single symbol `a`?",
+      "options": ["1", "2", "3", "4"],
+      "correct": [1],
+      "explanation": "A start state and an end state, joined by one a-transition."
+    },
+    {
+      "id": "words-in-language",
+      "kind": "choice",
+      "level": "medium",
+      "topic": "regex",
+      "prompt": "Which words are in the language of `(ab|b)*a`?",
+      "options": ["a", "aba", "bba", "ab", "ε"],
+      "correct": [0, 1, 2],
+      "explanation": "Every word ends with a, and before that comes any sequence of ab and b blocks. ab and ε do not end with a."
+    },
+    {
+      "id": "nfa-a-star-b",
+      "kind": "automaton",
+      "level": "easy",
+      "topic": "regex",
+      "prompt": "Build an automaton (NFA with ε allowed) for `a*b`.",
+      "alphabet": ["a", "b"],
+      "reference": { "regex": "a*b" },
+      "explanation": "One state with an a-loop, then a b-transition into the final state is enough."
+    },
+    {
+      "id": "nfa-abb",
+      "kind": "automaton",
+      "level": "medium",
+      "topic": "regex",
+      "prompt": "Build an automaton (NFA with ε allowed) for `(a|b)*abb`.",
+      "alphabet": ["a", "b"],
+      "reference": { "regex": "(a|b)*abb" },
+      "explanation": "A start state looping on a and b, then the chain a, b, b into the final state."
+    },
+    {
+      "id": "regex-starts-a",
+      "kind": "regex",
+      "level": "easy",
+      "topic": "regex",
+      "prompt": "Write a regular expression for all words over {a, b} that **start with a**.",
+      "alphabet": ["a", "b"],
+      "reference": { "regex": "a(a|b)*" },
+      "explanation": "For example `a(a|b)*`."
+    },
+    {
+      "id": "regex-even-length",
+      "kind": "regex",
+      "level": "medium",
+      "topic": "regex",
+      "prompt": "Write a regular expression for all words over {a, b} of **even length** (ε included).",
+      "alphabet": ["a", "b"],
+      "reference": { "regex": "((a|b)(a|b))*" },
+      "explanation": "For example `((a|b)(a|b))*`: any number of two-letter blocks."
+    },
+    {
+      "id": "thompson-union",
+      "kind": "self",
+      "level": "medium",
+      "topic": "regex",
+      "prompt": "Describe Thompson's construction for the union `r|s`, given the automata for r and s.",
+      "solution": "Add a new start state with ε-transitions to the start states of r and s, and a new final state that the old final states of r and s reach by ε-transitions. The old final states stop being final."
+    }
+  ]
 }
