@@ -16,6 +16,11 @@ export interface PackFs {
   list(dir: string): Promise<string[]>;
   /** Last modification time in ms, or null when the file is missing. */
   mtime(path: string): Promise<number | null>;
+  /**
+   * A URL the browser can display for a (possibly binary) file such as a PDF,
+   * or null when the file is missing. Absent on backends without real files.
+   */
+  fileUrl?(path: string): Promise<string | null>;
 }
 
 export function splitPath(path: string): { dirs: string[]; name: string } {

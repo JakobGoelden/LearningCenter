@@ -25,11 +25,11 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (!s) return <div class="error">Fach „{subjectId}“ gibt es in diesem Pack nicht.</div>;
+  if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
 
   const head = (title: string) => (
     <div class="page-head">
-      <a href={dojo ? href({ name: 'dojo', subject: s.id }) : href({ name: 'dashboard' })}>← {dojo ? 'Alle Dojos' : 'Dashboard'}</a>
+      <a href={dojo ? href({ name: 'dojo', subject: s.id }) : href({ name: 'dashboard' })}>← {dojo ? 'All dojos' : 'Dashboard'}</a>
       <h1>{title}</h1>
     </div>
   );
@@ -38,11 +38,11 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
     return (
       <div class="stack">
         {head(`Dojos: ${s.name}`)}
-        {dojoId && <div class="error">Dojo „{dojoId}“ gibt es nicht.</div>}
+        {dojoId && <div class="error">There is no dojo "{dojoId}".</div>}
         {dojos.length === 0 ? (
           <div class="panel muted">
-            Für dieses Fach gibt es noch keine Dojos. Lege eine Datei unter <code>dojos/</code> an (Vorlagen in{' '}
-            <code>packs/dojo-library</code>) und trage die ID in <code>pack.json</code> ein.
+            This subject has no dojos yet. Add a file under <code>dojos/</code> (templates in{' '}
+            <code>packs/dojo-library</code>) and list its ID in <code>pack.json</code>.
           </div>
         ) : (
           <div class="cards">
@@ -51,7 +51,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
                 <h2>{d.title}</h2>
                 <div class="small muted">{d.procedure}</div>
                 {d.description && <div class="small">{d.description}</div>}
-                {d.aids?.length ? <div class="small muted">Hilfsmittel: {d.aids.join(', ')}</div> : null}
+                {d.aids?.length ? <div class="small muted">Aids: {d.aids.join(', ')}</div> : null}
               </a>
             ))}
           </div>
@@ -68,7 +68,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
     try {
       await saveSession(fs, next);
     } catch (e) {
-      setNotice(`Sitzung konnte nicht gespeichert werden: ${(e as Error).message}`);
+      setNotice(`Could not save the session: ${(e as Error).message}`);
     }
   };
   const patchItem = (change: Partial<SessionItem>) =>
@@ -159,11 +159,11 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
       <div class="panel stack">
         <div class="small muted">
           {s.name} · {dojo.procedure}
-          {dojo.aids?.length ? ` · Hilfsmittel: ${dojo.aids.join(', ')}` : ''}
+          {dojo.aids?.length ? ` · Aids: ${dojo.aids.join(', ')}` : ''}
         </div>
         {dojo.description && <div>{dojo.description}</div>}
         <div class="row">
-          <span class="small">Niveau</span>
+          <span class="small">Level</span>
           {levels.map((l) => (
             <button class={`small ${l === level ? 'primary' : ''}`} onClick={() => setLevel(l)} disabled={busy}>
               {LEVEL_LABEL[l]}
@@ -171,7 +171,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
           ))}
           <span style="flex:1" />
           <button class={session ? '' : 'primary'} onClick={newTask} disabled={busy}>
-            {session ? 'Neue Aufgabe' : 'Aufgabe erzeugen'}
+            {session ? 'New task' : 'Generate task'}
           </button>
         </div>
       </div>
@@ -183,37 +183,37 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
         <>
           <div class="panel stack">
             <div class="row small">
-              <h3 style="flex:1">Aufgabe</h3>
+              <h3 style="flex:1">Task</h3>
               <span class="badge">{LEVEL_LABEL[session!.level ?? level]}</span>
             </div>
             <Markdown text={item.prompt} />
           </div>
           <div class="panel stack">
-            <h3>Deine Lösung</h3>
+            <h3>Your solution</h3>
             {dojo.answerFormat && <div class="small muted">Format: {dojo.answerFormat}</div>}
             <textarea
               class="mono"
               style="min-height:180px"
               value={item.answer ?? ''}
               onInput={(e) => setSession(patchItem({ answer: e.currentTarget.value }))}
-              aria-label="Deine Lösung"
+              aria-label="Your solution"
             />
             <div class="row">
               <button class="primary" onClick={check} disabled={busy || !item.answer?.trim()}>
-                Prüfen
+                Check
               </button>
               <button onClick={hint} disabled={busy}>
-                Tipp
+                Hint
               </button>
               <button onClick={solution} disabled={busy}>
-                Musterlösung
+                Show solution
               </button>
             </div>
           </div>
 
           {item.hints?.length ? (
             <div class="panel stack">
-              <h3>Tipps</h3>
+              <h3>Hints</h3>
               {item.hints.map((h, i) => (
                 <div class="row" style="align-items:baseline">
                   <strong>{i + 1}.</strong>
@@ -226,7 +226,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
           {item.score !== undefined && (
             <div class="panel stack">
               <div class="row">
-                <h3 style="flex:1">Prüfung</h3>
+                <h3 style="flex:1">Check</h3>
                 <span class={`score score-${item.score}`}>
                   {item.score}/5 · {SCORE_LABEL[item.score]}
                 </span>
@@ -247,11 +247,11 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
               {item.feedback && <div>{item.feedback}</div>}
               {dojo.topics?.length ? (
                 session!.applied ? (
-                  <div class="small muted">In den Lernstand übernommen.</div>
+                  <div class="small muted">Saved to progress.</div>
                 ) : (
                   <div>
                     <button class="small" onClick={apply}>
-                      In Lernstand übernehmen ({dojo.topics.map((id) => s.topics.find((t) => t.id === id)?.title ?? id).join(', ')})
+                      Save to progress ({dojo.topics.map((id) => s.topics.find((t) => t.id === id)?.title ?? id).join(', ')})
                     </button>
                   </div>
                 )
@@ -261,7 +261,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
 
           {item.solution && (
             <div class="panel stack">
-              <h3>Musterlösung</h3>
+              <h3>Model solution</h3>
               <Markdown text={item.solution} />
             </div>
           )}

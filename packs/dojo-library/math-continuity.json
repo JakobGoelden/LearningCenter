@@ -2,9 +2,9 @@
   "$schema": "../../schema/dojo.schema.json",
   "id": "math-continuity",
   "subject": "math",
-  "title": "Stetigkeit mit Testfolgen",
-  "procedure": "Folgenkriterium: Stetigkeit zeigen oder mit zwei Testfolgen widerlegen",
+  "title": "Continuity with test sequences",
+  "procedure": "Sequence criterion: prove continuity or disprove it with two test sequences",
   "levels": ["easy", "medium", "exam"],
-  "promptTemplate": "Gib eine Funktion f: ℝ → ℝ (ggf. stückweise definiert) und einen Punkt x0. easy: offensichtliche Sprungstelle. medium: Wurzel- oder Betragsterm. exam: Parameter, für den Stetigkeit gilt oder nicht, mit Begründung über Testfolgen. Beim Prüfen: Wahl der Folgen (konvergieren sie gegen x0?), Grenzwerte der Funktionswerte, Schlussfolgerung.",
-  "answerFormat": "Behauptung, Testfolgen, Grenzwertrechnung, Schluss."
+  "promptTemplate": "Give a function f: ℝ → ℝ (piecewise defined if needed) and a point x0. easy: an obvious jump. medium: a root or absolute value term. exam: a parameter for which continuity holds or fails, argued with test sequences. When checking: choice of sequences (do they converge to x0?), limits of the function values, conclusion.",
+  "answerFormat": "Claim, test sequences, limit calculation, conclusion."
 }

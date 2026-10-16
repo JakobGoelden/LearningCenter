@@ -3,10 +3,10 @@
   "id": "theo-nfa-dfa",
   "subject": "theo",
   "title": "NFA → DFA",
-  "procedure": "Potenzmengenkonstruktion (mit ε-Hülle)",
-  "description": "Gegeben ein NFA, konstruiere den äquivalenten DFA. Nur erreichbare Zustände.",
+  "procedure": "Powerset construction (with ε-closure)",
+  "description": "Given an NFA, construct the equivalent DFA. Reachable states only.",
   "levels": ["easy", "medium", "exam"],
   "topics": ["powerset", "dfa-nfa"],
-  "promptTemplate": "Erzeuge einen NFA für die Potenzmengenkonstruktion auf Niveau {{level}}. easy: 3 Zustände, Alphabet {a,b}, keine ε-Übergänge. medium: 4 Zustände mit einem ε-Übergang. exam: 4–5 Zustände, ε-Übergänge, mehrere Endzustände, wie in einer Klausur formuliert. Gib den NFA als Übergangstabelle an (Zeilen = Zustände, Spalten = Symbole, Startzustand mit →, Endzustände mit *). Beim Prüfen: Kontrolliere zuerst die ε-Hülle des Startzustands, dann jede Zeile der DFA-Tabelle einzeln, dann die Endzustände.",
-  "answerFormat": "DFA als Tabelle: Zustandsmengen wie {q0,q1} als Zeilen, je Symbol eine Spalte, Startzustand mit →, Endzustände mit *."
+  "promptTemplate": "Create an NFA for the powerset construction at level {{level}}. easy: 3 states, alphabet {a,b}, no ε-transitions. medium: 4 states with one ε-transition. exam: 4–5 states, ε-transitions, several final states, worded like an exam question. Give the NFA as a transition table (rows = states, columns = symbols, start state marked →, final states marked *). When checking: first check the ε-closure of the start state, then each row of the DFA table on its own, then the final states.",
+  "answerFormat": "DFA as a table: state sets like {q0,q1} as rows, one column per symbol, start state marked →, final states marked *."
 }

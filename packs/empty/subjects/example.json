@@ -1,17 +1,22 @@
 {
   "$schema": "../../../schema/subject.schema.json",
   "id": "example",
-  "name": "Beispielfach",
-  "short": "BSP",
+  "name": "Example subject",
+  "short": "EX",
   "color": "#3b6fd4",
   "exam": { "format": "unknown", "aids": [] },
   "topics": [
-    { "id": "first-topic", "title": "Erstes Thema", "notes": "Worum es geht, Quelle (z.B. VL 1, Skript Kap. 2).", "status": "new" }
+    {
+      "id": "first-topic",
+      "title": "First topic",
+      "notes": "What it is about, and the source (e.g. lecture 1, script chapter 2).",
+      "status": "new"
+    }
   ],
   "sheets": [],
   "openItems": [],
   "checks": [
-    { "id": "moodle", "kind": "material", "label": "Moodle-Kurs", "everyDays": 3 },
-    { "id": "notes", "kind": "notes", "label": "Eigene Mitschrift", "everyDays": 7 }
+    { "id": "moodle", "kind": "material", "label": "Moodle course", "everyDays": 3 },
+    { "id": "notes", "kind": "notes", "label": "Own notes", "everyDays": 7 }
   ]
 }

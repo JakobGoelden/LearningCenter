@@ -27,15 +27,15 @@ async function viaAnthropic(req: AiRequest, s: AiSettings, signal: AbortSignal):
     { signal },
   );
   if (res.stop_reason === 'refusal') {
-    throw new Error(`Die KI hat die Anfrage abgelehnt${res.stop_details?.category ? ` (${res.stop_details.category})` : ''}.`);
+    throw new Error(`The AI declined the request${res.stop_details?.category ? ` (${res.stop_details.category})` : ''}.`);
   }
-  if (res.stop_reason === 'max_tokens') throw new Error('Antwort wurde abgeschnitten (max_tokens).');
+  if (res.stop_reason === 'max_tokens') throw new Error('The answer was cut off (max_tokens).');
   const text = res.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('');
   return extractJson(text);
 }
 
 async function viaOpenAiCompatible(req: AiRequest, s: AiSettings, signal: AbortSignal): Promise<unknown> {
-  if (!s.model) throw new Error('Bitte ein Modell eintragen.');
+  if (!s.model) throw new Error('Please enter a model.');
   const res = await fetch(`${s.baseUrl.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
     signal,
@@ -52,16 +52,16 @@ async function viaOpenAiCompatible(req: AiRequest, s: AiSettings, signal: AbortS
       ],
     }),
   });
-  if (!res.ok) throw new Error(`API-Fehler ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  if (!res.ok) throw new Error(`API error ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   const text = data.choices?.[0]?.message?.content;
-  if (!text) throw new Error('Leere Antwort von der API.');
+  if (!text) throw new Error('Empty answer from the API.');
   return extractJson(text);
 }
 
 export function sendViaApi(req: AiRequest, s: AiSettings, signal: AbortSignal): Promise<unknown> {
   if (s.provider === 'anthropic' && !s.apiKey) {
-    return Promise.reject(new Error('Kein API-Schlüssel hinterlegt (Einstellungen).'));
+    return Promise.reject(new Error('No API key set (Settings).'));
   }
   return s.provider === 'anthropic' ? viaAnthropic(req, s, signal) : viaOpenAiCompatible(req, s, signal);
 }

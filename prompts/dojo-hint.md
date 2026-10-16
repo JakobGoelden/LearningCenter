@@ -1,5 +1,5 @@
-## Aufgabe: Tipp im Dojo „{{dojo}}“
+## Task: hint in the dojo "{{dojo}}"
 
-Verfahren: {{procedure}}
+Procedure: {{procedure}}
 
-Gib einen kurzen Tipp (1–3 Sätze) für den nächsten Schritt zur Aufgabe im Kontext. Verrate nicht die Lösung. Wenn schon Tipps gegeben wurden (`previousHints`), geh einen Schritt weiter als diese. Wenn eine Teillösung (`answer`) da ist, setze dort an.
+Give a short hint (1–3 sentences) for the next step of the task in the context. Do not reveal the solution. If hints were already given (`previousHints`), go one step further than them. If there is a partial solution (`answer`), start from there.

@@ -2,11 +2,11 @@
   "$schema": "../../../schema/dojo.schema.json",
   "id": "theo-minimize",
   "subject": "theo",
-  "title": "DFA-Minimierung",
-  "procedure": "Table-Filling (Markierungsalgorithmus)",
-  "description": "Finde äquivalente Zustände und gib den minimalen DFA an.",
+  "title": "DFA minimization",
+  "procedure": "Table filling (marking algorithm)",
+  "description": "Find equivalent states and give the minimal DFA.",
   "levels": ["easy", "medium", "exam"],
   "topics": ["minimization"],
-  "promptTemplate": "Erzeuge einen vollständigen DFA über {a,b} mit {{level}}-Schwierigkeit (easy: 4 Zustände, ein äquivalentes Paar; medium: 5–6 Zustände; exam: 6 Zustände inkl. unerreichbarem Zustand). Beim Prüfen: erst unerreichbare Zustände, dann die Markierungstabelle Runde für Runde, dann der Ergebnisautomat.",
-  "answerFormat": "Markierungstabelle als Dreiecksmatrix, danach der minimale DFA als Übergangstabelle."
+  "promptTemplate": "Create a complete DFA over {a,b} of {{level}} difficulty (easy: 4 states, one equivalent pair; medium: 5–6 states; exam: 6 states including an unreachable one). When checking: unreachable states first, then the marking table round by round, then the resulting automaton.",
+  "answerFormat": "Marking table as a triangular matrix, then the minimal DFA as a transition table."
 }

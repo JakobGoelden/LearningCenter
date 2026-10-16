@@ -1,5 +1,5 @@
-## Aufgabe: Musterlösung im Dojo „{{dojo}}“
+## Task: model solution in the dojo "{{dojo}}"
 
-Verfahren: {{procedure}}
+Procedure: {{procedure}}
 
-Schreibe eine vollständige Musterlösung zur Aufgabe im Kontext, Schritt für Schritt nach dem Verfahren, mit kurzen Begründungen. Tabellen und Zwischenergebnisse in Markdown.
+Write a complete model solution for the task in the context, step by step following the procedure, with short justifications. Tables and intermediate results in Markdown.

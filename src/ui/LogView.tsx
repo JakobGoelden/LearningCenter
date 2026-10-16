@@ -15,29 +15,29 @@ export function LogView() {
     <div class="stack">
       <div class="page-head">
         <a href={href({ name: 'dashboard' })}>← Dashboard</a>
-        <h1>Verlauf</h1>
-        <span class="muted small">log/events.jsonl, neueste zuerst</span>
+        <h1>History</h1>
+        <span class="muted small">log/events.jsonl, newest first</span>
       </div>
       <div class="panel table-wrap">
         {events === null ? (
-          <span class="muted">Lade …</span>
+          <span class="muted">Loading …</span>
         ) : events.length === 0 ? (
-          <span class="muted">Noch keine Ereignisse.</span>
+          <span class="muted">No events yet.</span>
         ) : (
           <table class="small">
             <thead>
               <tr>
-                <th>Zeit</th>
-                <th>Ereignis</th>
-                <th>Fach</th>
-                <th>Bezug</th>
-                <th>Daten</th>
+                <th>Time</th>
+                <th>Event</th>
+                <th>Subject</th>
+                <th>Ref</th>
+                <th>Data</th>
               </tr>
             </thead>
             <tbody>
               {events.map((e) => (
                 <tr>
-                  <td style="white-space:nowrap">{new Date(e.ts).toLocaleString('de-DE')}</td>
+                  <td style="white-space:nowrap">{new Date(e.ts).toLocaleString()}</td>
                   <td>
                     <code>{e.type}</code>
                   </td>

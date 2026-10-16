@@ -51,6 +51,9 @@ export class DevFs implements PackFs {
     const res = await this.call('list', dir);
     return res.status === 404 ? [] : ((await res.json()) as string[]);
   }
+  async fileUrl(path: string) {
+    return (await this.mtime(path)) === null ? null : `${API}/raw?path=${encodeURIComponent(path)}`;
+  }
   async mtime(path: string) {
     const res = await this.call('mtime', path);
     return res.status === 404 ? null : Number(await res.text());

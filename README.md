@@ -1,140 +1,156 @@
 # LearningCenter
 
-Ein Dashboard fürs Semester, das eine KI für dich mitpflegt. Für beliebige
-Studierende und Fächer: Du siehst auf einen Blick, was ansteht, und startest
-per Klick eine Abfrage oder ein Dojo. Eine KI (Claude oder eine andere) füllt
-die Daten, stellt Verständnisfragen, bewertet Antworten und plant die nächsten
-Wiederholungen.
+A semester dashboard that an AI helps you keep up to date. Works for any
+student and any subject: you see at a glance what is coming up, and start a
+quiz or a dojo with one click. An AI (Claude or another one) fills in the
+data, asks questions that test understanding, grades your answers and plans
+the next reviews.
 
-![Dashboard mit Demo-Pack](docs/dashboard.png)
+![Dashboard with the demo pack](docs/dashboard.png)
 
-- **Dashboard:** eine Kachel pro Fach mit Prüfungsform, Termin, Countdown und
-  Hilfsmitteln, Lernstand der Themen, fälligen Abfragen, Übungsblättern als
-  Chips (offen → bearbeitet → geprüft), offenen Punkten und letzten Checks.
-  Oben die Zeile „Heute dran“ über alle Fächer.
-- **Abfrage:** Die KI stellt Verständnisfragen („Frage n/N“), bewertet sie von
-  0–5 und erklärt Lücken. Danach Spaced Repetition: gute Themen wandern
-  1 → 3 → 7 → 14 → 21 Tage weiter, unsichere bleiben kurz, keine Termine am
-  Wochenende.
-- **Dojos:** Übungsräume für Verfahren wie NFA → DFA, SQL von Hand oder
-  Subnetting. Die KI erzeugt Aufgaben (leicht / mittel / Klausurniveau) und
-  prüft deine Lösung Schritt für Schritt; Tipp und Musterlösung per Knopfdruck.
-  Dojos sind reine Daten, neue brauchen keinen Code.
-- **Themenliste** pro Fach mit Status und Termin, auch von Hand änderbar.
+- **Dashboard:** one banner per subject with a progress bar (share of topics
+  that are solid) and, below it, flags for due reviews, open sheets and open
+  tasks. Above them, the "Today" line shows today's classes and what is due.
+  Click a banner to open the subject page with the panels Exam (format, date,
+  countdown, allowed aids), Progress, Exercise sheets, Open tasks, Timetable
+  and Last checks, plus the buttons Quiz, Dojo and Topics.
+- **Exercise sheets:** click a sheet to open it next to an editor and write
+  your solutions task by task. The sheet (PDF, image or text) shows on the
+  left, your answers save themselves into the pack. Mark it done → checked
+  when you are finished.
+- **Quiz:** The AI asks questions that test understanding ("Question n/N"),
+  grades them from 0 to 5 and explains gaps. Then spaced repetition takes
+  over: topics you know well move on 1 → 3 → 7 → 14 → 21 days, shaky ones
+  stay short, and nothing is scheduled on weekends.
+- **Dojos:** practice rooms for procedures like NFA → DFA, SQL by hand or
+  subnetting. The AI creates tasks (easy / medium / exam level) and checks
+  your solution step by step; hint and model solution at the push of a
+  button. Dojos are pure data, new ones need no code.
+- **Topic list** per subject with status (new / shaky / solid / skip) and
+  due date, also editable by hand.
 
-## Mit einer KI einrichten
+## Set it up with an AI
 
-Das Projekt ist dafür gebaut, dass eine KI die Einrichtung übernimmt. Öffne
-das Repo in Claude Code (oder einem anderen KI-Werkzeug) und sag:
+The project is built so that an AI can do the setup. Open the repo in Claude
+Code (or another AI tool) and say:
 
-> Lies ONBOARDING.md und richte LearningCenter für mich ein.
+> Read ONBOARDING.md and set up LearningCenter for me.
 
-Die KI installiert alles, fragt nach Fächern und Prüfungen, findet mit dir
-heraus, wo Skripte (z.B. Moodle) und eigene Notizen (z.B. reMarkable) liegen,
-legt dein Pack an und startet die App. Details: [ONBOARDING.md](ONBOARDING.md).
+The AI installs everything, asks about your subjects and exams, works out
+with you where your course material (e.g. Moodle) and your own notes (e.g.
+reMarkable) live, creates your pack and starts the app. Details:
+[ONBOARDING.md](ONBOARDING.md).
 
-## Schnellstart
+## Quick start
 
-Voraussetzung: Node.js 18.19 oder neuer.
+Requirement: Node.js 18.19 or newer.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Dann <http://localhost:5173> öffnen und **Demo ausprobieren** wählen. Die Demo
-liegt im Browser-Speicher und hat zwei Fächer.
+The app opens in your browser by itself (otherwise go to
+<http://localhost:5173>). Choose **Try the demo**. The demo
+lives in browser storage and has two subjects.
 
-## Eigenes Pack anlegen
+## Create your own pack
 
-Alle Daten stehen in einem **Learning Pack**: einem Ordner mit JSON-Dateien.
-Persönliche Packs gehören nach `local/`. Dieser Ordner ist per `.gitignore`
-ausgeschlossen, deine Lerndaten bleiben also auf deinem Rechner, auch wenn du
-das Repo mit anderen teilst.
+All data lives in a **learning pack**: a folder of JSON files. Personal packs
+belong in `local/`. That folder is excluded via `.gitignore`, so your study
+data stays on your computer, even if you share the repo with others.
 
 ```bash
-cp -r packs/empty local/mein-semester
+cp -r packs/empty local/my-semester
 ```
 
-Dann entweder von Hand ausfüllen (siehe `packs/empty/ANLEITUNG.md`) oder Claude
-Code im Repo starten und sagen: *„Leg mir in local/mein-semester ein Pack an.
-Meine Fächer und Prüfungen: …“*. Die Regeln für die KI stehen in
+Then either fill it in by hand (see `packs/empty/GUIDE.md`) or start Claude
+Code in the repo and say: *"Create a pack in local/my-semester for me. My
+subjects and exams: …"*. The rules for the AI are in
 [`CLAUDE.md`](CLAUDE.md).
 
-Öffnen auf einem von zwei Wegen:
+Open it in one of two ways:
 
-| Weg | Browser | So geht's |
+| Way | Browser | How |
 | --- | --- | --- |
-| Dev-Server | alle | `LC_PACK_DIR=local/mein-semester npm run dev` |
-| Ordner öffnen | Chrome, Edge | In der App **Pack-Ordner öffnen …** wählen |
+| Dev server | all | `LC_PACK_DIR=local/my-semester npm run dev` |
+| Open folder | Chrome, Edge | Choose **Open pack folder …** in the app |
 
-In beiden Fällen schreibt die App direkt in die Dateien. Änderungen, die eine
-KI parallel an den Dateien macht, lädt sie nach wenigen Sekunden neu.
+Either way the app writes straight to the files. If an AI changes the files
+at the same time, the app reloads them within a few seconds.
 
-Prüfen, ob ein Pack gültig ist: `npm run validate -- local/mein-semester`
+Check that a pack is valid: `npm run validate -- local/my-semester`
 
-## KI anbinden
+## Connect an AI
 
-Unter **Einstellungen → KI-Anbindung** wählst du einen von drei Wegen. Alle
-nutzen dieselben Prompts (`prompts/`) und dasselbe Antwortformat.
+Under **Settings → AI connection** you pick one of three ways. All of them
+use the same prompts (`prompts/`) and the same answer format.
 
-1. **Datei-Brücke (Claude Code):** Ein Klick auf „Abfrage“ schreibt eine
-   Anfrage nach `inbox/` im Pack-Ordner. Starte im Pack-Ordner
-   `claude "Arbeite die Inbox ab"`. Claude Code schreibt die Antwort nach
-   `outbox/`, und die App zeigt sie an. Braucht einen geöffneten Pack-Ordner.
-2. **API:** Direkt mit eigenem API-Schlüssel, entweder Anthropic (Claude) oder
-   ein OpenAI-kompatibler Dienst (OpenAI, OpenRouter, lokal mit Ollama). Der
-   Schlüssel wird nur im `localStorage` dieses Browsers gespeichert, nie im
-   Pack und nie im Export.
-3. **Copy-Prompt:** Die App zeigt einen fertigen Prompt. Du fügst ihn in einen
-   beliebigen KI-Chat ein und kopierst die JSON-Antwort zurück.
+1. **File bridge (Claude Code):** Clicking "Quiz" writes a request to
+   `inbox/` in the pack folder. In the pack folder, run
+   `claude "Process the inbox"`. Claude Code writes the answer to `outbox/`,
+   and the app shows it. Needs an open pack folder.
+2. **API:** Direct, with your own API key, either Anthropic (Claude) or an
+   OpenAI-compatible service (OpenAI, OpenRouter, locally with Ollama). The
+   key is stored only in this browser's `localStorage`, never in the pack and
+   never in an export.
+3. **Copy-Prompt:** The app shows a ready-made prompt. You paste it into any
+   AI chat and copy the JSON answer back.
 
-Ohne App geht es auch: Sag Claude Code im Repo *„Frag mich Datenbanken ab“*.
-Es fragt im Chat und trägt die Ergebnisse mit `npm run review` ein, nach
-denselben Regeln wie die App.
+The AI answers in the pack's language, which is English by default. If you
+want German quiz questions, set **Settings → Study plan → AI language** to
+Deutsch (or `settings.language: "de"` in `pack.json`).
 
-## Datenformat
+It also works without the app: tell Claude Code in the repo *"Quiz me on
+databases"*. It asks the questions in the chat and records the results with
+`npm run review`, following the same rules as the app.
 
-Das Format ist offen und mit JSON Schema dokumentiert (`schema/`):
+## Data format
+
+The format is open and documented with JSON Schema (`schema/`):
 
 ```
 <pack>/
-  pack.json              Titel, Semester, Einstellungen, Fächer- und Dojo-IDs
-  subjects/<id>.json     Prüfung, Themen mit Verlauf, Übungsblätter, offene Punkte, Checks
-  dojos/<id>.json        Dojo-Definitionen
-  sessions/<id>.json     Protokolle von Abfragen und Dojos
-  log/events.jsonl       Ereignis-Log: was angeklickt und beantwortet wurde
-  inbox/, outbox/        Anfragen und Antworten der Datei-Brücke
+  pack.json              title, semester, settings, subject and dojo IDs
+  subjects/<id>.json     exam, timetable, topics with history, exercise sheets, open tasks, checks
+  dojos/<id>.json        dojo definitions
+  sessions/<id>.json     logs of quizzes and dojos
+  work/<subject>/<sheet>.json  your answers to an exercise sheet
+  material/, notes/      scripts, sheet PDFs, timetable and your own notes (not exported)
+  log/events.jsonl       event log: what was clicked and answered
+  inbox/, outbox/        requests and answers of the file bridge
 ```
 
-**Export** (oben rechts) lädt das ganze Pack als eine `.pack.json` herunter,
-**Import** lädt eine solche Datei wieder (Startseite oder Einstellungen).
+**Export** (top right) downloads the whole pack as one `.pack.json` file,
+**Import** loads such a file again (start screen via **Import pack file …**,
+or Settings).
 
-Mitgeliefert:
+Included:
 
-- `packs/demo/`: Demo mit Theoretischer Informatik und Datenbanken samt Dojos
-- `packs/empty/`: leere Vorlage mit Anleitung
-- `packs/dojo-library/`: weitere Dojos (Mathe: Stetigkeit; Netze: Subnetting,
-  Fragmentierung, Routing) zum Kopieren
+- `packs/demo/`: "Demo semester" with Theoretical Computer Science and
+  Databases, including dojos
+- `packs/empty/`: empty template with a guide
+- `packs/dojo-library/`: more dojos (math: continuity; networks: subnetting,
+  fragmentation, routing) to copy
 
-## Als statische Seite (GitHub Pages)
+## As a static site (GitHub Pages)
 
-`npm run build` erzeugt eine statische Seite in `dist/`. Der Workflow
-`.github/workflows/pages.yml` veröffentlicht sie bei jedem Push auf `main`.
-Einmalig aktivieren: **Settings → Pages → Source: GitHub Actions**.
+`npm run build` creates a static site in `dist/`. The workflow
+`.github/workflows/pages.yml` publishes it on every push to `main`.
+Enable it once: **Settings → Pages → Source: GitHub Actions**.
 
-Auf der statischen Seite liegen Packs im Browser-Speicher oder in einem
-geöffneten Ordner (Chrome/Edge). Den Dev-Server-Weg gibt es dort nicht.
+On the static site, packs live in browser storage or in an opened folder
+(Chrome/Edge). The dev server way is not available there.
 
-## Entwicklung
+## Development
 
-| Befehl | Zweck |
+| Command | Purpose |
 | --- | --- |
-| `npm run dev` | Dev-Server, optional mit `LC_PACK_DIR=<ordner>` |
-| `npm run build` | Typprüfung und statischer Build |
+| `npm run dev` | Dev server, optionally with `LC_PACK_DIR=<folder>` |
+| `npm run build` | Type check and static build |
 | `npm test` | Tests (Vitest) |
-| `npm run validate [-- <ordner>]` | Packs gegen das Schema prüfen |
-| `npm run review -- <ordner> <fach> <thema> <0-5>` | Bewertung eintragen und Termin neu planen |
+| `npm run validate [-- <folder>]` | Check packs against the schema |
+| `npm run review -- <folder> <subject> <topic> <0-5>` | Record a grade and reschedule |
 
-Stack: Vite, TypeScript, Preact, Ajv. Kein Backend. Aufbau und Konventionen
-stehen in [`CLAUDE.md`](CLAUDE.md), Teil B.
+Stack: Vite, TypeScript, Preact, Ajv. No backend. Structure and conventions
+are in [`CLAUDE.md`](CLAUDE.md), part B.

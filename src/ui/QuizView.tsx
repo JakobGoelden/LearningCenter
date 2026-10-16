@@ -11,7 +11,7 @@ import { SCORE_LABEL, TOPIC_STATUS } from './labels';
 
 type Phase = 'setup' | 'answer' | 'results';
 
-const KIND_LABEL: Record<string, string> = { why: 'Warum', 'what-if': 'Was wäre wenn', explain: 'Erklären', apply: 'Anwenden' };
+const KIND_LABEL: Record<string, string> = { why: 'Why', 'what-if': 'What if', explain: 'Explain', apply: 'Apply' };
 
 export function sessionId(type: string, subject: string): string {
   return `${nowIso().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')}-${type}-${subject}`;
@@ -32,7 +32,7 @@ export function QuizView({ subjectId }: { subjectId: string }) {
   const [idx, setIdx] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  if (!s) return <div class="error">Fach „{subjectId}“ gibt es in diesem Pack nicht.</div>;
+  if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
   const chosen = candidates.filter((t) => !excluded.has(t.id)).slice(0, count);
   const topicById = new Map(s.topics.map((t) => [t.id, t]));
 
@@ -41,7 +41,7 @@ export function QuizView({ subjectId }: { subjectId: string }) {
     try {
       await saveSession(fs, next);
     } catch (e) {
-      setNotice(`Sitzung konnte nicht gespeichert werden: ${(e as Error).message}`);
+      setNotice(`Could not save the session: ${(e as Error).message}`);
     }
   };
 
@@ -135,10 +135,10 @@ export function QuizView({ subjectId }: { subjectId: string }) {
     <div class="stack">
       <div class="page-head">
         <a href={href({ name: 'dashboard' })}>← Dashboard</a>
-        <h1>Abfrage: {s.name}</h1>
+        <h1>Quiz: {s.name}</h1>
         <span class="spacer" />
         <a class="btn small" href={href({ name: 'topics', subject: s.id })}>
-          Themen
+          Topics
         </a>
       </div>
       {error && <div class="error">{error}</div>}
@@ -148,17 +148,17 @@ export function QuizView({ subjectId }: { subjectId: string }) {
         <div class="panel stack">
           <div class="row">
             <label class="row">
-              Anzahl Fragen
+              Number of questions
               <input type="number" min={1} max={30} value={count} style="width:70px" onInput={(e) => setCount(Math.max(1, Number(e.currentTarget.value) || 1))} />
             </label>
           </div>
           {candidates.length === 0 ? (
             <div class="muted">
-              Keine abfragbaren Themen. Lege unter <a href={href({ name: 'topics', subject: s.id })}>Themen</a> welche an.
+              No topics to quiz. Add some under <a href={href({ name: 'topics', subject: s.id })}>Topics</a>.
             </div>
           ) : (
             <>
-              <div class="small muted">Fällige und unsichere Themen zuerst. Abwählen, was heute nicht dran sein soll:</div>
+              <div class="small muted">Due and shaky topics first. Untick what you want to leave out today:</div>
               <ul class="list">
                 {candidates.slice(0, count + excluded.size).map((t: Topic) => (
                   <li>
@@ -177,14 +177,14 @@ export function QuizView({ subjectId }: { subjectId: string }) {
                     </label>
                     <span class="small muted">
                       {TOPIC_STATUS[t.status]}
-                      {t.due && ` · ${t.due < on ? 'überfällig' : t.due === on ? 'heute' : formatShort(t.due)}`}
+                      {t.due && ` · ${t.due < on ? 'overdue' : t.due === on ? 'today' : formatShort(t.due)}`}
                     </span>
                   </li>
                 ))}
               </ul>
               <div>
                 <button class="primary" disabled={chosen.length === 0} onClick={start}>
-                  Abfrage mit {chosen.length} {chosen.length === 1 ? 'Frage' : 'Fragen'} starten
+                  Start quiz with {chosen.length} {chosen.length === 1 ? 'question' : 'questions'}
                 </button>
               </div>
             </>
@@ -196,7 +196,7 @@ export function QuizView({ subjectId }: { subjectId: string }) {
         <div class="panel stack">
           <div class="row small">
             <span class="qnum">
-              Frage {item.n}/{N}
+              Question {item.n}/{N}
             </span>
             {item.topicId && <span class="badge">{topicById.get(item.topicId)?.title}</span>}
             {item.kind && <span class="badge">{KIND_LABEL[item.kind] ?? item.kind}</span>}
@@ -205,22 +205,22 @@ export function QuizView({ subjectId }: { subjectId: string }) {
           <textarea
             value={item.answer ?? ''}
             onInput={(e) => setAnswer(e.currentTarget.value)}
-            placeholder="Deine Antwort, in eigenen Worten …"
-            aria-label={`Antwort auf Frage ${item.n}`}
+            placeholder="Your answer, in your own words …"
+            aria-label={`Answer to question ${item.n}`}
             autoFocus
           />
           <div class="row">
             <button disabled={idx === 0} onClick={() => go(idx - 1)}>
-              Zurück
+              Back
             </button>
             <span class="spacer" style="flex:1" />
             {idx < N - 1 ? (
               <button class="primary" onClick={() => go(idx + 1)}>
-                Weiter
+                Next
               </button>
             ) : (
               <button class="primary" onClick={grade}>
-                Abgeben und bewerten
+                Submit and grade
               </button>
             )}
           </div>
@@ -234,7 +234,7 @@ export function QuizView({ subjectId }: { subjectId: string }) {
             <div class="panel stack">
               <div class="row small">
                 <span class="qnum">
-                  Frage {it.n}/{N}
+                  Question {it.n}/{N}
                 </span>
                 {it.topicId && <span class="badge">{topicById.get(it.topicId)?.title}</span>}
                 {it.score !== undefined && (
@@ -247,7 +247,7 @@ export function QuizView({ subjectId }: { subjectId: string }) {
                 <strong>{it.prompt}</strong>
               </div>
               <div class="small muted" style="white-space:pre-wrap">
-                {it.answer || '(keine Antwort)'}
+                {it.answer || '(no answer)'}
               </div>
               {it.feedback && <div>{it.feedback}</div>}
               {it.gaps && (
@@ -262,7 +262,7 @@ export function QuizView({ subjectId }: { subjectId: string }) {
           <div class="panel row">
             {session.applied ? (
               <span>
-                Übernommen. Nächste Termine:{' '}
+                Saved. Next reviews:{' '}
                 {[...new Set(session.items.map((i) => i.topicId).filter(Boolean))]
                   .map((id) => s.topics.find((t) => t.id === id))
                   .filter(Boolean)
@@ -271,12 +271,12 @@ export function QuizView({ subjectId }: { subjectId: string }) {
               </span>
             ) : (
               <button class="primary" onClick={apply}>
-                In Lernstand übernehmen
+                Save to progress
               </button>
             )}
             <span style="flex:1" />
             <a class="btn" href={href({ name: 'dashboard' })}>
-              Zum Dashboard
+              Back to dashboard
             </a>
           </div>
         </div>

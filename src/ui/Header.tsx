@@ -4,7 +4,7 @@ import { exportBundle, toJson } from '../storage/repo';
 import { today } from '../lib/dates';
 import { href } from './router';
 
-const SOURCE: Record<string, string> = { folder: 'Ordner', dev: 'Dev-Server', browser: 'Browser' };
+const SOURCE: Record<string, string> = { folder: 'Folder', dev: 'Dev server', browser: 'Browser' };
 
 export function Header() {
   const { loaded, fs, close } = usePack();
@@ -24,16 +24,16 @@ export function Header() {
       <span class="spacer" />
       <nav>
         <a class="btn small" href={href({ name: 'log' })}>
-          Verlauf
+          History
         </a>
-        <button class="small" onClick={exportPack} title="Ganzes Pack als eine JSON-Datei herunterladen">
+        <button class="small" onClick={exportPack} title="Download the whole pack as one JSON file">
           Export
         </button>
         <a class="btn small" href={href({ name: 'settings' })}>
-          Einstellungen
+          Settings
         </a>
         <button class="small ghost" onClick={close}>
-          Pack wechseln
+          Switch pack
         </button>
       </nav>
     </header>

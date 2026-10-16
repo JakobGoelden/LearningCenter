@@ -16,17 +16,17 @@ export function extractJson(text: string): unknown {
   const candidate = fenced ? fenced[1] : text;
   const start = candidate.indexOf('{');
   const end = candidate.lastIndexOf('}');
-  if (start < 0 || end < start) throw new Error('Keine JSON-Antwort gefunden.');
+  if (start < 0 || end < start) throw new Error('No JSON answer found.');
   try {
     return JSON.parse(candidate.slice(start, end + 1));
   } catch (e) {
-    throw new Error(`Antwort ist kein gültiges JSON: ${(e as Error).message}`);
+    throw new Error(`Answer is not valid JSON: ${(e as Error).message}`);
   }
 }
 
 /** Normalises a raw AI answer into a validated AiResponse for `req`. */
 export function finalizeResponse(req: AiRequest, raw: unknown): AiResponse {
-  if (!raw || typeof raw !== 'object') throw new Error('Antwort ist kein JSON-Objekt.');
+  if (!raw || typeof raw !== 'object') throw new Error('Answer is not a JSON object.');
   const clean: Record<string, unknown> = { ...(raw as object), requestId: req.id, kind: req.kind };
   delete clean.$schema;
   // Structured outputs require every field; drop empty optional ones.
@@ -35,8 +35,8 @@ export function finalizeResponse(req: AiRequest, raw: unknown): AiResponse {
       Object.fromEntries(Object.entries(q).filter(([, v]) => v !== '')),
     );
   }
-  const res = assertValid('response', clean, 'KI-Antwort');
+  const res = assertValid('response', clean, 'AI answer');
   const field = REQUIRED_FIELD[req.kind];
-  if (res[field] === undefined) throw new Error(`KI-Antwort enthält kein Feld "${field}".`);
+  if (res[field] === undefined) throw new Error(`AI answer has no "${field}" field.`);
   return res;
 }

@@ -22,7 +22,7 @@ export function StartScreen(props: { options: StartupOptions; onOpen(fs: PackFs)
   const intoBrowser = (bundle: unknown) =>
     run(async () => {
       const fs = new BrowserFs();
-      if (!(await fs.isEmpty()) && !confirm('Das im Browser gespeicherte Pack wird ersetzt. Fortfahren?')) return;
+      if (!(await fs.isEmpty()) && !confirm('This replaces the pack stored in the browser. Continue?')) return;
       await fs.clear();
       await importBundle(fs, bundle);
       await props.onOpen(fs);
@@ -34,7 +34,7 @@ export function StartScreen(props: { options: StartupOptions; onOpen(fs: PackFs)
         <div>
           <h1>LearningCenter</h1>
           <p class="muted">
-            Ein Dashboard fürs Semester. Alle Daten liegen als JSON in einem Learning Pack, das du oder eine KI pflegt.
+            A dashboard for your semester. All data lives as JSON in a learning pack that you or an AI maintain.
           </p>
         </div>
         {(props.error || error) && <div class="error">{props.error || error}</div>}
@@ -47,28 +47,28 @@ export function StartScreen(props: { options: StartupOptions; onOpen(fs: PackFs)
               if (fs) await props.onOpen(fs);
             })}
           >
-            <strong>Weiter mit Ordner „{options.rememberedFolder.name}“</strong>
+            <strong>Continue with folder "{options.rememberedFolder.name}"</strong>
           </button>
         )}
         {options.hasBrowserPack && (
           <button class="choice" onClick={run(() => props.onOpen(new BrowserFs()))}>
-            <strong>Weiter mit dem Pack im Browser</strong>
-            <small>Zuletzt im Browser gespeichert.</small>
+            <strong>Continue with the pack in this browser</strong>
+            <small>Last saved in this browser.</small>
           </button>
         )}
 
-        <h3>Pack öffnen</h3>
+        <h3>Open a pack</h3>
         {folderAccessSupported() ? (
           <button class="choice" onClick={run(async () => props.onOpen(await FolderFs.pick()))}>
-            <strong>Pack-Ordner öffnen …</strong>
+            <strong>Open pack folder …</strong>
             <small>
-              Die App liest und schreibt direkt im Ordner. Damit funktioniert auch die Datei-Brücke zu Claude Code.
+              The app reads and writes the folder directly. This also enables the file bridge to Claude Code.
             </small>
           </button>
         ) : (
           <div class="panel small muted">
-            Dieser Browser kann keine Ordner öffnen (geht in Chrome und Edge). Alternative für alle Browser: im Repo{' '}
-            <code>LC_PACK_DIR=local/mein-pack npm run dev</code> starten.
+            This browser cannot open folders (Chrome and Edge can). Works in every browser: run{' '}
+            <code>LC_PACK_DIR=local/my-pack npm run dev</code> in the repo.
           </div>
         )}
         <button
@@ -78,19 +78,19 @@ export function StartScreen(props: { options: StartupOptions; onOpen(fs: PackFs)
             if (text) await intoBrowser(JSON.parse(text))();
           })}
         >
-          <strong>Pack-Datei importieren …</strong>
-          <small>Eine exportierte .pack.json in den Browser-Speicher laden.</small>
+          <strong>Import pack file …</strong>
+          <small>Load an exported .pack.json into browser storage.</small>
         </button>
 
-        <h3>Neu anfangen</h3>
+        <h3>Start fresh</h3>
         <button class="choice" onClick={intoBrowser(demoBundle())}>
-          <strong>Demo ausprobieren</strong>
-          <small>Zwei Fächer mit Themen, Übungsblättern und Dojos, im Browser gespeichert.</small>
+          <strong>Try the demo</strong>
+          <small>Two subjects with topics, exercise sheets and dojos, stored in this browser.</small>
         </button>
         <button class="choice" onClick={intoBrowser(emptyBundle())}>
-          <strong>Leeres Pack im Browser</strong>
+          <strong>Empty pack in this browser</strong>
           <small>
-            Für ein eigenes Pack als Ordner: <code>packs/empty</code> nach <code>local/</code> kopieren und oben öffnen.
+            For your own pack as a folder: copy <code>packs/empty</code> to <code>local/</code> and open it above.
           </small>
         </button>
       </div>

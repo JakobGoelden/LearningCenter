@@ -13,7 +13,7 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [open, setOpen] = useState<string | null>(null);
-  if (!s) return <div class="error">Fach „{subjectId}“ gibt es in diesem Pack nicht.</div>;
+  if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
   const on = today();
   const settings = loaded.pack.settings;
 
@@ -48,7 +48,7 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
     );
 
   const remove = (t: Topic) => {
-    if (!confirm(`Thema „${t.title}“ mit Verlauf löschen?`)) return;
+    if (!confirm(`Delete topic "${t.title}" and its history?`)) return;
     void updateSubject(s.id, (subj) => ({ ...subj, topics: subj.topics.filter((x) => x.id !== t.id) }), {
       type: 'topic.remove',
       ref: t.id,
@@ -77,21 +77,21 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
     <div class="stack">
       <div class="page-head">
         <a href={href({ name: 'dashboard' })}>← Dashboard</a>
-        <h1>Themen: {s.name}</h1>
+        <h1>Topics: {s.name}</h1>
         <span class="spacer" />
         <a class="btn primary small" href={href({ name: 'quiz', subject: s.id })}>
-          Abfrage starten
+          Start quiz
         </a>
       </div>
       <div class="panel table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Thema</th>
+              <th>Topic</th>
               <th>Status</th>
-              <th>Nächste Abfrage</th>
-              <th>Verlauf</th>
-              <th>Selbst bewerten</th>
+              <th>Next review</th>
+              <th>History</th>
+              <th>Rate yourself</th>
               <th />
             </tr>
           </thead>
@@ -105,7 +105,7 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
                       <button
                         class="ghost small"
                         style="padding:0;text-align:left"
-                        title="Notizen anzeigen und bearbeiten"
+                        title="Show and edit notes"
                         aria-expanded={open === t.id}
                         onClick={() => setOpen(open === t.id ? null : t.id)}
                       >
@@ -116,7 +116,7 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
                       <select
                         value={t.status}
                         onChange={(e) => setStatus(t, e.currentTarget.value as TopicStatus)}
-                        aria-label={`Status von ${t.title}`}
+                        aria-label={`Status of ${t.title}`}
                       >
                         {(Object.keys(TOPIC_STATUS) as TopicStatus[]).map((st) => (
                           <option value={st}>{TOPIC_STATUS[st]}</option>
@@ -129,12 +129,12 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
                         value={t.due ?? ''}
                         disabled={t.status === 'skip'}
                         onChange={(e) => setDue(t, e.currentTarget.value)}
-                        aria-label={`Nächste Abfrage für ${t.title}`}
+                        aria-label={`Next review for ${t.title}`}
                         class={t.due && t.due < on ? 'overdue' : ''}
                       />
                       {t.intervalDays !== undefined && (
                         <div class="small muted">
-                          Abstand {t.intervalDays} T. (Stufe {step + 1}/{ladder.length})
+                          Interval {t.intervalDays} d (step {step + 1}/{ladder.length})
                         </div>
                       )}
                     </td>
@@ -154,7 +154,7 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
                           if (v !== '') void rate(t, Number(v) as Score);
                           e.currentTarget.value = '';
                         }}
-                        aria-label={`${t.title} selbst bewerten`}
+                        aria-label={`Rate ${t.title} yourself`}
                       >
                         <option value="">–</option>
                         {SCORE_LABEL.map((l, i) => (
@@ -165,7 +165,7 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
                       </select>
                     </td>
                     <td>
-                      <button class="ghost small danger" onClick={() => remove(t)} title="Thema löschen">
+                      <button class="ghost small danger" onClick={() => remove(t)} title="Delete topic">
                         ✕
                       </button>
                     </td>
@@ -174,7 +174,7 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
                     <tr>
                       <td colSpan={6}>
                         <label class="field">
-                          <span>Notizen (helfen der KI, gute Fragen zu stellen)</span>
+                          <span>Notes (help the AI ask good questions)</span>
                           <textarea
                             style="min-height:70px"
                             value={t.notes ?? ''}
@@ -191,12 +191,12 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
         </table>
       </div>
       <form class="panel stack" onSubmit={add}>
-        <h3>Thema hinzufügen</h3>
+        <h3>Add topic</h3>
         <div class="row">
-          <input placeholder="Titel" value={title} onInput={(e) => setTitle(e.currentTarget.value)} style="flex:1" aria-label="Titel" />
-          <input placeholder="Notizen (optional)" value={notes} onInput={(e) => setNotes(e.currentTarget.value)} style="flex:2" aria-label="Notizen" />
+          <input placeholder="Title" value={title} onInput={(e) => setTitle(e.currentTarget.value)} style="flex:1" aria-label="Title" />
+          <input placeholder="Notes (optional)" value={notes} onInput={(e) => setNotes(e.currentTarget.value)} style="flex:2" aria-label="Notes" />
           <button class="primary" type="submit">
-            Hinzufügen
+            Add
           </button>
         </div>
       </form>

@@ -1,19 +1,15 @@
 {
   "$schema": "../../../schema/subject.schema.json",
   "id": "db",
-  "name": "Datenbanken",
+  "name": "Databases",
   "short": "DB",
   "color": "#1f8a70",
-  "exam": {
-    "format": "unknown",
-    "notes": "Klausur oder mündlich, wird in VL 4 bekanntgegeben.",
-    "aids": []
-  },
+  "exam": { "format": "unknown", "notes": "Written or oral, announced in lecture 4.", "aids": [] },
   "topics": [
     {
       "id": "er-model",
-      "title": "ER-Modell",
-      "notes": "Entitäten, Beziehungen, Kardinalitäten (Chen und min/max).",
+      "title": "ER model",
+      "notes": "Entities, relationships, cardinalities (Chen and min/max).",
       "status": "solid",
       "due": "2026-10-30",
       "intervalDays": 14,
@@ -25,8 +21,8 @@
     },
     {
       "id": "relational-algebra",
-      "title": "Relationale Algebra",
-      "notes": "Selektion, Projektion, Join, Division; Übersetzung nach SQL.",
+      "title": "Relational algebra",
+      "notes": "Selection, projection, join, division; translation to SQL.",
       "status": "shaky",
       "due": "2026-10-15",
       "intervalDays": 1,
@@ -35,25 +31,33 @@
     {
       "id": "sql-basics",
       "title": "SQL: SELECT, JOIN, GROUP BY",
-      "notes": "Auswertungsreihenfolge, HAVING vs. WHERE, NULL-Semantik.",
+      "notes": "Evaluation order, HAVING vs. WHERE, NULL semantics.",
       "status": "new"
     },
     {
       "id": "normal-forms",
-      "title": "Normalformen (1NF–BCNF)",
-      "notes": "Funktionale Abhängigkeiten, Schlüssel, Zerlegung.",
+      "title": "Normal forms (1NF–BCNF)",
+      "notes": "Functional dependencies, keys, decomposition.",
       "status": "new"
     }
+  ],
+  "schedule": [
+    { "kind": "lecture", "weekday": "tue", "start": "08:15", "end": "09:45", "location": "Lecture hall 3" },
+    { "kind": "lab", "weekday": "fri", "start": "12:00", "end": "13:30", "location": "PC pool", "notes": "every other week" }
   ],
   "sheets": [
     { "id": "b1", "label": "B1", "due": "2026-10-21", "status": "done" },
     { "id": "b2", "label": "B2", "due": "2026-10-28", "status": "open" }
   ],
-  "openItems": [
-    { "id": "exam-form", "text": "Prüfungsform in VL 4 erfragen", "createdAt": "2026-10-16" }
-  ],
+  "openItems": [{ "id": "exam-form", "text": "Ask about the exam format in lecture 4", "createdAt": "2026-10-16" }],
   "checks": [
-    { "id": "moodle", "kind": "material", "label": "Moodle-Kurs", "lastChecked": "2026-10-16", "everyDays": 3 },
-    { "id": "notes", "kind": "notes", "label": "Eigene Mitschrift", "everyDays": 7 }
+    {
+      "id": "moodle",
+      "kind": "material",
+      "label": "Moodle course",
+      "lastChecked": "2026-10-16",
+      "everyDays": 3
+    },
+    { "id": "notes", "kind": "notes", "label": "Own notes", "everyDays": 7 }
   ]
 }

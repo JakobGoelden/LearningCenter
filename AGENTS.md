@@ -1,6 +1,6 @@
 # AGENTS.md
 
-All instructions for AI agents are in [CLAUDE.md](CLAUDE.md) (German). Read it
+All instructions for AI agents are in [CLAUDE.md](CLAUDE.md). Read it
 before creating or editing a learning pack, answering requests in a pack's
 `inbox/`, quizzing a learner, or changing the app.
 

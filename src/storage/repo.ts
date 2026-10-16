@@ -1,6 +1,6 @@
 import { nowIso } from '../lib/dates';
 import { assertValid } from '../model/validate';
-import type { Bundle, Dojo, LoadedPack, LogEvent, Pack, Session, Subject } from '../model/types';
+import type { Bundle, Dojo, LoadedPack, LogEvent, Pack, Session, SheetWork, Subject } from '../model/types';
 import type { PackFs } from './fs';
 
 const SCHEMA_ROOT = '../../schema/';
@@ -12,11 +12,11 @@ export function toJson(value: unknown): string {
 
 async function readJson(fs: PackFs, path: string): Promise<unknown> {
   const text = await fs.read(path);
-  if (text === null) throw new Error(`${path} fehlt.`);
+  if (text === null) throw new Error(`${path} is missing.`);
   try {
     return JSON.parse(text);
   } catch (e) {
-    throw new Error(`${path} ist kein gültiges JSON: ${(e as Error).message}`);
+    throw new Error(`${path} is not valid JSON: ${(e as Error).message}`);
   }
 }
 
@@ -76,6 +76,22 @@ export async function listSessions(fs: PackFs): Promise<string[]> {
   return (await fs.list('sessions')).filter((n) => n.endsWith('.json')).map((n) => n.slice(0, -5));
 }
 
+export const workPath = (subject: string, sheet: string) => `work/${subject}/${sheet}.json`;
+
+/** The learner's answers to a sheet, or an empty record. */
+export async function loadWork(fs: PackFs, subject: string, sheet: string): Promise<SheetWork> {
+  const path = workPath(subject, sheet);
+  const text = await fs.read(path);
+  return text ? assertValid('work', JSON.parse(text), path) : { subject, sheet, answers: {} };
+}
+
+export async function saveWork(fs: PackFs, work: SheetWork) {
+  const path = workPath(work.subject, work.sheet);
+  const data: SheetWork = { $schema: '../../../schema/work.schema.json', ...work, updatedAt: nowIso() };
+  assertValid('work', data, path);
+  await fs.write(path, toJson(data));
+}
+
 export const EVENTS_PATH = 'log/events.jsonl';
 
 export async function appendEvent(fs: PackFs, event: Omit<LogEvent, 'ts'> & { ts?: string }) {
@@ -113,13 +129,17 @@ export async function exportBundle(fs: PackFs): Promise<Bundle> {
     for (const name of await fs.list(dir)) if (name.endsWith('.json')) await add(`${dir}/${name}`);
   }
   await add(EVENTS_PATH);
+  const pack = files['pack.json'] ? (JSON.parse(files['pack.json']) as Pack) : null;
+  for (const id of pack?.subjects ?? []) {
+    for (const name of await fs.list(`work/${id}`)) if (name.endsWith('.json')) await add(`work/${id}/${name}`);
+  }
   return { format: 'learningcenter-bundle', schemaVersion: 1, exportedAt: nowIso(), files };
 }
 
 /** Writes all files of a bundle into `fs`, after validating the manifest. */
 export async function importBundle(fs: PackFs, data: unknown): Promise<void> {
   const bundle = assertValid('bundle', data, 'Bundle');
-  if (!bundle.files['pack.json']) throw new Error('Bundle enthält keine pack.json.');
+  if (!bundle.files['pack.json']) throw new Error('Bundle contains no pack.json.');
   for (const [path, text] of Object.entries(bundle.files)) await fs.write(path, text);
 }
 

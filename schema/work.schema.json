@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JakobGoelden/LearningCenter/schema/work.schema.json",
+  "title": "Work on an exercise sheet (work/<subject>/<sheet>.json)",
+  "description": "The learner's own solutions to a sheet, written in the app. One answer per task id; '_' holds the answer when the sheet has no tasks listed.",
+  "type": "object",
+  "required": ["subject", "sheet", "answers"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "subject": { "$ref": "common.schema.json#/$defs/id" },
+    "sheet": { "$ref": "common.schema.json#/$defs/id" },
+    "updatedAt": { "$ref": "common.schema.json#/$defs/dateTime" },
+    "answers": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Task id → answer in Markdown."
+    }
+  }
+}

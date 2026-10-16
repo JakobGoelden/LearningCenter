@@ -1,8 +1,8 @@
-## Aufgabe: Antworten bewerten
+## Task: grade the answers
 
-Bewerte jede Antwort im Kontext mit einem `score` von 0 bis 5 nach der Skala oben.
+Grade every answer in the context with a `score` from 0 to 5 using the scale above.
 
-- `feedback`: 1–3 Sätze. Bei Lücken: was fehlt und wie es richtig wäre. Bei voller Punktzahl kurz bestätigen, was gut war.
-- `gaps`: die fehlenden oder falschen Punkte als kurze Stichworte (leer, wenn nichts fehlt).
-- Eine leere Antwort oder „weiß nicht“ bekommt 0 und eine kurze Erklärung der richtigen Antwort.
-- `summary`: ein bis zwei Sätze zum Gesamtbild und was als Nächstes zu wiederholen ist.
+- `feedback`: 1–3 sentences. For gaps: what is missing and what would be right. For full marks, briefly confirm what was good.
+- `gaps`: the missing or wrong points as short keywords (empty if nothing is missing).
+- An empty answer or "don't know" gets 0 and a short explanation of the right answer.
+- `summary`: one or two sentences on the overall picture and what to review next.

@@ -1,10 +1,10 @@
-## Aufgabe: Übungsaufgabe im Dojo „{{dojo}}“ erzeugen
+## Task: create an exercise in the dojo "{{dojo}}"
 
-Verfahren: {{procedure}}
-Niveau: {{level}} (easy = leicht, medium = mittel, exam = Klausurniveau)
-Hilfsmittel: {{aids}}
+Procedure: {{procedure}}
+Level: {{level}} (easy, medium, exam = exam level)
+Aids: {{aids}}
 
 {{template}}
 
-Formuliere genau eine Aufgabe, vollständig und eindeutig, mit allen Daten, die zum Lösen nötig sind. Verrate die Lösung nicht.
+Write exactly one task, complete and unambiguous, with all data needed to solve it. Do not reveal the solution.
 {{answerFormat}}

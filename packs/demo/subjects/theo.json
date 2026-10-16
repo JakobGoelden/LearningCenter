@@ -1,22 +1,22 @@
 {
   "$schema": "../../../schema/subject.schema.json",
   "id": "theo",
-  "name": "Theoretische Informatik",
+  "name": "Theoretical Computer Science",
   "short": "Theo",
   "color": "#6d5bd0",
   "exam": {
     "format": "written",
     "date": "2027-02-08",
     "time": "10:00",
-    "location": "Audimax",
+    "location": "Main lecture hall",
     "durationMinutes": 120,
-    "aids": ["1 handbeschriebenes DIN-A4-Blatt"]
+    "aids": ["1 handwritten A4 sheet"]
   },
   "topics": [
     {
       "id": "dfa-nfa",
-      "title": "DFA und NFA",
-      "notes": "Definitionen, akzeptierte Sprache, Nichtdeterminismus, ε-Übergänge.",
+      "title": "DFA and NFA",
+      "notes": "Definitions, accepted language, nondeterminism, ε-transitions.",
       "status": "solid",
       "due": "2026-10-23",
       "intervalDays": 7,
@@ -27,8 +27,8 @@
     },
     {
       "id": "powerset",
-      "title": "Potenzmengenkonstruktion",
-      "notes": "NFA → DFA, ε-Hülle, warum höchstens 2^n Zustände.",
+      "title": "Powerset construction",
+      "notes": "NFA → DFA, ε-closure, why at most 2^n states.",
       "status": "shaky",
       "due": "2026-10-14",
       "intervalDays": 1,
@@ -36,8 +36,8 @@
     },
     {
       "id": "regex",
-      "title": "Reguläre Ausdrücke",
-      "notes": "Syntax, Thompson-Konstruktion, Zustandselimination DFA → RegExp.",
+      "title": "Regular expressions",
+      "notes": "Syntax, Thompson construction, state elimination DFA → regex.",
       "status": "shaky",
       "due": "2026-10-16",
       "intervalDays": 3,
@@ -45,35 +45,78 @@
     },
     {
       "id": "minimization",
-      "title": "DFA-Minimierung",
-      "notes": "Äquivalenzklassen, Table-Filling-Algorithmus, Myhill-Nerode.",
+      "title": "DFA minimization",
+      "notes": "Equivalence classes, table-filling algorithm, Myhill-Nerode.",
       "status": "new"
     },
     {
       "id": "pumping",
-      "title": "Pumping-Lemma für reguläre Sprachen",
-      "notes": "Beweisstruktur, typische Fehler beim Wählen von w und der Zerlegung.",
+      "title": "Pumping lemma for regular languages",
+      "notes": "Proof structure, typical mistakes when choosing w and the split.",
       "status": "new"
     },
     {
       "id": "history-of-automata",
-      "title": "Geschichte der Automatentheorie",
-      "notes": "Nicht klausurrelevant.",
+      "title": "History of automata theory",
+      "notes": "Not relevant for the exam.",
       "status": "skip"
     }
+  ],
+  "schedule": [
+    { "kind": "lecture", "weekday": "mon", "start": "10:00", "end": "12:00", "location": "Main lecture hall" },
+    { "kind": "lecture", "weekday": "thu", "start": "10:00", "end": "12:00", "location": "Main lecture hall" },
+    { "kind": "tutorial", "weekday": "wed", "start": "14:00", "end": "16:00", "location": "Room 2.031", "notes": "group B" }
   ],
   "sheets": [
     { "id": "b1", "label": "B1", "due": "2026-10-20", "status": "checked" },
     { "id": "b2", "label": "B2", "due": "2026-10-27", "status": "done" },
-    { "id": "b3", "label": "B3", "due": "2026-11-03", "status": "open" }
+    {
+      "id": "b3",
+      "label": "B3",
+      "due": "2026-11-03",
+      "status": "open",
+      "tasks": [
+        {
+          "id": "1",
+          "label": "Task 1",
+          "points": 4,
+          "text": "Let N be the NFA over {a,b} with states q0 (start), q1, q2 (final) and transitions q0 -a-> q0, q0 -b-> q0, q0 -a-> q1, q1 -b-> q2.\n\nConstruct the equivalent DFA with the powerset construction. Give only reachable states."
+        },
+        {
+          "id": "2",
+          "label": "Task 2",
+          "points": 2,
+          "text": "Which language does N accept? Describe it in one sentence and give a regular expression for it."
+        },
+        {
+          "id": "3",
+          "label": "Task 3",
+          "points": 2,
+          "text": "Why can the powerset construction produce up to 2^n states? Give an example language where this blow-up really happens."
+        }
+      ]
+    }
   ],
   "openItems": [
-    { "id": "slides-vl3", "text": "Folien VL 3 fehlen noch auf Moodle", "createdAt": "2026-10-15" },
-    { "id": "notes-vl2", "text": "Mitschrift VL 2 mit Skript abgleichen", "createdAt": "2026-10-14" }
+    { "id": "slides-vl3", "text": "Slides for lecture 3 still missing on Moodle", "createdAt": "2026-10-15" },
+    { "id": "notes-vl2", "text": "Compare lecture 2 notes with the script", "createdAt": "2026-10-14" }
   ],
   "checks": [
-    { "id": "moodle", "kind": "material", "label": "Moodle-Kurs", "lastChecked": "2026-10-15", "everyDays": 3 },
-    { "id": "script", "kind": "script", "label": "Skript", "version": "v1.2", "lastChecked": "2026-10-12", "everyDays": 14 },
-    { "id": "notes", "kind": "notes", "label": "Eigene Mitschrift", "lastChecked": "2026-10-07", "everyDays": 7 }
+    {
+      "id": "moodle",
+      "kind": "material",
+      "label": "Moodle course",
+      "lastChecked": "2026-10-15",
+      "everyDays": 3
+    },
+    {
+      "id": "script",
+      "kind": "script",
+      "label": "Script",
+      "version": "v1.2",
+      "lastChecked": "2026-10-12",
+      "everyDays": 14
+    },
+    { "id": "notes", "kind": "notes", "label": "Own notes", "lastChecked": "2026-10-07", "everyDays": 7 }
   ]
 }

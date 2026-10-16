@@ -9,11 +9,12 @@ import event from '../../schema/event.schema.json';
 import request from '../../schema/request.schema.json';
 import response from '../../schema/response.schema.json';
 import bundle from '../../schema/bundle.schema.json';
-import type { AiRequest, AiResponse, Bundle, Dojo, LogEvent, Pack, Session, Subject } from './types';
+import work from '../../schema/work.schema.json';
+import type { AiRequest, AiResponse, Bundle, Dojo, LogEvent, Pack, Session, SheetWork, Subject } from './types';
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 addFormats(ajv);
-for (const s of [common, pack, subject, dojo, session, event, request, response, bundle]) ajv.addSchema(s);
+for (const s of [common, pack, subject, dojo, session, event, request, response, bundle, work]) ajv.addSchema(s);
 
 const BASE = 'https://github.com/JakobGoelden/LearningCenter/schema/';
 
@@ -25,7 +26,8 @@ export type SchemaName =
   | 'event'
   | 'request'
   | 'response'
-  | 'bundle';
+  | 'bundle'
+  | 'work';
 
 interface SchemaTypes {
   pack: Pack;
@@ -36,6 +38,7 @@ interface SchemaTypes {
   request: AiRequest;
   response: AiResponse;
   bundle: Bundle;
+  work: SheetWork;
 }
 
 const cache = new Map<SchemaName, ValidateFunction>();

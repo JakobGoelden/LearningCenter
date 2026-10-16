@@ -10,7 +10,7 @@ const sleep = (ms: number, signal: AbortSignal) =>
     const t = setTimeout(resolve, ms);
     signal.addEventListener('abort', () => {
       clearTimeout(t);
-      reject(new DOMException('Abgebrochen', 'AbortError'));
+      reject(new DOMException('Cancelled', 'AbortError'));
     });
   });
 

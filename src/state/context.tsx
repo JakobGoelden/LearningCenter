@@ -71,10 +71,10 @@ export function PackProvider(props: {
         const now = await fingerprint(fs, loadedRef.current);
         if (now !== print.current) {
           await reload();
-          setNotice('Pack wurde außerhalb der App geändert und neu geladen.');
+          setNotice('The pack was changed outside the app and has been reloaded.');
         }
       } catch (e) {
-        setNotice(`Neu laden fehlgeschlagen: ${(e as Error).message}`);
+        setNotice(`Reload failed: ${(e as Error).message}`);
       }
     }, POLL_MS);
     return () => clearInterval(timer);
@@ -86,7 +86,7 @@ export function PackProvider(props: {
     async (id, change, event) => {
       const current = loadedRef.current;
       const before = current.subjects.find((s) => s.id === id);
-      if (!before) throw new Error(`Unbekanntes Fach: ${id}`);
+      if (!before) throw new Error(`Unknown subject: ${id}`);
       const after = change(before);
       const next = { ...current, subjects: current.subjects.map((s) => (s.id === id ? after : s)) };
       setLoaded(next);
@@ -97,7 +97,7 @@ export function PackProvider(props: {
         if (event) await appendEvent(fs, { subject: id, ...event });
         await refreshPrint(next);
       } catch (e) {
-        setNotice(`Speichern fehlgeschlagen: ${(e as Error).message}`);
+        setNotice(`Saving failed: ${(e as Error).message}`);
         setLoaded(current);
       } finally {
         busy.current--;
@@ -118,7 +118,7 @@ export function PackProvider(props: {
         if (event) await appendEvent(fs, event);
         await refreshPrint(next);
       } catch (e) {
-        setNotice(`Speichern fehlgeschlagen: ${(e as Error).message}`);
+        setNotice(`Saving failed: ${(e as Error).message}`);
         setLoaded(current);
       } finally {
         busy.current--;

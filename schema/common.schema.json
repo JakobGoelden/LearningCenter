@@ -32,11 +32,11 @@
     },
     "level": {
       "enum": ["easy", "medium", "exam"],
-      "description": "Difficulty: easy (leicht), medium (mittel), exam (Klausurniveau)."
+      "description": "Difficulty: easy, medium, or exam level."
     },
     "topicStatus": {
       "enum": ["new", "shaky", "solid", "skip"],
-      "description": "new = not yet reviewed, shaky = unsicher, solid = sicher, skip = nicht abfragen."
+      "description": "new = not yet reviewed, shaky = unsure, solid = confident, skip = never quizzed."
     }
   }
 }

@@ -54,7 +54,43 @@ export interface Sheet {
   due?: ISODate;
   status: SheetStatus;
   url?: string;
+  /** Path in the pack (e.g. material/db/sheet-3.pdf) or an https link. */
+  file?: string;
+  tasks?: SheetTask[];
   notes?: string;
+}
+
+export interface SheetTask {
+  id: string;
+  label: string;
+  /** Markdown. */
+  text: string;
+  points?: number;
+}
+
+export type ClassKind = 'lecture' | 'tutorial' | 'lab' | 'seminar' | 'other';
+export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+
+/** One weekly slot in the timetable. */
+export interface ClassSlot {
+  kind: ClassKind;
+  weekday: Weekday;
+  start: string;
+  end: string;
+  location?: string;
+  from?: ISODate;
+  until?: ISODate;
+  notes?: string;
+}
+
+/** The learner's answers to a sheet (work/<subject>/<sheet>.json). */
+export interface SheetWork {
+  $schema?: string;
+  subject: string;
+  sheet: string;
+  updatedAt?: string;
+  /** Task id → Markdown; '_' when the sheet lists no tasks. */
+  answers: Record<string, string>;
 }
 
 export interface OpenItem {
@@ -94,6 +130,7 @@ export interface Subject {
   notes?: string;
   exam: Exam;
   topics: Topic[];
+  schedule?: ClassSlot[];
   sheets?: Sheet[];
   openItems?: OpenItem[];
   checks?: Check[];
