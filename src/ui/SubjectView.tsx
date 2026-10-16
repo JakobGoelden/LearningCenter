@@ -6,6 +6,7 @@ import { uniqueId } from '../lib/download';
 import { CHECK_KIND, CLASS_KIND, EXAM_FORMAT, SHEET_STATUS, WEEKDAY_LABEL } from './labels';
 import type { Weekday } from '../model/types';
 import { href } from './router';
+import { Torii } from './Emblem';
 import { StatusBar } from './StatusBar';
 
 /** Full detail page for one subject, opened from its dashboard banner. */
@@ -65,14 +66,15 @@ export function SubjectView({ subjectId }: { subjectId: string }) {
 
   return (
     <div class="stack">
-      <div class="page-head">
+      <div class="page-head subject-head" style={{ '--c': s.color }}>
         <a href={href({ name: 'dashboard' })}>← Dashboard</a>
-        <h1 style={{ borderLeft: `6px solid ${s.color ?? 'var(--accent)'}`, paddingLeft: '10px' }}>{s.name}</h1>
+        <h1>{s.name}</h1>
         <span class="spacer" />
         <a class="btn primary" href={href({ name: 'quiz', subject: s.id })}>
           Quiz
         </a>
-        <a class="btn" href={href({ name: 'dojo', subject: s.id })}>
+        <a class="btn dojo-btn" href={href({ name: 'dojo', subject: s.id })}>
+          <Torii size={16} />
           Dojo{dojoCount ? ` (${dojoCount})` : ''}
         </a>
         <a class="btn" href={href({ name: 'topics', subject: s.id })}>

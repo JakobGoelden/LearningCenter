@@ -2,6 +2,7 @@ import { overview } from '../model/derive';
 import type { Dojo, ISODate, Subject } from '../model/types';
 import { href } from './router';
 import { StatusBar } from './StatusBar';
+import { Torii } from './Emblem';
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -63,8 +64,12 @@ export function SubjectBanner({ subject: s, on, dojos = [] }: { subject: Subject
         title={dojos.map((d) => d.title).join(', ')}
         aria-label={`Dojo for ${s.name}: ${only ? only.title : `${dojos.length} dojos`}`}
       >
+        <span class="dojo-kanji" aria-hidden="true">
+          道場
+        </span>
+        <Torii class="dojo-torii" />
         <strong>Dojo</strong>
-        <span class="small muted">{only ? only.title : `${dojos.length} dojos`}</span>
+        <span class="dojo-sub">{only ? only.title : `${dojos.length} dojos`}</span>
       </a>
     </div>
   );

@@ -3,6 +3,7 @@ import { downloadText } from '../lib/download';
 import { exportBundle, toJson } from '../storage/repo';
 import { today } from '../lib/dates';
 import { href } from './router';
+import { Logo } from './Emblem';
 
 const SOURCE: Record<string, string> = { folder: 'Folder', dev: 'Dev server', browser: 'Browser' };
 
@@ -15,6 +16,7 @@ export function Header() {
   return (
     <header class="topbar">
       <a class="brand" href={href({ name: 'dashboard' })}>
+        <Logo />
         {pack.title}
       </a>
       <span class="meta">

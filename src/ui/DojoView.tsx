@@ -12,6 +12,8 @@ import { sessionId } from './QuizView';
 import { SCORE_LABEL } from './labels';
 import { DrillPractice, type RoundSummary } from './DrillRound';
 import { roundScore } from '../dojo/drills';
+import { Enso, Torii } from './Emblem';
+import type { ComponentChildren } from 'preact';
 
 const ALL_LEVELS: Level[] = ['easy', 'medium', 'exam'];
 
@@ -31,17 +33,32 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
 
   if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
 
-  const head = (title: string) => (
-    <div class="page-head">
-      <a href={dojo ? href({ name: 'dojo', subject: s.id }) : href({ name: 'dashboard' })}>← {dojo ? 'All dojos' : 'Dashboard'}</a>
-      <h1>{title}</h1>
-    </div>
+  const back = (
+    <a class="dojo-back" href={dojo ? href({ name: 'dojo', subject: s.id }) : href({ name: 'dashboard' })}>
+      ← {dojo ? 'All dojos' : 'Dashboard'}
+    </a>
+  );
+  const hero = (title: string, sub: ComponentChildren, extra?: ComponentChildren) => (
+    <header class="dojo-hero" style={{ '--c': s.color }}>
+      <Enso class="dojo-hero-enso" />
+      <Torii class="dojo-hero-torii" />
+      <span class="dojo-hero-kanji" aria-hidden="true">
+        道場
+      </span>
+      <div class="dojo-hero-body">
+        {back}
+        <div class="dojo-hero-eyebrow">Dojo · {s.name}</div>
+        <h1>{title}</h1>
+        <div class="dojo-hero-sub">{sub}</div>
+        {extra}
+      </div>
+    </header>
   );
 
   if (!dojo) {
     return (
       <div class="stack">
-        {head(`Dojos: ${s.name}`)}
+        {hero('Choose your training', `${dojos.length} ${dojos.length === 1 ? 'dojo' : 'dojos'} for ${s.name}`)}
         {dojoId && <div class="error">There is no dojo "{dojoId}".</div>}
         {dojos.length === 0 ? (
           <div class="panel muted">
@@ -51,8 +68,10 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
         ) : (
           <div class="cards">
             {dojos.map((d) => (
-              <a class="panel card-link" href={href({ name: 'dojo', subject: s.id, dojo: d.id })}>
+              <a class="dojo-card" style={{ '--c': s.color }} href={href({ name: 'dojo', subject: s.id, dojo: d.id })}>
+                <Torii class="dojo-card-torii" />
                 <h2>{d.title}</h2>
+                {d.drills?.length ? <span class="dojo-card-count">{d.drills.length} exercises</span> : null}
                 <div class="small muted">{d.procedure}</div>
                 {d.description && <div class="small">{d.description}</div>}
                 {d.aids?.length ? <div class="small muted">Aids: {d.aids.join(', ')}</div> : null}
@@ -238,12 +257,22 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
 
   return (
     <div class="stack">
-      {head(dojo.title)}
-      <div class="small muted">
-        {s.name} · {dojo.procedure}
-        {dojo.aids?.length ? ` · Aids: ${dojo.aids.join(', ')}` : ''}
-      </div>
-      {dojo.description && <div>{dojo.description}</div>}
+      {hero(
+        dojo.title,
+        dojo.procedure,
+        <>
+          {dojo.description && <p class="dojo-hero-desc">{dojo.description}</p>}
+          <div class="dojo-hero-tags">
+            {dojo.drills?.length ? <span>{dojo.drills.length} exercises</span> : null}
+            {(dojo.levels ?? []).map((l) => (
+              <span>{LEVEL_LABEL[l]}</span>
+            ))}
+            {dojo.aids?.map((a) => (
+              <span>Aid: {a}</span>
+            ))}
+          </div>
+        </>,
+      )}
 
       {dojo.drills?.length ? (
         <DrillPractice
