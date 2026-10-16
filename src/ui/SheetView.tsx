@@ -84,9 +84,9 @@ export function SheetView({ subjectId, sheetId }: { subjectId: string; sheetId: 
 
   return (
     <div class="stack">
-      <div class="page-head">
+      <div class="page-head subject-head" data-kanji="練" style={{ '--c': s.color }}>
         <a href={href({ name: 'subject', subject: s.id })}>← {s.name}</a>
-        <h1 style={{ borderLeft: `6px solid ${s.color ?? 'var(--accent)'}`, paddingLeft: '10px' }}>{sheet.label}</h1>
+        <h1>{sheet.label}</h1>
         {sheet.due && (
           <span class={`badge${late ? ' danger' : ''}`}>
             due {formatShort(sheet.due)} ({relative(sheet.due, on)})

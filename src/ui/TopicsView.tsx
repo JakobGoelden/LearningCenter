@@ -75,7 +75,7 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
 
   return (
     <div class="stack">
-      <div class="page-head">
+      <div class="page-head subject-head" data-kanji="題" style={{ '--c': s.color }}>
         <a href={href({ name: 'dashboard' })}>← Dashboard</a>
         <h1>Topics: {s.name}</h1>
         <span class="spacer" />
