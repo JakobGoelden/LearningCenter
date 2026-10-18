@@ -56,6 +56,19 @@ export interface TopicQuestion {
   kind?: QuestionKind;
   /** Key points of a good answer (Markdown), shown after answering. */
   answer?: string;
+  /** Blocked on this machine: never asked again and not re-added by a sync. */
+  blocked?: boolean;
+  /** How the learner does with this card; drives the endless-mode priority, not the schedule. */
+  stats?: CardStats;
+}
+
+export interface CardStats {
+  /** Number of answers given. */
+  seen: number;
+  /** The last (up to 5) scores, oldest first. */
+  recent: Score[];
+  /** Date of the last answer. */
+  last?: ISODate;
 }
 
 export interface Sheet {

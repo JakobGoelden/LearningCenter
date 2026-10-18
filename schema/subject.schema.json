@@ -64,7 +64,19 @@
         "id": { "$ref": "common.schema.json#/$defs/id", "description": "Unique within the topic." },
         "prompt": { "type": "string", "minLength": 1, "description": "The question (Markdown). Tests understanding, not recall of wording." },
         "kind": { "enum": ["why", "what-if", "explain", "apply"] },
-        "answer": { "type": "string", "description": "Key points of a good answer (Markdown), shown to the learner after answering and used for grading." }
+        "answer": { "type": "string", "description": "Key points of a good answer (Markdown), shown to the learner after answering and used for grading." },
+        "blocked": { "type": "boolean", "description": "The learner blocked this card: it is never asked again and a sync does not bring it back. Set by the app only." },
+        "stats": {
+          "type": "object",
+          "description": "How the learner does with this card. Written by the app; drives the priority in endless mode, separate from the topic schedule.",
+          "required": ["seen", "recent"],
+          "additionalProperties": false,
+          "properties": {
+            "seen": { "type": "integer", "minimum": 0, "description": "Number of answers given." },
+            "recent": { "type": "array", "maxItems": 5, "items": { "$ref": "common.schema.json#/$defs/score" }, "description": "Last scores, oldest first." },
+            "last": { "$ref": "common.schema.json#/$defs/date", "description": "Date of the last answer." }
+          }
+        }
       }
     },
     "review": {

@@ -74,6 +74,9 @@ export function SubjectView({ subjectId }: { subjectId: string }) {
         <a class="btn primary" href={href({ name: 'quiz', subject: s.id })}>
           Quiz
         </a>
+        <a class="btn" href={href({ name: 'endless', subject: s.id })}>
+          Endless
+        </a>
         <a class="btn dojo-btn" href={href({ name: 'dojo', subject: s.id })}>
           <Torii size={16} />
           Dojo{dojoCount ? ` (${dojoCount})` : ''}

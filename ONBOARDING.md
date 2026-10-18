@@ -391,9 +391,13 @@ look yourself; otherwise ask the person to check with you):
 Fix whatever is missing, then validate again.
 
 Finally, have the person do a first round: the **Study** button on the
-dashboard picks the most pressing topics across all subjects (or quiz
-directly in the chat and record it with `npm run review`), so that due dates
-get created. Tick the last items off in `SETUP.md`.
+dashboard picks the most pressing topics across all subjects, so that due
+dates get created, and the **Endless** button on a subject page shows
+cards for as long as they like. Explain what the app does by itself
+(scheduling, quizzes, flashcards, endless mode with weak cards first, the
+"Block this card" button for cards they disagree with) and what you are
+for afterwards: finding their weak spots from the results and being their study
+partner. Tick the last items off in `SETUP.md`.
 
 ## 6. Afterwards: regular upkeep
 
@@ -404,6 +408,10 @@ Suggest this routine to the person and carry it out when they ask for it:
   files into `material/`, compare the script version, create new topics,
   add new exercise sheets with `file` and `tasks`, update the timetable if it
   changed, set `lastChecked`.
+- **"Where am I weak?"**: look at the cards' `stats` (low `recent` scores),
+  the topics' `history` and the sessions; name the weak spots and fix the
+  cause (clearer questions, notes, new cards, drills). Blocked cards stay
+  blocked. Do not reschedule topics, the app does that.
 - **"Process my new results"** (the prompt from the dashboard banner):
   grade open quizzes, look at quizzes, dojo rounds and sheets since the
   last sync, update notes, questions and drills, then append `ai.sync`

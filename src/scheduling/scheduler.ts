@@ -1,4 +1,5 @@
 import { addDays, diffDays, weekday } from '../lib/dates';
+import { allBlocked } from '../model/quiz';
 import type { ISODate, PackSettings, Review, Score, Subject, Topic, TopicStatus } from '../model/types';
 
 export const DEFAULT_LADDER = [1, 3, 7, 14, 21, 35, 60];
@@ -101,7 +102,7 @@ export function pickQuizTopics(topics: Topic[], on: ISODate, count: number): Top
   const rank = (t: Topic) =>
     isDue(t, on) ? 0 : t.status === 'shaky' ? 1 : t.status === 'new' ? 2 : 3;
   return topics
-    .filter((t) => t.status !== 'skip')
+    .filter((t) => t.status !== 'skip' && !allBlocked(t))
     .sort((a, b) => rank(a) - rank(b) || (a.due ?? '9999').localeCompare(b.due ?? '9999'))
     .slice(0, count);
 }

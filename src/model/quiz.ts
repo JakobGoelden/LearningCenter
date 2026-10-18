@@ -9,13 +9,19 @@ export interface QuizQuestion {
   answer?: string;
 }
 
+/** Prepared questions that are not blocked. */
+export const activeQuestions = (topic: Pick<Topic, 'questions'>) => (topic.questions ?? []).filter((q) => !q.blocked);
+
+/** Every prepared question is blocked: the topic is not quizzed (no generic fallback either). */
+export const allBlocked = (topic: Pick<Topic, 'questions'>) => !!topic.questions?.length && !activeQuestions(topic).length;
+
 /**
  * The question the app asks for a topic without an AI. Prepared questions
  * take turns (by the number of past reviews); a topic without any gets a
  * general "explain it" question built from its title.
  */
 export function questionFor(topic: Topic): QuizQuestion {
-  const qs = topic.questions ?? [];
+  const qs = activeQuestions(topic);
   if (!qs.length) {
     return { kind: 'explain', prompt: `Explain **${topic.title}** in your own words: what is it, why does it matter, and what is a typical example or mistake?` };
   }

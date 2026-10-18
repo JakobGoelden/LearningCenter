@@ -39,6 +39,13 @@ the next reviews.
   as your AI has not looked at the new results, the dashboard shows a
   banner with a prompt to copy; the AI grades what is open, updates your
   topics, questions and drills, and the banner goes away.
+- **Endless:** the **Endless** button on a subject page shows prepared cards
+  for as long as you want. Weak cards come up more often (priority from your
+  recent answers on each card, separate from the schedule; endless answers
+  do not move due dates). **Block this card** (also while answering a quiz)
+  keeps a card you disagree with in your pack but never asks it again.
+  Scheduling happens in the app; the AI's job is to find weak spots and be a
+  study partner.
 - **Quiz:** runs right in the app: each topic has
   prepared questions that test understanding (written by the AI when it
   sets up your pack), shown one card at a time. At the end you choose

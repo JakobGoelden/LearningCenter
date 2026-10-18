@@ -120,6 +120,40 @@ The format is fully described in `schema/*.schema.json` (JSON Schema
 - If the app is running, it notices changes to `pack.json`, `subjects/` and
   `dojos/` within a few seconds and reloads.
 
+### What the app does and what you do
+
+The app does the scheduling and the practice on its own: due dates and
+intervals (spaced repetition, below), quizzes, flashcards, drills, and
+**endless mode** (a button on every subject page: cards for as long as the
+person wants, weak cards more often). You are not needed for any of that. Your
+role is **weak-spot detector and study partner**:
+
+- read `history`, `sessions/`, `work/` and the per-card `stats` to find what
+  keeps going wrong, then fix the cause: a sharper `notes`, better or
+  additional questions, drills, open tasks;
+- explain, tutor and quiz in the chat when the person wants a human-style
+  conversation;
+- write the content the app practises (topics, questions, dojos, drills).
+
+Do not reschedule topics by hand and do not "grade for the app": the app
+records what the person rated. Only record grades yourself for answers given
+in the chat (`npm run review`).
+
+**Cards.** A card is a prepared `question` of a topic. Besides `id`, `prompt`,
+`kind` and `answer` it carries two fields that only the app writes (never
+edit or reset them; read them):
+
+- `stats`: `{seen, recent, last}`, the number of answers, the last five
+  scores and the date. Cards with low recent scores are drawn more often in
+  endless mode; this priority is separate from the topic schedule, and endless
+  answers do not move `due`. A card answered in a normal quiz also adds to its
+  stats. Use it to find weak cards: low `recent` scores point at a question
+  that is unclear or a topic that needs explaining.
+- `blocked: true`: the person blocked the card ("Block this card" on the
+  answer page, or in endless mode). It is never asked again but stays in the
+  file; do not delete, unblock or re-create it, and do not write a replacement
+  that asks the same thing. A topic whose cards are all blocked is not quizzed.
+
 ### Due dates and spaced repetition
 
 Same rules as in the app (`src/scheduling/scheduler.ts`). The ladder is in
