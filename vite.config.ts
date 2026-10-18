@@ -4,8 +4,8 @@ import { packFs } from './tools/vite-pack-fs';
 
 // LC_PACK_DIR=local/my-pack npm run dev exposes that folder to the app (dev only).
 // `open` starts the browser with `npm run dev` / `npm run preview` (BROWSER=none turns it off).
-// `base: './'` keeps asset URLs relative, so the build works on GitHub Pages
-// under /<repo>/ as well as from any other static host.
+// `base: './'` keeps asset URLs relative, so the build works from any
+// static host or folder.
 export default defineConfig({
   base: './',
   plugins: [preact(), packFs()],

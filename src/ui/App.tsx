@@ -15,6 +15,7 @@ import { QuizView } from './QuizView';
 import { DojoView } from './DojoView';
 import { SettingsView } from './SettingsView';
 import { LogView } from './LogView';
+import { EndlessView } from './EndlessView';
 import { StudyView } from './StudyView';
 
 type Open = { fs: PackFs; loaded: LoadedPack };
@@ -79,6 +80,7 @@ function Shell() {
         {route.name === 'sheet' && <SheetView key={`${route.subject}/${route.sheet}`} subjectId={route.subject} sheetId={route.sheet} />}
         {route.name === 'topics' && <TopicsView subjectId={route.subject} />}
         {route.name === 'quiz' && <QuizView key={`${route.subject}/${route.ahead ?? ''}`} subjectId={route.subject} ahead={route.ahead} />}
+        {route.name === 'endless' && <EndlessView key={route.subject} subjectId={route.subject} />}
         {route.name === 'dojo' && <DojoView key={`${route.subject}/${route.dojo}`} subjectId={route.subject} dojoId={route.dojo} />}
         {route.name === 'settings' && <SettingsView />}
         {route.name === 'log' && <LogView />}

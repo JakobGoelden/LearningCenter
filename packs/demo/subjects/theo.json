@@ -14,6 +14,16 @@
       "1 handwritten A4 sheet"
     ]
   },
+  "chapters": [
+    {
+      "id": "automata",
+      "title": "Finite automata"
+    },
+    {
+      "id": "regular-languages",
+      "title": "Regular languages"
+    }
+  ],
   "topics": [
     {
       "id": "dfa-nfa",
@@ -47,7 +57,8 @@
           "prompt": "Explain when an NFA accepts a word, and how that differs from a DFA.",
           "answer": "- DFA: exactly one run; accept if it ends in a final state.\n- NFA: accepts if **at least one** possible run ends in a final state after reading the whole word.\n- Runs that get stuck (no transition) are simply discarded."
         }
-      ]
+      ],
+      "chapter": "automata"
     },
     {
       "id": "powerset",
@@ -76,7 +87,8 @@
           "prompt": "What if the NFA has n states: how many states can the DFA have at most, and why is it usually far fewer in practice?",
           "answer": "- At most 2^n states (all subsets).\n- Built from the start state, only **reachable** subsets appear, which is usually far fewer.\n- There are languages where the exponential blow-up really happens (e.g. \"the n-th symbol from the end is a\")."
         }
-      ]
+      ],
+      "chapter": "automata"
     },
     {
       "id": "regex",
@@ -105,7 +117,8 @@
           "prompt": "Why does the language of a regular expression with a star always contain the empty word ε?",
           "answer": "- r* means zero or more repetitions of r.\n- Zero repetitions give ε, so ε ∈ L(r*) for every r, even r = ∅."
         }
-      ]
+      ],
+      "chapter": "regular-languages"
     },
     {
       "id": "minimization",
@@ -125,7 +138,8 @@
           "prompt": "Why do you remove unreachable states before minimizing?",
           "answer": "- They never influence which words are accepted.\n- Leaving them in can make the result not minimal (they may not merge with anything).\n- Minimal DFA = no unreachable states and no two equivalent states."
         }
-      ]
+      ],
+      "chapter": "automata"
     },
     {
       "id": "pumping",
@@ -145,7 +159,8 @@
           "prompt": "What if a language satisfies the pumping property: does that prove it is regular?",
           "answer": "- No. The lemma is only a necessary condition.\n- Some non-regular languages can be pumped too.\n- To prove regularity, give a DFA, NFA or regex (or use closure properties)."
         }
-      ]
+      ],
+      "chapter": "regular-languages"
     },
     {
       "id": "history-of-automata",

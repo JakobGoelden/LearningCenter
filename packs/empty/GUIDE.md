@@ -25,6 +25,8 @@ dates: …". The rules for this are in `CLAUDE.md`.
 | `exam.format` | `written` written exam, `talk` talk or oral exam, `project` project, `unknown` unclear |
 | `topics[].status` | `new`, `shaky`, `solid`, `skip` (never quizzed) |
 | `topics[].due` | next review date (YYYY-MM-DD) |
+| `chapters[]`, `topics[].chapter` | optional parts of a subject (script chapters); the learner switches chapters on once the lecture has happened |
+| `topics[].questions[]` | prepared cards; the app adds `stats` and `blocked` itself, do not write them |
 | `sheets[].status` | `open`, `done`, `checked` |
 | `checks[].kind` | `material` (e.g. Moodle), `script` (script version), `notes` (own notes), `other` |
 | `checks[].everyDays` | after this many days a check counts as stale |

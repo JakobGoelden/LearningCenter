@@ -7,6 +7,8 @@ import { quizGradeRequest, quizStartRequest } from '../ai/requests';
 import { saveSession } from '../storage/repo';
 import type { Score, Session, SessionItem, Topic } from '../model/types';
 import { questionFor, SELF_SCORE, type SelfRating } from '../model/quiz';
+import { activeTopics } from '../model/chapters';
+import { withCardAnswer, withCardBlocked, type Card } from '../scheduling/cards';
 import { Markdown } from './Markdown';
 import { Cancelled, useAi } from './AiPanel';
 import { href } from './router';
@@ -75,7 +77,7 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
   const on = today();
   // Reviewing ahead: topics due by `ahead` are picked as if that day had come.
   const pickOn = ahead && ahead > on ? ahead : on;
-  const candidates = useMemo(() => (s ? pickQuizTopics(s.topics, pickOn, s.topics.length) : []), [s, pickOn]);
+  const candidates = useMemo(() => (s ? pickQuizTopics(activeTopics(s), pickOn, s.topics.length) : []), [s, pickOn]);
   const due = candidates.filter((t) => isDue(t, pickOn)).length;
   // Everything due by default, else the usual quiz size.
   const [count, setCount] = useState(Math.max(1, Math.min(candidates.length, due || (loaded.pack.settings?.questionsPerQuiz ?? 5))));
@@ -94,6 +96,8 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
   /** Flashcards: the current card shows its key points. */
   const [revealed, setRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Items whose card was blocked in this quiz. */
+  const [blocked, setBlocked] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (preset?.length && s) start();
@@ -271,14 +275,18 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
       const scores = Object.fromEntries([...perTopic].map(([id, sc]) => [id, averageScore(sc)]));
       await updateSubject(
         s.id,
-        (subj) => ({
-          ...subj,
-          topics: subj.topics.map((t) =>
-            t.id in scores
-              ? applyReview(t, { date: on, score: scores[t.id] as Score, source: 'quiz', sessionId: session.id }, loaded.pack.settings)
-              : t,
-          ),
-        }),
+        (subj) =>
+          session.items.reduce((acc, it) => {
+            const card = it.topicId && it.question && it.score !== undefined ? cardOf(acc, it) : null;
+            return card ? withCardAnswer(acc, card, it.score!, on) : acc;
+          }, {
+            ...subj,
+            topics: subj.topics.map((t) =>
+              t.id in scores
+                ? applyReview(t, { date: on, score: scores[t.id] as Score, source: 'quiz', sessionId: session.id }, loaded.pack.settings)
+                : t,
+            ),
+          }),
         { type: 'quiz.applied', ref: session.id, data: { scores } },
       );
       await persist({ ...session, applied: true });
@@ -290,6 +298,35 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
       if (!session) return;
       await persist({ ...session, finishedAt: nowIso() });
       setPhase('review');
+    });
+
+  /** The prepared card behind a quiz item, if it still exists and is not blocked. */
+  const cardOf = (subj: typeof s, it: SessionItem): Card | null => {
+    const topic = subj?.topics.find((t) => t.id === it.topicId);
+    const question = topic?.questions?.find((q) => q.id === it.question && !q.blocked);
+    return topic && question ? { topic, question } : null;
+  };
+
+  /** Never ask this card again. In flashcard mode it also moves on to the next card unrated. */
+  const blockItem = (it: SessionItem, advance = false) =>
+    guard(async () => {
+      const card = cardOf(s, it);
+      if (!card || !session) return;
+      setBlocked(new Set(blocked).add(it.n));
+      await updateSubject(s.id, (subj) => withCardBlocked(subj, cardOf(subj, it) ?? card), {
+        type: 'question.block',
+        ref: `${card.topic.id}/${card.question.id}`,
+      });
+      if (!advance) return;
+      if (idx < session.items.length - 1) {
+        setDir('fwd');
+        setIdx(idx + 1);
+        setRevealed(false);
+      } else {
+        await persist({ ...session, finishedAt: nowIso() });
+        setCheckMode('self');
+        setPhase('review');
+      }
     });
 
   const rate = (n: number, r: SelfRating) => setRatings(new Map(ratings).set(n, r));
@@ -574,6 +611,13 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
                     </button>
                   ))}
                 </span>
+                {item.question && !blocked.has(item.n) && (
+                  <span class="row" onClick={(e) => e.stopPropagation()}>
+                    <button type="button" class="ghost small" tabIndex={revealed ? 0 : -1} onClick={() => blockItem(item, true)}>
+                      🚫 Block this card
+                    </button>
+                  </span>
+                )}
               </span>
             </span>
           </div>
@@ -739,6 +783,17 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
                           </span>
                         ) : (
                           <span class="small muted">No key points for this question. Check it against your script or notes.</span>
+                        )}
+                        {it.question && (
+                          <span class="row" onClick={(e) => e.stopPropagation()}>
+                            {blocked.has(it.n) ? (
+                              <span class="small muted">🚫 Blocked: this card will not be asked again.</span>
+                            ) : (
+                              <button type="button" class="ghost small" onClick={() => blockItem(it)}>
+                                🚫 Block this card
+                              </button>
+                            )}
+                          </span>
                         )}
                         {!session.applied && !session.gradeLater && (
                           <span class="rate" onClick={(e) => e.stopPropagation()}>

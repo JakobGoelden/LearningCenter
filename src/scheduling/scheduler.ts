@@ -1,4 +1,6 @@
 import { addDays, diffDays, weekday } from '../lib/dates';
+import { activeTopics } from '../model/chapters';
+import { allBlocked } from '../model/quiz';
 import type { ISODate, PackSettings, Review, Score, Subject, Topic, TopicStatus } from '../model/types';
 
 export const DEFAULT_LADDER = [1, 3, 7, 14, 21, 35, 60];
@@ -101,7 +103,7 @@ export function pickQuizTopics(topics: Topic[], on: ISODate, count: number): Top
   const rank = (t: Topic) =>
     isDue(t, on) ? 0 : t.status === 'shaky' ? 1 : t.status === 'new' ? 2 : 3;
   return topics
-    .filter((t) => t.status !== 'skip')
+    .filter((t) => t.status !== 'skip' && !allBlocked(t))
     .sort((a, b) => rank(a) - rank(b) || (a.due ?? '9999').localeCompare(b.due ?? '9999'))
     .slice(0, count);
 }
@@ -139,7 +141,7 @@ export interface StudyBlock {
  */
 export function studyPlan(subjects: Subject[], on: ISODate, count: number): StudyBlock[] {
   const ranked = subjects
-    .flatMap((s) => s.topics.map((t) => ({ s, t, p: studyPriority(t, on, s.exam.date) })))
+    .flatMap((s) => activeTopics(s).map((t) => ({ s, t, p: studyPriority(t, on, s.exam.date) })))
     .filter((x) => x.p > 0)
     .sort((a, b) => b.p - a.p || (a.t.due ?? '9999').localeCompare(b.t.due ?? '9999'))
     .slice(0, count);
@@ -153,7 +155,7 @@ export function studyPlan(subjects: Subject[], on: ISODate, count: number): Stud
 
 /** Topics that are due today or overdue (skip never counts). */
 export function dueCount(subjects: Subject[], on: ISODate): number {
-  return subjects.reduce((n, s) => n + s.topics.filter((t) => t.status !== 'skip' && !!t.due && t.due <= on).length, 0);
+  return subjects.reduce((n, s) => n + activeTopics(s).filter((t) => t.status !== 'skip' && !!t.due && t.due <= on).length, 0);
 }
 
 /** Default size of a study round: everything that is due, else the usual quiz size. */
@@ -163,5 +165,5 @@ export function studyCount(subjects: Subject[], on: ISODate, fallback: number): 
 
 /** Topics a study round can draw from at all. */
 export function studyCandidates(subjects: Subject[], on: ISODate): number {
-  return subjects.reduce((n, s) => n + s.topics.filter((t) => studyPriority(t, on, s.exam.date) > 0).length, 0);
+  return subjects.reduce((n, s) => n + activeTopics(s).filter((t) => studyPriority(t, on, s.exam.date) > 0).length, 0);
 }

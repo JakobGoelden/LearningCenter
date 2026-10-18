@@ -13,6 +13,7 @@
     "title": { "type": "string" },
     "procedure": { "type": "string", "description": "The algorithm or method, e.g. 'Powerset construction NFA → DFA'." },
     "description": { "type": "string" },
+    "chapter": { "$ref": "common.schema.json#/$defs/id", "description": "Id of a chapter of the subject, for dojos that belong to one part of it." },
     "levels": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/level" }, "minItems": 1 },
     "topics": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/id" }, "description": "Topic ids in the subject that this dojo trains." },
     "aids": { "type": "array", "items": { "type": "string" }, "description": "Tools to use or assume, e.g. a specific calculator." },
