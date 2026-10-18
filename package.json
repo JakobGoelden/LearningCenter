@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "validate": "vite-node scripts/validate-packs.mjs --",
-    "review": "vite-node scripts/review.ts --"
+    "review": "vite-node scripts/review.ts --",
+    "share": "vite-node scripts/share.ts --"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

@@ -1,3 +1,4 @@
+import { activeTopics } from './chapters';
 import { diffDays, weekday } from '../lib/dates';
 import { isDue, isOverdue } from '../scheduling/scheduler';
 import type { Check, ClassSlot, ISODate, LoadedPack, Sheet, Subject, Topic, TopicStatus, Weekday } from './types';
@@ -34,16 +35,17 @@ export function progressOf(c: Record<TopicStatus, number>): number {
 
 export function overview(subject: Subject, on: ISODate): SubjectOverview {
   const statusCounts: Record<TopicStatus, number> = { new: 0, shaky: 0, solid: 0, skip: 0 };
-  for (const t of subject.topics) statusCounts[t.status]++;
+  const topics = activeTopics(subject);
+  for (const t of topics) statusCounts[t.status]++;
   const byDue = (a: Topic, b: Topic) => (a.due ?? '').localeCompare(b.due ?? '');
-  const due = subject.topics.filter((t) => isDue(t, on)).sort(byDue);
+  const due = topics.filter((t) => isDue(t, on)).sort(byDue);
   return {
     subject,
     examInDays: subject.exam.date ? diffDays(on, subject.exam.date) : null,
     statusCounts,
     due,
     overdue: due.filter((t) => isOverdue(t, on)),
-    upcoming: subject.topics
+    upcoming: topics
       .filter((t) => t.status !== 'skip' && t.due && t.due > on)
       .sort(byDue)
       .slice(0, 3),

@@ -1,3 +1,4 @@
+import { activeTopics } from '../model/chapters';
 import { useMemo, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { diffDays, today } from '../lib/dates';
@@ -158,7 +159,7 @@ export function StudyCta() {
   const { fs, loaded } = usePack();
   const on = today();
   const plan = useMemo(() => studyPlan(loaded.subjects, on, studyCount(loaded.subjects, on, loaded.pack.settings?.questionsPerQuiz ?? 5)), [loaded, on]);
-  const due = loaded.subjects.reduce((n, s) => n + s.topics.filter((t) => t.status !== 'skip' && t.due && t.due <= on).length, 0);
+  const due = loaded.subjects.reduce((n, s) => n + activeTopics(s).filter((t) => t.status !== 'skip' && t.due && t.due <= on).length, 0);
   const first = plan[0];
   return (
     <div class={`study-cta${plan.length ? '' : ' calm'}`}>

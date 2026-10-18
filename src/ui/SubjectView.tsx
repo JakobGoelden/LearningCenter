@@ -55,6 +55,13 @@ export function SubjectView({ subjectId }: { subjectId: string }) {
     });
   };
 
+  const toggleChapter = (id: string, enabled: boolean) =>
+    updateSubject(
+      s.id,
+      (subj) => ({ ...subj, chapters: subj.chapters?.map((c) => (c.id === id ? { ...c, enabled } : c)) }),
+      { type: 'chapter.toggle', ref: id, data: { enabled } },
+    );
+
   const markChecked = (id: string) =>
     updateSubject(
       s.id,
@@ -132,6 +139,31 @@ export function SubjectView({ subjectId }: { subjectId: string }) {
             <div class="small muted">Next up: {o.upcoming.map((t) => `${t.title} (${formatShort(t.due!)})`).join(' · ')}</div>
           )}
         </section>
+
+        {(s.chapters?.length ?? 0) > 0 && (
+          <section class="panel">
+            <h3>Chapters</h3>
+            <div class="small muted">
+              Switch on the chapters you have had the lecture for. Topics of the others stay out of quizzes, study and endless mode.
+            </div>
+            <ul class="list small">
+              {s.chapters!.map((c) => {
+                const n = s.topics.filter((t) => t.chapter === c.id).length;
+                return (
+                  <li>
+                    <label class="grow">
+                      <input type="checkbox" checked={c.enabled !== false} onChange={(e) => toggleChapter(c.id, (e.target as HTMLInputElement).checked)} />{' '}
+                      {c.title}
+                    </label>
+                    <span class="muted">
+                      {n} {n === 1 ? 'topic' : 'topics'}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         <section class="panel">
           <h3>Exercise sheets</h3>

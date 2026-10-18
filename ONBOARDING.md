@@ -399,6 +399,19 @@ cards for as long as they like. Explain what the app does by itself
 for afterwards: finding their weak spots from the results and being their study
 partner. Tick the last items off in `SETUP.md`.
 
+### Shared cards from friends (optional)
+
+Ask whether friends already keep a shared repository for this semester (one
+folder per subject with cards and dojos). If yes, have the person clone it
+(next to the app, e.g. `../Semester3`) and run
+`npm run share -- pull local/<pack> --repo ../Semester3`. That brings in what
+the others made, so you only write what is missing. Look at what arrived,
+then continue with the checklist for the rest. If the person has no repo yet,
+suggest creating one together later; `push` fills it
+(CLAUDE.md → Sharing cards and dojos with friends). For subjects whose whole
+script is already available, create `chapters` and put every topic into one,
+so the person can switch on the chapters whose lecture has happened.
+
 ## 6. Afterwards: regular upkeep
 
 Suggest this routine to the person and carry it out when they ask for it:
@@ -408,6 +421,9 @@ Suggest this routine to the person and carry it out when they ask for it:
   files into `material/`, compare the script version, create new topics,
   add new exercise sheets with `file` and `tasks`, update the timetable if it
   changed, set `lastChecked`.
+- **"Sync with the repo"**: `npm run share -- status`, then `pull`, check what
+  came in, then `push` the new cards and dojos (CLAUDE.md → Sharing cards and
+  dojos with friends).
 - **"Where am I weak?"**: look at the cards' `stats` (low `recent` scores),
   the topics' `history` and the sessions; name the weak spots and fix the
   cause (clearer questions, notes, new cards, drills). Blocked cards stay

@@ -48,6 +48,8 @@ export interface Topic {
   history?: Review[];
   /** Prepared quiz questions; the app asks them without an AI. */
   questions?: TopicQuestion[];
+  /** Id of the chapter (see Subject.chapters) the topic belongs to. */
+  chapter?: string;
 }
 
 export interface TopicQuestion {
@@ -153,10 +155,20 @@ export interface Subject {
   notes?: string;
   exam: Exam;
   topics: Topic[];
+  /** Optional parts of the subject, in order. Topics point to one with `chapter`. */
+  chapters?: Chapter[];
   schedule?: ClassSlot[];
   sheets?: Sheet[];
   openItems?: OpenItem[];
   checks?: Check[];
+}
+
+/** A part of a subject (e.g. a script chapter) the learner can switch on once the lecture has happened. */
+export interface Chapter {
+  id: string;
+  title: string;
+  /** False: the topics of this chapter are left out of quizzes, study, endless mode and the calendar. Default true. */
+  enabled?: boolean;
 }
 
 export interface Dojo {
@@ -167,6 +179,8 @@ export interface Dojo {
   procedure: string;
   description?: string;
   levels?: Level[];
+  /** Chapter of the subject the dojo belongs to. */
+  chapter?: string;
   topics?: string[];
   aids?: string[];
   promptTemplate: string;

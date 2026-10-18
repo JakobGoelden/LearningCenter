@@ -1,3 +1,4 @@
+import { activeTopics } from './chapters';
 import { addDays, diffDays, weekday } from '../lib/dates';
 import { CLASS_LABEL, classesOn } from './derive';
 import type { ISODate, LoadedPack, Subject } from './types';
@@ -60,7 +61,7 @@ export function entriesOn(loaded: LoadedPack, date: ISODate, today: ISODate): Ca
       });
     }
     if (past) continue;
-    const due = s.topics.filter((t) => t.status !== 'skip' && t.due && (isToday ? t.due <= date : t.due === date));
+    const due = activeTopics(s).filter((t) => t.status !== 'skip' && t.due && (isToday ? t.due <= date : t.due === date));
     if (due.length) {
       const overdue = isToday ? due.filter((t) => t.due! < date).length : 0;
       out.push({

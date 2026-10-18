@@ -1,3 +1,4 @@
+import { activeTopics } from '../model/chapters';
 import system from '../../prompts/system.md?raw';
 import quizStart from '../../prompts/quiz-start.md?raw';
 import quizGrade from '../../prompts/quiz-grade.md?raw';
@@ -279,7 +280,7 @@ export function dojoDrillsRequest(a: DojoArgs & { count: number }): AiRequest {
     vars: { ...dojoVars(a.pack, a.subject, a.dojo, a.level), count: a.count },
     context: {
       subject: examContext(a.subject),
-      topics: a.subject.topics.filter((t) => t.status !== 'skip').map((t) => ({ id: t.id, title: t.title, notes: t.notes })),
+      topics: activeTopics(a.subject).filter((t) => t.status !== 'skip').map((t) => ({ id: t.id, title: t.title, notes: t.notes })),
       dojo: { title: a.dojo.title, procedure: a.dojo.procedure, description: a.dojo.description, topics: a.dojo.topics },
       existingDrills: (a.dojo.drills ?? []).map((d) => ({ id: d.id, kind: d.kind, level: d.level, prompt: d.prompt.slice(0, 160) })),
       count: a.count,

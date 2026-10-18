@@ -7,6 +7,7 @@ import { quizGradeRequest, quizStartRequest } from '../ai/requests';
 import { saveSession } from '../storage/repo';
 import type { Score, Session, SessionItem, Topic } from '../model/types';
 import { questionFor, SELF_SCORE, type SelfRating } from '../model/quiz';
+import { activeTopics } from '../model/chapters';
 import { withCardAnswer, withCardBlocked, type Card } from '../scheduling/cards';
 import { Markdown } from './Markdown';
 import { Cancelled, useAi } from './AiPanel';
@@ -76,7 +77,7 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
   const on = today();
   // Reviewing ahead: topics due by `ahead` are picked as if that day had come.
   const pickOn = ahead && ahead > on ? ahead : on;
-  const candidates = useMemo(() => (s ? pickQuizTopics(s.topics, pickOn, s.topics.length) : []), [s, pickOn]);
+  const candidates = useMemo(() => (s ? pickQuizTopics(activeTopics(s), pickOn, s.topics.length) : []), [s, pickOn]);
   const due = candidates.filter((t) => isDue(t, pickOn)).length;
   // Everything due by default, else the usual quiz size.
   const [count, setCount] = useState(Math.max(1, Math.min(candidates.length, due || (loaded.pack.settings?.questionsPerQuiz ?? 5))));

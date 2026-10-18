@@ -52,6 +52,7 @@ local/<name>/
   log/events.jsonl       event log, one JSON line per event, append only
   material/<subject-id>/ downloaded scripts, slides, sheets (optional)
   work/<subject-id>/<sheet-id>.json  the person's answers to a sheet, written in the app
+  shared.json            sync state with a shared card repository (written by `npm run share`)
   notes/<subject-id>/    own notes as PDF/Markdown, e.g. reMarkable export (optional)
   inbox/<id>.json        requests from the app (file bridge)
   outbox/<id>.json       your answers to them
@@ -111,7 +112,7 @@ The format is fully described in `schema/*.schema.json` (JSON Schema
   `{"ts":"2026-10-16T09:00:00Z","type":"topic.add","actor":"ai","subject":"db","ref":"normal-forms","data":{"title":"Normal forms"}}`.
   Content additions use `topic.add`, `question.add`, `sheet.add`,
   `material.add` (new files in `material/`), `dojo.add` and
-  `dojo.drills.add`, always with `subject`: the dashboard shows per subject
+  `dojo.drills.add`, `share.pull`, `share.push`, always with `subject`: the dashboard shows per subject
   when new content last arrived.
   Common types: `topic.add`, `topic.status`, `topic.due`, `topic.review`,
   `sheet.status`, `openItem.add`, `openItem.done`, `check.done`, `exam.update`,
@@ -153,6 +154,58 @@ edit or reset them; read them):
   answer page, or in endless mode). It is never asked again but stays in the
   file; do not delete, unblock or re-create it, and do not write a replacement
   that asks the same thing. A topic whose cards are all blocked is not quizzed.
+
+### Chapters
+
+A subject can be split into `chapters` (`{id, title, enabled?}`) with the
+topics pointing to one via `topic.chapter` (a dojo can have `chapter` too).
+Use them when the whole script is already there (math, theory): one chapter per
+script chapter, so the person switches on only the ones whose lecture has
+happened (subject page → Chapters, or `enabled` in the file). Topics of a
+switched-off chapter are left out of quizzes, study, endless mode, the
+calendar and the progress bar. Create chapters when you set up such a subject;
+never switch one on or off for the person.
+
+### Sharing cards and dojos with friends
+
+A git repository (one per semester, e.g. `Semester3`) holds the cards and
+dojos everybody wrote, so they only have to be made once. Layout, one folder
+per subject:
+
+```
+repo.json, changelog.jsonl
+<subject>/subject.json                    {id, name, short?, color?}
+<subject>/topics/<topic>.json             {id, title, notes?, questions: [...]}
+<subject>/dojos/<dojo>.json               a dojo file
+<subject>/<chapter>/chapter.json          {id, title, order?}
+<subject>/<chapter>/topics|dojos/...      same, for subjects split into chapters
+```
+
+Only content is shared (a card's `prompt`, `kind`, `answer`; topic title and
+notes; whole dojos with drills). Stats, blocks, schedules, history, sheets and
+sessions stay in the pack. Commands (`src/sharing/shared.ts`, `scripts/share.ts`):
+
+- `npm run share -- status local/<name> --repo <clone>`: the new changelog
+  lines and what a pull or push would do.
+- `npm run share -- pull local/<name> --repo <clone> [--git] [--enable]`: adds
+  new topics, cards and dojos (topics `status: "new"`, new chapters switched
+  off unless `--enable`), updates cards the person did not touch. If both
+  sides changed a card, the person's version stays and it is reported.
+- `npm run share -- push local/<name> [--git] [--subject <id>]`: writes new and
+  edited cards, topics and dojos into the clone and appends the changelog.
+  Subjects the repo does not have yet need `--subject`. Blocked cards are never
+  pushed. If the repo changed the same item meanwhile, it says "pull first".
+- `--git` runs `git pull --ff-only` before a pull, and commit + push after a
+  push; without it the person commits themselves.
+
+The repo path and the version of every item at the last sync live in
+`<pack>/shared.json` (written by the script; never edit it). A card the person
+blocked stays blocked through every pull. A card removed upstream stays in the
+pack and is not pushed back. Before pushing, check that the cards are good
+(the rules for writing questions above apply, because others will use them) and
+that nothing personal is in `notes`. When the person says "sync with the
+repo": status, pull, review what came in (sanity-check, tell them about
+conflicts), then push what they added.
 
 ### Due dates and spaced repetition
 
@@ -420,7 +473,8 @@ checks and open tasks.
   - `src/ui/` Preact components
   - `prompts/` prompt templates (Markdown with `{{placeholders}}`)
   - `tools/vite-pack-fs.ts` dev server file access
-  - `scripts/` Node scripts (`validate-packs.mjs`, `review.ts`)
+  - `src/sharing/` sharing cards and dojos through a git repository (pure functions, tested)
+  - `scripts/` Node scripts (`validate-packs.mjs`, `review.ts`, `share.ts`)
 - Always make format changes together in `schema/`, `src/model/types.ts`, the
   demo and empty packs, and this file. `npm test` and `npm run validate` must
   pass.

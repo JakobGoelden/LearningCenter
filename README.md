@@ -46,6 +46,15 @@ the next reviews.
   keeps a card you disagree with in your pack but never asks it again.
   Scheduling happens in the app; the AI's job is to find weak spots and be a
   study partner.
+- **Chapters:** a subject can be split into chapters (math, theory). On the
+  subject page you switch on the chapters whose lecture has happened; topics
+  of the others stay out of quizzes, study, endless mode and the calendar.
+- **Shared cards:** cards and dojos can be shared with friends through a git
+  repository, one folder per subject (and per chapter). `npm run share -- pull
+  local/<pack> --repo ../Semester3` brings in what others added (your own
+  edits and blocked cards win), `... push ...` adds yours, and the repo's
+  `changelog.jsonl` shows who changed what. Only content is shared, never your
+  progress. See CLAUDE.md → Sharing cards and dojos with friends.
 - **Quiz:** runs right in the app: each topic has
   prepared questions that test understanding (written by the AI when it
   sets up your pack), shown one card at a time. At the end you choose
@@ -213,6 +222,7 @@ folder (Chrome/Edge). The dev server way is not available there.
 | `npm test` | Tests (Vitest) |
 | `npm run validate [-- <folder>]` | Check packs against the schema |
 | `npm run review -- <folder> <subject> <topic> <0-5>` | Record a grade and reschedule |
+| `npm run share -- <pull\|push\|status> <folder> --repo <clone>` | Sync cards and dojos with a shared repository |
 
 Stack: Vite, TypeScript, Preact, Ajv. No backend. Structure and conventions
 are in [`CLAUDE.md`](CLAUDE.md), part B.

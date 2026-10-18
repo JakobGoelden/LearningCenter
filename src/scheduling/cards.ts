@@ -1,4 +1,5 @@
 import { diffDays } from '../lib/dates';
+import { activeTopics } from '../model/chapters';
 import { activeQuestions } from '../model/quiz';
 import type { CardStats, ISODate, Score, Subject, Topic, TopicQuestion } from '../model/types';
 
@@ -56,7 +57,7 @@ export function cardPriority(stats: CardStats | undefined, on: ISODate): number 
 
 /** All cards of a subject that may be asked: not blocked, topic not skipped. */
 export function deckOf(subject: Subject): Card[] {
-  return subject.topics
+  return activeTopics(subject)
     .filter((t) => t.status !== 'skip')
     .flatMap((topic) => activeQuestions(topic).map((question) => ({ topic, question })));
 }
