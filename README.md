@@ -191,14 +191,11 @@ Included:
 - `packs/dojo-library/`: more dojos (math: continuity; networks: subnetting,
   fragmentation, routing) to copy
 
-## As a static site (GitHub Pages)
+## Static build
 
-`npm run build` creates a static site in `dist/`. The workflow
-`.github/workflows/pages.yml` publishes it on every push to `main`.
-Enable it once: **Settings → Pages → Source: GitHub Actions**.
-
-On the static site, packs live in browser storage or in an opened folder
-(Chrome/Edge). The dev server way is not available there.
+`npm run build` creates a static site in `dist/` that you can open from any
+static host or folder. On it, packs live in browser storage or in an opened
+folder (Chrome/Edge). The dev server way is not available there.
 
 ## Development
 
