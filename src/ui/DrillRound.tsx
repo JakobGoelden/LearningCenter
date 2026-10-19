@@ -12,6 +12,7 @@ import {
   type DrillResult,
 } from '../dojo/drills';
 import { LEVEL_LABEL } from '../ai/requests';
+import { AutomatonDiagram } from './AutomatonDiagram';
 import { AutomatonEditor, AutomatonTable, emptyTable, tableToAutomaton, type TableState } from './AutomatonEditor';
 import { Markdown } from './Markdown';
 import { SCORE_LABEL } from './labels';
@@ -403,7 +404,10 @@ function DrillRun({
         <Markdown text={drill.prompt} />
       </div>
       {(drill.kind === 'automaton' || drill.kind === 'regex') && drill.given && (
-        <AutomatonTable automaton={drill.given} alphabet={drill.alphabet} />
+        <div class="automaton-pair">
+          <AutomatonTable automaton={drill.given} alphabet={drill.alphabet} />
+          <AutomatonDiagram automaton={drill.given} label="Given automaton" />
+        </div>
       )}
       <DrillInput key={drill.id + idx} drill={drill} locked={done} outcome={outcome} onSubmit={finish} />
       {!done && <SymbolBar symbols={symbols} />}
@@ -490,6 +494,10 @@ function DrillInput({
   const [order, setOrder] = useState<number[]>(() => (drill.kind === 'order' ? shuffledOrder(drill.items.length) : []));
   const [table, setTable] = useState<TableState>(emptyTable);
   const [revealed, setRevealed] = useState(false);
+  const built = useMemo(
+    () => (drill.kind === 'automaton' ? tableToAutomaton(table, drill.deterministic ? drill.alphabet : [...drill.alphabet, 'ε']) : null),
+    [drill, table],
+  );
 
   const submit = (a: DrillAnswer) => onSubmit(answerText(drill, a), gradeDrill(drill, a));
   const onEnter = (e: KeyboardEvent, a: () => DrillAnswer) => {
@@ -590,12 +598,13 @@ function DrillInput({
             allowEps={!drill.deterministic}
             disabled={locked}
           />
+          {built && <AutomatonDiagram automaton={built} label="Your automaton" />}
           {drill.deterministic && !locked && (
             <div class="small muted">
               A DFA: one target per cell. Name states as you like, e.g. {'{q0,q1}'}.{drill.minimal ? ' It must be minimal.' : ''}
             </div>
           )}
-          {check(() => ({ kind: 'automaton', automaton: tableToAutomaton(table, drill.deterministic ? drill.alphabet : [...drill.alphabet, 'ε']) }))}
+          {check(() => ({ kind: 'automaton', automaton: built! }))}
         </div>
       );
     case 'self':

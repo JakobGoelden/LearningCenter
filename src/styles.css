@@ -307,6 +307,13 @@ table.automaton { border-collapse: collapse; }
 table.automaton th, table.automaton td { padding: 3px 6px; text-align: center; }
 table.automaton input:not([type]) { width: 7em; }
 table.automaton.readonly td, table.automaton.readonly th { border: 1px solid var(--border); padding: 4px 10px; }
+.automaton-pair { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+.automaton-diagram { display: block; max-width: 100%; height: auto; color: var(--text); }
+.automaton-diagram .edge { fill: none; stroke: currentColor; stroke-width: 1.4; }
+.automaton-diagram .state circle { fill: var(--panel); stroke: currentColor; stroke-width: 1.5; }
+.automaton-diagram .state.unknown circle { stroke: var(--danger); stroke-dasharray: 4 3; }
+.automaton-diagram text { font-family: var(--mono); fill: currentColor; text-anchor: middle; dominant-baseline: central; }
+.automaton-diagram .edge-label { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
 
 /* Dashboard calendar: today | this week, long term below */
 .calendar {
