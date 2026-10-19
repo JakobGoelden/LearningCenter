@@ -423,8 +423,9 @@ default 60/120/240 by level, doubled for `automaton`, `regex`, `self`).
 `reference` is exactly one of `{"regex": "..."}` or `{"automaton": {...}}`;
 an automaton is `{states, start, final, transitions: [[from, symbol, to]]}`
 with `ε` for ε-transitions. Regex syntax: `|`, juxtaposition, `* + ?`,
-parentheses, `ε` (or `eps`), `∅`. `given` shows an automaton as a table in
-the task (e.g. "turn this NFA into a DFA").
+parentheses, `ε` (or `eps`), `∅`. `given` shows an automaton as a table and a
+state diagram in the task (e.g. "turn this NFA into a DFA"); the automaton
+the learner types into the table is drawn live below it.
 
 Writing good drills (for you as an AI):
 
