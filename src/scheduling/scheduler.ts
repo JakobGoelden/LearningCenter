@@ -116,12 +116,15 @@ export function mastery(topic: Topic): number {
 
 /**
  * Study priority of a topic (0 = not needed today). Due topics come first and
- * rise the longer they are overdue; shaky and new topics fill up after them.
- * Weak topics (low recent scores) and an exam within three weeks raise it.
+ * rise the longer they are overdue; shaky and new topics fill up after them,
+ * unless they were already answered today (else a weak topic would come back
+ * again and again). Weak topics (low recent scores) and an exam within three
+ * weeks raise it.
  */
 export function studyPriority(topic: Topic, on: ISODate, examDate?: ISODate): number {
   let base: number;
   if (isDue(topic, on)) base = 2 + Math.min(diffDays(topic.due!, on), 14) / 7;
+  else if (topic.history?.at(-1)?.date === on) return 0;
   else if (topic.status === 'shaky') base = 1;
   else if (topic.status === 'new') base = 0.8;
   else return 0;
@@ -137,13 +140,14 @@ export interface StudyBlock {
 
 /**
  * The `count` most pressing topics across all subjects, grouped into one block
- * per subject. Blocks are ordered by their most pressing topic.
+ * per subject. Every due topic comes before any that is not due, whatever the
+ * priority; blocks are ordered by their most pressing topic.
  */
 export function studyPlan(subjects: Subject[], on: ISODate, count: number): StudyBlock[] {
   const ranked = subjects
-    .flatMap((s) => activeTopics(s).map((t) => ({ s, t, p: studyPriority(t, on, s.exam.date) })))
-    .filter((x) => x.p > 0)
-    .sort((a, b) => b.p - a.p || (a.t.due ?? '9999').localeCompare(b.t.due ?? '9999'))
+    .flatMap((s) => activeTopics(s).map((t) => ({ s, t, due: isDue(t, on), p: studyPriority(t, on, s.exam.date) })))
+    .filter((x) => x.p > 0 && !allBlocked(x.t))
+    .sort((a, b) => Number(b.due) - Number(a.due) || b.p - a.p || (a.t.due ?? '9999').localeCompare(b.t.due ?? '9999'))
     .slice(0, count);
   const blocks = new Map<string, StudyBlock>();
   for (const { s, t } of ranked) {

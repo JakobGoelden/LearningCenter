@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyReview, dueCount, pickQuizTopics, schedule, shiftOffWeekend, studyCandidates, studyCount, studyPlan, studyPriority } from '../src/scheduling/scheduler';
-import type { Subject, Topic } from '../src/model/types';
+import type { Score, Subject, Topic } from '../src/model/types';
 
 const FRI = '2026-10-16';
 const MON = '2026-10-19';
@@ -82,6 +82,20 @@ describe('study plan', () => {
     const plan = studyPlan([subj('a', [fresh, later]), subj('b', [strong, weak, skipped])], FRI, 2);
     expect(plan.map((b) => [b.subject.id, b.topics.map((t) => t.id)])).toEqual([['b', ['weak', 'strong']]]);
     expect(studyPlan([subj('a', [later])], FRI, 5)).toEqual([]);
+  });
+
+  it('puts a due topic before a weak one that is not due', () => {
+    const known: Topic = { id: 'known', title: 'K', status: 'solid', due: FRI, history: [5, 5, 5].map((score) => ({ date: '2026-10-10', score: score as Score, source: 'quiz' as const })) };
+    const weakLater: Topic = { id: 'weak-later', title: 'W', status: 'shaky', due: '2026-10-20', history: [{ date: '2026-10-12', score: 1, source: 'quiz' }] };
+    expect(studyPriority(weakLater, FRI)).toBeGreaterThan(studyPriority(known, FRI));
+    const plan = studyPlan([subj('a', [weakLater]), subj('b', [known])], FRI, 1);
+    expect(plan.map((b) => b.topics.map((t) => t.id))).toEqual([['known']]);
+  });
+
+  it('does not bring back a topic answered today unless it is due', () => {
+    const answered: Topic = { id: 'answered', title: 'A', status: 'shaky', due: '2026-10-19', history: [{ date: FRI, score: 1, source: 'quiz' }] };
+    expect(studyPriority(answered, FRI)).toBe(0);
+    expect(studyPlan([subj('a', [answered, fresh])], FRI, 5).map((b) => b.topics.map((t) => t.id))).toEqual([['new']]);
   });
 
   it('sizes a round to everything due, else the usual quiz size', () => {
