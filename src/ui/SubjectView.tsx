@@ -134,7 +134,7 @@ export function SubjectView({ subjectId }: { subjectId: string }) {
               ))}
             </ul>
           ) : (
-            <div class="small muted">No reviews due.</div>
+            <div class="small muted">No cards due.</div>
           )}
           {o.upcoming.length > 0 && (
             <div class="small muted">Next up: {o.upcoming.map((t) => `${t.title} (${formatShort(t.due!)})`).join(' · ')}</div>
