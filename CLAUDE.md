@@ -90,6 +90,12 @@ The format is fully described in `schema/*.schema.json` (JSON Schema
    transition per line, `q0 -a-> q1` or `q0 -a,b-> q1` (`ε`/`eps` for
    ε-transitions, `#` for comments); the JSON of a drill `reference` works
    too. `npm run validate` checks that every such block can be drawn.
+   **Formulas:** LaTeX between `$…$`, `$$…$$`, `\(…\)` or `\[…\]` is
+   rendered with KaTeX. A `$` that is glued to a word or quote, or followed
+   by a space or punctuation, stays a literal dollar (regex anchors, the
+   parser token `$`). Short plain notation also works without delimiters:
+   `x_i`, `x_{ij}`, `2^n`, `π_{a,b}` become sub- and superscripts. Use `$…$`
+   for anything bigger (fractions, sums, cases).
 5. **Exam:** `format` is `written` (written exam), `talk` (presentation/oral),
    `project` or `unknown`. Do not invent a date: if it is unknown, leave out
    `date` and create an open task.

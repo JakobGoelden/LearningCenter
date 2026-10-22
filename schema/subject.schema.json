@@ -78,9 +78,9 @@
       "additionalProperties": false,
       "properties": {
         "id": { "$ref": "common.schema.json#/$defs/id", "description": "Unique within the topic." },
-        "prompt": { "type": "string", "minLength": 1, "description": "The question (Markdown; an ```automaton block is drawn as a state diagram). Tests understanding, not recall of wording." },
+        "prompt": { "type": "string", "minLength": 1, "description": "The question (Markdown with $…$ LaTeX; an ```automaton block is drawn as a state diagram). Tests understanding, not recall of wording." },
         "kind": { "enum": ["why", "what-if", "explain", "apply"] },
-        "answer": { "type": "string", "description": "Key points of a good answer (Markdown, ```automaton blocks allowed), shown to the learner after answering and used for grading." },
+        "answer": { "type": "string", "description": "Key points of a good answer (Markdown, $…$ LaTeX and ```automaton blocks allowed), shown to the learner after answering and used for grading." },
         "blocked": { "type": "boolean", "description": "The learner blocked this card: it is never asked again and a sync does not bring it back. Set by the app only." },
         "stats": {
           "type": "object",

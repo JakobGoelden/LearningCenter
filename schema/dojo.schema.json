@@ -68,7 +68,7 @@
         "kind": { "enum": ["choice", "input", "number", "order", "automaton", "regex", "self"] },
         "level": { "$ref": "common.schema.json#/$defs/level" },
         "topic": { "$ref": "common.schema.json#/$defs/id" },
-        "prompt": { "type": "string", "minLength": 1, "description": "The question or task (Markdown; an ```automaton block is drawn as a state diagram)." },
+        "prompt": { "type": "string", "minLength": 1, "description": "The question or task (Markdown with $…$ LaTeX; an ```automaton block is drawn as a state diagram)." },
         "explanation": { "type": "string", "description": "Shown after answering: why the answer is right (Markdown)." },
         "seconds": { "type": "integer", "minimum": 5, "description": "Time limit. Default: 60/120/240 s for easy/medium/exam, doubled for automaton, regex and self." }
       },

@@ -1,25 +1,47 @@
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import type { JSX } from 'preact';
 import { parseAutomatonBlock } from '../dojo/automatonBlock';
 import { AutomatonDiagram } from './AutomatonDiagram';
+import { splitMath, splitScripts } from './math';
 
 // Small, safe Markdown subset for AI output: paragraphs, headings, lists,
 // fenced code, pipe tables, **bold**, *italic* and `code`. No raw HTML.
-// A ```automaton block is drawn as a state diagram (see dojo/automatonBlock).
+// A ```automaton block is drawn as a state diagram (see dojo/automatonBlock),
+// LaTeX in $…$, $$…$$, \(…\) or \[…\] is rendered with KaTeX, and plain x_i,
+// x^{2} become sub- and superscripts (see ./math).
 
-function inline(text: string): (string | JSX.Element)[] {
+function Tex({ tex, display }: { tex: string; display: boolean }) {
+  const html = katex.renderToString(tex, { throwOnError: false, displayMode: display });
+  return <span class={display ? 'tex tex-display' : 'tex'} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+function scripts(text: string): (string | JSX.Element)[] {
+  return splitScripts(text).map((p) => (p.kind === 'sub' ? <sub>{p.text}</sub> : p.kind === 'sup' ? <sup>{p.text}</sup> : p.text));
+}
+
+function emphasis(text: string): (string | JSX.Element)[] {
   const out: (string | JSX.Element)[] = [];
-  const re = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*\s][^*]*\*)/g;
+  const re = /(\*\*[^*]+\*\*|\*[^*\s][^*]*\*)/g;
   let last = 0;
   for (let m = re.exec(text); m; m = re.exec(text)) {
-    if (m.index > last) out.push(text.slice(last, m.index));
+    if (m.index > last) out.push(...scripts(text.slice(last, m.index)));
     const t = m[0];
-    if (t.startsWith('`')) out.push(<code>{t.slice(1, -1)}</code>);
-    else if (t.startsWith('**')) out.push(<strong>{t.slice(2, -2)}</strong>);
-    else out.push(<em>{t.slice(1, -1)}</em>);
+    if (t.startsWith('**')) out.push(<strong>{scripts(t.slice(2, -2))}</strong>);
+    else out.push(<em>{scripts(t.slice(1, -1))}</em>);
     last = m.index + t.length;
   }
-  if (last < text.length) out.push(text.slice(last));
+  if (last < text.length) out.push(...scripts(text.slice(last)));
   return out;
+}
+
+function inline(text: string): (string | JSX.Element)[] {
+  // Code spans first: nothing inside them is touched.
+  return text.split(/(`[^`]+`)/).flatMap((part, k) =>
+    k % 2
+      ? [<code>{part.slice(1, -1)}</code>]
+      : splitMath(part).flatMap((p) => (p.kind === 'tex' ? [<Tex tex={p.tex} display={p.display} />] : emphasis(p.text))),
+  );
 }
 
 const cells = (line: string) =>
@@ -35,6 +57,18 @@ export function Markdown({ text }: { text: string }) {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
+    if (/^\s*\$\$/.test(line)) {
+      // Display formula over one or more lines: $$ … $$
+      const body: string[] = [line.trim().slice(2)];
+      let j = i;
+      while (!body[body.length - 1].trimEnd().endsWith('$$') && ++j < lines.length) body.push(lines[j]);
+      const tex = body.join('\n').trimEnd();
+      if (tex.endsWith('$$') && tex.length > 2) {
+        blocks.push(<div class="tex-block"><Tex tex={tex.slice(0, -2)} display /></div>);
+        i = j + 1;
+        continue;
+      }
+    }
     if (line.startsWith('```')) {
       const lang = line.slice(3).trim();
       const body: string[] = [];
