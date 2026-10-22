@@ -56,6 +56,12 @@
           "kind": "explain",
           "prompt": "Explain when an NFA accepts a word, and how that differs from a DFA.",
           "answer": "- DFA: exactly one run; accept if it ends in a final state.\n- NFA: accepts if **at least one** possible run ends in a final state after reading the whole word.\n- Runs that get stuck (no transition) are simply discarded."
+        },
+        {
+          "id": "ends-ab",
+          "kind": "apply",
+          "prompt": "Which language does this DFA over {a, b} accept, and what does each state remember?\n\n```automaton\nstart: q0\nfinal: q2\nq0 -b-> q0\nq0 -a-> q1\nq1 -a-> q1\nq1 -b-> q2\nq2 -a-> q1\nq2 -b-> q0\n```",
+          "answer": "- All words that end in **ab**\n- q0: nothing useful seen yet, q1: last symbol was a, q2: last two symbols were ab\n- Typical mistake: \"contains ab\" (then q2 would never be left)"
         }
       ],
       "chapter": "automata"

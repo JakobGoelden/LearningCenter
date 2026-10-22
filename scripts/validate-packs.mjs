@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { drillProblems } from '../src/dojo/drills.ts';
+import { automatonBlockProblems } from '../src/dojo/automatonBlock.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const schemaDir = join(root, 'schema');
@@ -46,6 +47,9 @@ function checkDrills(where, dojo, topics) {
     ids.add(drill.id);
     if (drill.topic && topics && !topics.has(drill.topic)) fail(`${where}: drill "${drill.id}" has unknown topic "${drill.topic}"`);
     for (const p of drillProblems(drill)) fail(`${where}: drill "${drill.id}" ${p}`);
+    for (const text of [drill.prompt, drill.explanation, drill.solution]) {
+      for (const p of automatonBlockProblems(text ?? '')) fail(`${where}: drill "${drill.id}" automaton block: ${p}`);
+    }
   }
 }
 
@@ -66,6 +70,9 @@ function checkPack(dir) {
       for (const q of t.questions ?? []) {
         if (qids.has(q.id)) fail(`subjects/${id}.json: topic "${t.id}" has duplicate question id "${q.id}"`);
         qids.add(q.id);
+        for (const p of automatonBlockProblems(`${q.prompt}\n${q.answer ?? ''}`)) {
+          fail(`subjects/${id}.json: topic "${t.id}" question "${q.id}" automaton block: ${p}`);
+        }
       }
     }
     topicIds.set(id, ids);
@@ -73,6 +80,9 @@ function checkPack(dir) {
     for (const sh of s.sheets ?? []) {
       if (sheetIds.has(sh.id)) fail(`subjects/${id}.json: duplicate sheet id "${sh.id}"`);
       sheetIds.add(sh.id);
+      for (const task of sh.tasks ?? []) {
+        for (const p of automatonBlockProblems(task.text)) fail(`subjects/${id}.json: sheet "${sh.id}" task "${task.id}" automaton block: ${p}`);
+      }
       if (sh.file && !/^https?:\/\//.test(sh.file) && !existsSync(join(dir, sh.file))) {
         console.warn(`  ! subjects/${id}.json: sheet "${sh.id}" file not found: ${sh.file}`);
       }

@@ -1,7 +1,10 @@
 import type { JSX } from 'preact';
+import { parseAutomatonBlock } from '../dojo/automatonBlock';
+import { AutomatonDiagram } from './AutomatonDiagram';
 
 // Small, safe Markdown subset for AI output: paragraphs, headings, lists,
 // fenced code, pipe tables, **bold**, *italic* and `code`. No raw HTML.
+// A ```automaton block is drawn as a state diagram (see dojo/automatonBlock).
 
 function inline(text: string): (string | JSX.Element)[] {
   const out: (string | JSX.Element)[] = [];
@@ -33,10 +36,17 @@ export function Markdown({ text }: { text: string }) {
   while (i < lines.length) {
     const line = lines[i];
     if (line.startsWith('```')) {
+      const lang = line.slice(3).trim();
       const body: string[] = [];
       for (i++; i < lines.length && !lines[i].startsWith('```'); i++) body.push(lines[i]);
       i++;
-      blocks.push(<pre>{body.join('\n')}</pre>);
+      const block = lang === 'automaton' ? parseAutomatonBlock(body.join('\n')) : null;
+      if (block && 'automaton' in block) blocks.push(<AutomatonDiagram automaton={block.automaton} label="Automaton" />);
+      else if (block) {
+        blocks.push(<pre>{body.join('\n')}</pre>);
+        blocks.push(<p class="muted small">Cannot draw this automaton: {block.error}</p>);
+      }
+      else blocks.push(<pre>{body.join('\n')}</pre>);
     } else if (/^\s*\|.*\|\s*$/.test(line) && i + 1 < lines.length && /^\s*\|?[\s:|-]+\|?\s*$/.test(lines[i + 1])) {
       const head = cells(line);
       const rows: string[][] = [];

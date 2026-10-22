@@ -83,6 +83,13 @@ The format is fully described in `schema/*.schema.json` (JSON Schema
    right/partly/wrong, so `answer` is what makes a good card: keep it short
    enough to check at a glance. A topic without
    questions gets a general "explain it" question.
+   **Automata in Markdown:** wherever Markdown is shown (cards, sheet tasks,
+   drill prompts and explanations), a fenced block with the language
+   `automaton` is drawn as a state diagram. Write it as lines
+   `start: q0`, `final: q2` (optional `states: q0, q1, q2`) and one
+   transition per line, `q0 -a-> q1` or `q0 -a,b-> q1` (`ε`/`eps` for
+   ε-transitions, `#` for comments); the JSON of a drill `reference` works
+   too. `npm run validate` checks that every such block can be drawn.
 5. **Exam:** `format` is `written` (written exam), `talk` (presentation/oral),
    `project` or `unknown`. Do not invent a date: if it is unknown, leave out
    `date` and create an open task.
