@@ -1,9 +1,9 @@
-import { activeTopics } from '../model/chapters';
 import { useMemo, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { diffDays, today } from '../lib/dates';
-import { dueCount, mastery, studyCandidates, studyCount, studyPlan, type StudyBlock } from '../scheduling/scheduler';
-import type { ISODate, Topic } from '../model/types';
+import { cardDue, cardMastery, dueCount, newCards, studyCandidates, studyCount, studyPlan, type StudyBlock } from '../scheduling/scheduler';
+import { cardKey, cardLine, type Card } from '../scheduling/cards';
+import type { ISODate } from '../model/types';
 import { QuizView } from './QuizView';
 import { href, navigate } from './router';
 import { Stepper } from './Stepper';
@@ -11,14 +11,15 @@ import { ChatStart } from './ChatStart';
 import { quizChatPrompt } from '../ai/chat';
 import { BackLink } from './BackLink';
 
-/** Why a topic made it into today's study round, as short chips. */
-function reasons(t: Topic, on: ISODate, exam?: ISODate): string[] {
+/** Why a card made it into today's study round, as short chips. */
+function reasons(c: Card, on: ISODate, exam?: ISODate): string[] {
   const out: string[] = [];
-  if (t.due && t.due < on) out.push(`overdue ${diffDays(t.due, on)} d`);
-  else if (t.due === on) out.push('due today');
-  else if (t.status === 'new') out.push('new');
-  else if (t.status === 'shaky') out.push('shaky');
-  if (t.history?.length && mastery(t) < 0.6) out.push('weak');
+  const due = cardDue(c.topic, c.question);
+  if (!due) out.push('new');
+  else if (due < on) out.push(`overdue ${diffDays(due, on)} d`);
+  else if (due === on) out.push('due today');
+  else out.push('ahead');
+  if (c.question.stats?.recent.length && cardMastery(c) < 0.6) out.push('weak');
   if (exam && exam >= on && diffDays(on, exam) <= 21) out.push(`exam in ${diffDays(on, exam)} d`);
   return out;
 }
@@ -30,14 +31,15 @@ function reasons(t: Topic, on: ISODate, exam?: ISODate): string[] {
 export function StudyView() {
   const { fs, loaded } = usePack();
   const on = today();
-  const due = dueCount(loaded.subjects, on);
-  const most = Math.max(1, studyCandidates(loaded.subjects, on));
-  // Everything due by default; the stepper only matters when you want less (or more).
-  const [count, setCount] = useState(Math.min(most, studyCount(loaded.subjects, on, loaded.pack.settings?.questionsPerQuiz ?? 5)));
+  const settings = loaded.pack.settings;
+  const due = dueCount(loaded.subjects, on) + newCards(loaded.subjects, on, settings).length;
+  const most = Math.max(1, studyCandidates(loaded.subjects, on, settings));
+  // Everything due plus today's new cards by default; the stepper only matters when you want less (or more).
+  const [count, setCount] = useState(Math.min(most, studyCount(loaded.subjects, on, settings?.questionsPerQuiz ?? 5, settings)));
   // The plan is fixed once the round starts, so saving progress does not reshuffle it.
   const [plan, setPlan] = useState<StudyBlock[] | null>(null);
   const [step, setStep] = useState(0);
-  const preview = useMemo(() => studyPlan(loaded.subjects, on, count), [loaded, on, count]);
+  const preview = useMemo(() => studyPlan(loaded.subjects, on, count, settings), [loaded, on, count]);
 
   if (plan) {
     const block = plan[step];
@@ -70,7 +72,7 @@ export function StudyView() {
       <QuizView
         key={step}
         subjectId={block.subject.id}
-        topics={block.topics.map((t) => t.id)}
+        cards={block.cards.map(cardKey)}
         head={
           <div class="page-head subject-head" style={{ '--c': block.subject.color }}>
             <BackLink href={href({ name: 'dashboard' })} label="Dashboard" />
@@ -90,7 +92,7 @@ export function StudyView() {
     );
   }
 
-  const total = preview.reduce((n, b) => n + b.topics.length, 0);
+  const total = preview.reduce((n, b) => n + b.cards.length, 0);
   return (
     <div class="stack">
       <div class="page-head subject-head">
@@ -100,22 +102,22 @@ export function StudyView() {
       {total === 0 ? (
         <div class="panel stack">
           <strong>Nothing to study right now.</strong>
-          <span class="muted">No reviews are due and there are no new or shaky topics. Enjoy the break.</span>
+          <span class="muted">No cards are due and today's new cards are done. Enjoy the break.</span>
         </div>
       ) : (
         <div class="panel stack study-plan">
           <div class="row">
             <span class="muted">
               {due && count >= due
-                ? `Everything that is due${count > due ? ', plus new and shaky topics' : ''}. Weak ones and upcoming exams come first.`
-                : 'Picked for you: due topics first, weak ones and upcoming exams weigh more.'}
+                ? `Everything that is due and today's new cards${count > due ? ', plus cards ahead of their date' : ''}. Weak cards and upcoming exams come first.`
+                : 'Picked for you: due cards first, weak ones and upcoming exams weigh more.'}
             </span>
             <span class="spacer" style="flex:1" />
-            <span class="small">Questions</span>
-            <Stepper value={count} onChange={setCount} min={1} max={Math.max(most, 1)} label="Questions" />
+            <span class="small">Cards</span>
+            <Stepper value={count} onChange={setCount} min={1} max={Math.max(most, 1)} label="Cards" />
             {due > 0 && count !== due && (
               <button class="small all-due" onClick={() => setCount(due)}>
-                All due ({due})
+                All for today ({due})
               </button>
             )}
           </div>
@@ -123,11 +125,14 @@ export function StudyView() {
             <div class="study-block" style={{ '--c': b.subject.color }}>
               <h3>{b.subject.name}</h3>
               <ul class="list">
-                {b.topics.map((t) => (
+                {b.cards.map((c) => (
                   <li>
-                    <span class="grow">{t.title}</span>
+                    <span class="grow stack" style="gap:0">
+                      <span class="small muted">{c.topic.title}</span>
+                      <span class="card-line">{cardLine(c)}</span>
+                    </span>
                     <span class="chips">
-                      {reasons(t, on, b.subject.exam.date).map((r) => (
+                      {reasons(c, on, b.subject.exam.date).map((r) => (
                         <span class={`chip${r.startsWith('overdue') || r === 'weak' ? ' hot' : ''}`}>{r}</span>
                       ))}
                     </span>
@@ -144,7 +149,7 @@ export function StudyView() {
                 setStep(0);
               }}
             >
-              Start here · {total} {total === 1 ? 'question' : 'questions'}
+              Start here · {total} {total === 1 ? 'card' : 'cards'}
             </button>
             <ChatStart prompt={() => quizChatPrompt({ fs, pack: loaded.pack, blocks: preview })} />
           </div>
@@ -158,8 +163,11 @@ export function StudyView() {
 export function StudyCta() {
   const { fs, loaded } = usePack();
   const on = today();
-  const plan = useMemo(() => studyPlan(loaded.subjects, on, studyCount(loaded.subjects, on, loaded.pack.settings?.questionsPerQuiz ?? 5)), [loaded, on]);
-  const due = loaded.subjects.reduce((n, s) => n + activeTopics(s).filter((t) => t.status !== 'skip' && t.due && t.due <= on).length, 0);
+  const settings = loaded.pack.settings;
+  const due = useMemo(() => dueCount(loaded.subjects, on), [loaded, on]);
+  const fresh = useMemo(() => newCards(loaded.subjects, on, settings).length, [loaded, on]);
+  // Only what today asks for: no round is offered once due and new cards are done.
+  const plan = useMemo(() => (due + fresh ? studyPlan(loaded.subjects, on, due + fresh, settings) : []), [loaded, on, due, fresh]);
   const first = plan[0];
   return (
     <div class={`study-cta${plan.length ? '' : ' calm'}`}>
@@ -171,7 +179,7 @@ export function StudyCta() {
           <strong>Study</strong>
           <span class="small">
             {plan.length
-              ? `${due ? `${due} ${due === 1 ? 'review' : 'reviews'} due` : 'Nothing due, new and shaky topics waiting'}${first ? ` · ${first.subject.name} first` : ''}`
+              ? `${[due && `${due} ${due === 1 ? 'card' : 'cards'} due`, fresh && `${fresh} new`].filter(Boolean).join(' · ')}${first ? ` · ${first.subject.name} first` : ''}`
               : 'All caught up'}
           </span>
         </span>

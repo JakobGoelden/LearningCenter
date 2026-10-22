@@ -39,6 +39,7 @@
       "id": "aggregate",
       "kind": "input",
       "level": "exam",
+      "origin": "made-up",
       "prompt": "Aggregate `192.168.4.0/24` and `192.168.5.0/24` into a single prefix.",
       "accept": ["192.168.4.0/23"],
       "explanation": "4 = 00000100 and 5 = 00000101 differ only in the last bit of the third byte, so 23 bits are shared."

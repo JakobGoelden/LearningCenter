@@ -43,6 +43,7 @@
       "id": "division",
       "kind": "input",
       "level": "exam",
+      "origin": "made-up",
       "topic": "relational-algebra",
       "prompt": "Which operator answers questions like \"students who attended **all** lectures\"? Give its name.",
       "accept": ["division", "÷", "divide", "relational division"],

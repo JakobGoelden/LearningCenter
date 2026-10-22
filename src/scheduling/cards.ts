@@ -64,6 +64,13 @@ export function deckOf(subject: Subject): Card[] {
 
 export const cardKey = (c: Card) => `${c.topic.id}/${c.question.id}`;
 
+/** First line of a card's question without Markdown marks, for lists. */
+export const cardLine = (c: Pick<Card, 'question'>) =>
+  c.question.prompt
+    .split('\n')[0]
+    .replace(/\*\*|`|\$/g, '')
+    .replace(/\*([^*]+)\*/g, '$1');
+
 /**
  * Draws the next card by priority. The last few cards shown are held back so
  * a weak card does not come twice in a row. `random` is injectable for tests.

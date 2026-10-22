@@ -84,6 +84,7 @@
       "id": "regex-no-bb",
       "kind": "regex",
       "level": "exam",
+      "origin": "made-up",
       "topic": "regex",
       "prompt": "Give a regular expression for the language of this DFA. Hint: eliminate s1 first.",
       "alphabet": ["a", "b"],

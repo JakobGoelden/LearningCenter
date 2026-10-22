@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { formatShort, today } from '../lib/dates';
 import { uniqueId } from '../lib/download';
-import { applyReview, ladderIndex, ladderOf } from '../scheduling/scheduler';
+import { applyReview, ladderIndex, ladderOf, withTopicDue } from '../scheduling/scheduler';
 import type { Score, Topic, TopicStatus } from '../model/types';
 import { SCORE_LABEL, TOPIC_STATUS } from './labels';
 import { href } from './router';
@@ -36,7 +36,13 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
   const setStatus = (t: Topic, status: TopicStatus) =>
     patch(t.id, status === 'skip' ? { status, due: undefined, intervalDays: undefined } : { status }, 'topic.status', { from: t.status, to: status });
 
-  const setDue = (t: Topic, due: string) => patch(t.id, { due: due || undefined }, 'topic.due', { from: t.due, to: due || null });
+  // A date set by hand applies to the topic and all its cards ("not before Thursday").
+  const setDue = (t: Topic, due: string) =>
+    updateSubject(
+      s.id,
+      (subj) => ({ ...subj, topics: subj.topics.map((x) => (x.id === t.id ? withTopicDue(x, due || undefined) : x)) }),
+      { type: 'topic.due', ref: t.id, data: { from: t.due ?? null, to: due || null } },
+    );
 
   const rate = (t: Topic, score: Score) =>
     updateSubject(

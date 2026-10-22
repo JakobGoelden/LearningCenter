@@ -56,7 +56,7 @@ export function EndlessView({ subjectId }: { subjectId: string }) {
     });
   };
 
-  // Space or Enter flips, 1 / 2 / 3 rate, B blocks.
+  // Space or Enter flips, 1 / 2 / 3 rate, B blocks, Esc turns the card back.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
@@ -68,6 +68,10 @@ export function EndlessView({ subjectId }: { subjectId: string }) {
         e.preventDefault();
         void rate(RATE_KEYS[e.key]);
       } else if (revealed && e.key.toLowerCase() === 'b') void block();
+      else if (revealed && e.key === 'Escape') {
+        e.preventDefault();
+        setRevealed(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -131,6 +135,9 @@ export function EndlessView({ subjectId }: { subjectId: string }) {
                 ))}
               </span>
               <div class="row">
+                <button type="button" class="ghost small" onClick={() => setRevealed(false)} title="Flipped by mistake? Turn the card back to the question">
+                  ↺ Turn back <kbd>Esc</kbd>
+                </button>
                 <button type="button" class="ghost small" onClick={block} title="Never ask this card again (stays on this machine)">
                   🚫 Block this card <kbd>B</kbd>
                 </button>

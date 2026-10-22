@@ -72,17 +72,24 @@ The format is fully described in `schema/*.schema.json` (JSON Schema
    subject. `notes` describes scope and source (e.g. "Lecture 3, script 2.4;
    typical mistake: …"). This is the most important context for good
    questions. New topics get `status: "new"` and no `due`.
-   **Questions:** give every topic 2–4 prepared `questions`
-   (`{id, prompt, kind, answer}`). The app runs quizzes with them on its own,
-   no AI and no copied prompt needed: one question per topic per quiz, in
-   turn. `prompt` tests understanding (why, what if, explain, apply), not
-   wording; `answer` lists the key points of a good answer (Markdown bullets,
-   plus a typical mistake). The learner sees the key points after answering
-   and grades themselves, or lets you grade later. In flashcard mode the
-   learner answers in their head, flips to the key points and rates
-   right/partly/wrong, so `answer` is what makes a good card: keep it short
-   enough to check at a glance. A topic without
-   questions gets a general "explain it" question.
+   **Cards (`questions`) are for understanding, dojos are for practice.**
+   Give every topic 2–4 prepared `questions` (`{id, prompt, kind, answer}`):
+   definitions, why, what if, explain, short conceptual checks ("Is |x₁| a
+   norm?", "Which route does the packet take?"). Calculations, constructions,
+   proofs and anything that takes more than a minute or two belong in a dojo
+   as drills (below), not on a card: every card is scheduled on its own and
+   comes back again and again, so practice tasks on cards flood the day.
+   Each card has its own due date; a quiz asks every due card plus today's
+   new cards (`settings.newCardsPerDay`, default 20, across all subjects),
+   no AI needed. `prompt` tests understanding, not wording; `answer` lists
+   the key points of a good answer (Markdown bullets, plus a typical
+   mistake). In flashcard mode the learner answers in their head, flips to
+   the key points and rates right/partly/wrong, so keep `answer` short
+   enough to check at a glance. Vocabulary (abbreviations, names) is one
+   card per term. The topic title is shown above the card while asking, so
+   it must not give the answer away. A topic without `questions` gets a
+   general "explain it" card; `questions: []` marks a pure procedure topic
+   that is trained only in dojos.
    **Automata in Markdown:** wherever Markdown is shown (cards, sheet tasks,
    drill prompts and explanations), a fenced block with the language
    `automaton` is drawn as a state diagram. Write it as lines
@@ -154,14 +161,18 @@ records what the person rated. Only record grades yourself for answers given
 in the chat (`npm run review`).
 
 **Cards.** A card is a prepared `question` of a topic. Besides `id`, `prompt`,
-`kind` and `answer` it carries two fields that only the app writes (never
+`kind` and `answer` it carries fields that only the app writes (never
 edit or reset them; read them):
 
+- `due`, `intervalDays`, `since`: the card's own schedule (same ladder as
+  below) and the day it was first answered. A card without `due` is new.
+  The topic's `due` is the earliest due date of its cards; its `status` and
+  `history` summarise the quizzes. Packs from before card schedules: a card
+  without `due` takes over the topic's date once it has `stats`.
 - `stats`: `{seen, recent, last}`, the number of answers, the last five
   scores and the date. Cards with low recent scores are drawn more often in
-  endless mode; this priority is separate from the topic schedule, and endless
-  answers do not move `due`. A card answered in a normal quiz also adds to its
-  stats. Use it to find weak cards: low `recent` scores point at a question
+  endless mode and rank higher in study rounds; endless answers do not move
+  `due`. Use it to find weak cards: low `recent` scores point at a question
   that is unclear or a topic that needs explaining.
 - `blocked: true`: the person blocked the card ("Block this card" on the
   answer page, or in endless mode). It is never asked again but stays in the
@@ -216,7 +227,10 @@ The repo path and the version of every item at the last sync live in
 blocked stays blocked through every pull. A card removed upstream stays in the
 pack and is not pushed back. Before pushing, check that the cards are good
 (the rules for writing questions above apply, because others will use them) and
-that nothing personal is in `notes`. When the person says "sync with the
+that nothing personal is in `notes`. The same rules hold for everyone who
+pushes: cards for understanding, practice as dojo drills, exam-level drills
+with `origin`/`source`, `exam.points` from old exams (see Dojos). The repo's
+README repeats them for people who only read the repo. When the person says "sync with the
 repo": status, pull, review what came in (sanity-check, tell them about
 conflicts), then push what they added.
 
@@ -232,12 +246,17 @@ days).
 | 3 | step 1 or 2 (1 or 3 days) | `shaky` |
 | 0–2 | step 1 (1 day) | `shaky` |
 
+- The ladder applies to every card on its own (`status` of a card: new, or
+  shaky if its last score was below 4, else solid). The topic gets the
+  average of the quiz as one `history` entry and is due with its earliest card.
 - `due` = date of the quiz + interval. If it falls on Sat/Sun and
   `settings.skipWeekends` is not `false`, move it to Monday.
 - `skip` ("do not quiz") is never due and never quizzed.
 - **Always record grades with the script**, so the rules stay exactly the
   same:
-  `npm run review -- local/<name> <subject-id> <topic-id> <score> [quiz|dojo|manual] ["note"]`
+  `npm run review -- local/<name> <subject-id> <topic-id> <score> [quiz|dojo|manual] ["note"] [--card <question-id>]`
+  With `--card` the card is rescheduled on its own (use it for every card
+  you asked in the chat); without it the whole topic is graded (dojo tasks).
   The script appends to `history`, sets `status`, `due`, `intervalDays` and
   writes an event to the log.
 - Only set due dates by hand if the person explicitly wants it (e.g.
@@ -351,13 +370,13 @@ the pack path and the chosen topics; follow it like this, taking the topics
 from the prompt instead of picking them. The person may answer by voice:
 ignore filler words and transcription slips.
 
-1. Pick topics like the app does: first due/overdue ones (`due` ≤ today,
-   oldest first), then `shaky`, then `new`; never `skip`. Default:
-   `settings.questionsPerQuiz` questions, one per topic.
+1. Pick cards like the app does: every due card (`due` ≤ today, oldest
+   first), then new cards up to `settings.newCardsPerDay`; never `skip`
+   topics or blocked cards. The "Start in chat" prompt lists the cards.
 2. Ask the questions one at a time, numbered as "Question n/N". Mix question
    types: why, what if, explain in your own words, apply to an example.
 3. After each answer, grade briefly (score + gaps). Give a summary at the end.
-4. Record the results with `npm run review` (`source` = `quiz`) and optionally
+4. Record the results with `npm run review … --card <id>` (`source` = `quiz`), one call per card, and optionally
    write a log `sessions/<id>.json` (schema `session.schema.json`, `id` e.g.
    `20261016T090000Z-quiz-db`).
 5. Name the next due dates.
@@ -407,6 +426,15 @@ while answering, as characters (`["σ", "⋈"]`) or group names (`automata`,
 app also adds the symbols it finds in a task and its answer key, so set
 `symbols` only when tasks need symbols they do not show.
 
+#### Practice exam
+
+The dojo page of every subject has a **Practice exam**: exam-level drills of
+all dojos whose chapter is switched on, mixed by their `exam.points` (equal
+shares while a dojo has none) and filled up to `exam.durationMinutes`
+(default 90). It shows where the weights and the tasks come from. A good
+practice exam therefore needs, per dojo, enough `exam` drills from old exams
+and an `exam.points` from the same exams.
+
 #### Drills (practice rounds in the app)
 
 `drills` in a dojo file are prepared exercises that run and get graded in the
@@ -420,8 +448,9 @@ dojo's `topics`). The button "+ 5 new exercises with AI" sends a
 Every drill has `id` (slug, unique in the dojo), `kind`, `prompt` (Markdown
 with all data, tables as Markdown tables), and optionally `level`
 (`easy`/`medium`/`exam`), `topic` (topic id of the subject), `explanation`
-(shown after answering: why the answer is right) and `seconds` (time limit;
-default 60/120/240 by level, doubled for `automaton`, `regex`, `self`).
+(shown after answering: why the answer is right), `seconds` (time limit;
+default 60/120/240 by level, doubled for `automaton`, `regex`, `self`),
+`origin` and `source` (where it comes from, see above).
 
 | `kind` | Fields | Graded by |
 | --- | --- | --- |
@@ -451,8 +480,21 @@ Writing good drills (for you as an AI):
   `number` instead.
 - Wrong `choice` options are typical mistakes from the material, not
   nonsense.
-- Mix levels: `easy` checks one step or a definition, `medium` a whole small
-  run of the procedure, `exam` the size and wording of an exam task.
+- Levels build up to the exam: `easy` is one small part of an exam task
+  (one step, one value, one rule applied), `medium` a whole small run of the
+  procedure, `exam` the size and wording of a real exam task.
+- **Exam level comes from old exams.** Put old exams into
+  `material/<subject-id>/exams/` and build `exam` drills from their tasks.
+  Every `exam` drill states where it comes from: `origin: "exam"` (taken
+  as is) or `"adapted"` (changed numbers or wording), each with `source`
+  ("Klausur WiSe 24/25, Aufgabe 3b"), or `origin: "made-up"` when no old
+  exam was the model (say in `source` if it follows a script exercise).
+  Never present a made-up task as an exam task. `npm run validate` warns
+  about `exam` drills without `origin`.
+- **Weight in the exam.** `exam: {points, basis}` on a dojo says how many
+  points tasks of this kind typically have in one real exam, derived from
+  old exams (`basis`: which exams, or that it is an estimate). Only the ratio
+  between the dojos of a subject matters.
 - Work out every answer yourself and double-check it: a wrong answer key is
   worse than no drill. `npm run validate -- local/<name>` checks the format,
   that references parse and that ids and topics exist.

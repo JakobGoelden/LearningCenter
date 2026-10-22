@@ -1,6 +1,6 @@
-import { activeTopics } from './chapters';
 import { addDays, diffDays, weekday } from '../lib/dates';
 import { CLASS_LABEL, classesOn } from './derive';
+import { cardDue, dueCards } from '../scheduling/scheduler';
 import type { ISODate, LoadedPack, Subject } from './types';
 
 export type CalendarKind = 'exam' | 'class' | 'reviews' | 'sheet';
@@ -18,6 +18,8 @@ export interface CalendarEntry {
   urgent: boolean;
   /** Topic ids for 'reviews'. */
   topics?: string[];
+  /** Reviews: number of cards due. */
+  cards?: number;
   /** Sheet id for 'sheet'. */
   sheet?: string;
 }
@@ -61,16 +63,17 @@ export function entriesOn(loaded: LoadedPack, date: ISODate, today: ISODate): Ca
       });
     }
     if (past) continue;
-    const due = activeTopics(s).filter((t) => t.status !== 'skip' && t.due && (isToday ? t.due <= date : t.due === date));
+    const due = dueCards(s, date, !isToday);
     if (due.length) {
-      const overdue = isToday ? due.filter((t) => t.due! < date).length : 0;
+      const overdue = isToday ? due.filter((c) => cardDue(c.topic, c.question)! < date).length : 0;
       out.push({
         date,
         subject: s,
         kind: 'reviews',
-        text: `${due.length} ${due.length === 1 ? 'review' : 'reviews'}${overdue ? ` (${overdue} overdue)` : ''}`,
+        text: `${due.length} ${due.length === 1 ? 'card' : 'cards'}${overdue ? ` (${overdue} overdue)` : ''}`,
         urgent: overdue > 0,
-        topics: due.map((t) => t.id),
+        topics: [...new Set(due.map((c) => c.topic.id))],
+        cards: due.length,
       });
     }
     for (const sh of s.sheets ?? []) {
@@ -125,7 +128,7 @@ export function longTermWeeks(loaded: LoadedPack, today: ISODate, minWeeks = 8, 
     const entries = days.flatMap((d) => entriesOn(loaded, d, today));
     const end = addDays(start, 6);
     const reviewsBy: Record<string, number> = {};
-    for (const e of entries) if (e.kind === 'reviews') reviewsBy[e.subject.id] = (reviewsBy[e.subject.id] ?? 0) + (e.topics?.length ?? 0);
+    for (const e of entries) if (e.kind === 'reviews') reviewsBy[e.subject.id] = (reviewsBy[e.subject.id] ?? 0) + (e.cards ?? e.topics?.length ?? 0);
     return {
       start,
       week: isoWeek(start),

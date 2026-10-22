@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { activeDojos } from '../model/chapters';
 import { usePack } from '../state/context';
 import { overview } from '../model/derive';
 import { diffDays, formatShort, relative, today } from '../lib/dates';
@@ -18,7 +19,7 @@ export function SubjectView({ subjectId }: { subjectId: string }) {
   if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
   const on = today();
   const o = overview(s, on);
-  const dojoCount = loaded.dojos.filter((d) => d.subject === s.id).length;
+  const dojoCount = activeDojos(s, loaded.dojos).length;
   const exam = s.exam;
   const countdown =
     o.examInDays === null ? null : o.examInDays < 0 ? 'over' : o.examInDays === 0 ? 'today' : `in ${o.examInDays} days`;

@@ -51,13 +51,13 @@
         "title": { "type": "string", "minLength": 1 },
         "notes": { "type": "string", "description": "What the topic covers, sources, typical pitfalls. Helps the AI ask good questions." },
         "status": { "$ref": "common.schema.json#/$defs/topicStatus" },
-        "due": { "$ref": "common.schema.json#/$defs/date", "description": "Next review date." },
+        "due": { "$ref": "common.schema.json#/$defs/date", "description": "Next review date: the earliest due card of the topic once cards have their own dates." },
         "intervalDays": { "type": "integer", "minimum": 0, "description": "Interval that produced 'due'." },
         "history": { "type": "array", "items": { "$ref": "#/$defs/review" } },
         "chapter": { "$ref": "common.schema.json#/$defs/id", "description": "Id of an entry of the subject's `chapters`." },
         "questions": {
           "type": "array",
-          "description": "Prepared quiz questions. The app asks them without an AI (one per topic per quiz, in turn), the learner grades themselves or lets the AI grade later. Write 2–4 per topic.",
+          "description": "Cards: prepared questions for understanding, each with its own schedule (due cards are asked, new ones come in through settings.newCardsPerDay). The learner grades themselves or lets the AI grade later. Calculations and constructions belong in dojo drills. Without this field the topic gets one generic \"explain it\" card; an empty array means the topic is trained only in dojos.",
           "items": { "$ref": "#/$defs/question" }
         }
       }
@@ -84,7 +84,7 @@
         "blocked": { "type": "boolean", "description": "The learner blocked this card: it is never asked again and a sync does not bring it back. Set by the app only." },
         "stats": {
           "type": "object",
-          "description": "How the learner does with this card. Written by the app; drives the priority in endless mode, separate from the topic schedule.",
+          "description": "How the learner does with this card. Written by the app; drives the priority in endless mode and in study rounds.",
           "required": ["seen", "recent"],
           "additionalProperties": false,
           "properties": {
@@ -92,7 +92,10 @@
             "recent": { "type": "array", "maxItems": 5, "items": { "$ref": "common.schema.json#/$defs/score" }, "description": "Last scores, oldest first." },
             "last": { "$ref": "common.schema.json#/$defs/date", "description": "Date of the last answer." }
           }
-        }
+        },
+        "due": { "$ref": "common.schema.json#/$defs/date", "description": "Next review of this card; missing for a new card. Written by the app (spaced repetition per card)." },
+        "intervalDays": { "type": "integer", "minimum": 0, "description": "Interval that produced the card's 'due'. Written by the app." },
+        "since": { "$ref": "common.schema.json#/$defs/date", "description": "Day the card was first answered; counts against settings.newCardsPerDay. Written by the app." }
       }
     },
     "review": {

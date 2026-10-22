@@ -42,15 +42,19 @@ function checkFile(path, name) {
 // the options, and reference expressions/automata that actually work.
 function checkDrills(where, dojo, topics) {
   const ids = new Set();
+  let unsourced = 0;
   for (const drill of dojo.drills ?? []) {
     if (ids.has(drill.id)) fail(`${where}: duplicate drill id "${drill.id}"`);
     ids.add(drill.id);
     if (drill.topic && topics && !topics.has(drill.topic)) fail(`${where}: drill "${drill.id}" has unknown topic "${drill.topic}"`);
     for (const p of drillProblems(drill)) fail(`${where}: drill "${drill.id}" ${p}`);
+    if ((drill.origin === 'exam' || drill.origin === 'adapted') && !drill.source) fail(`${where}: drill "${drill.id}" has origin "${drill.origin}" but no source (which exam, which task)`);
+    if (drill.level === 'exam' && !drill.origin) unsourced++;
     for (const text of [drill.prompt, drill.explanation, drill.solution]) {
       for (const p of automatonBlockProblems(text ?? '')) fail(`${where}: drill "${drill.id}" automaton block: ${p}`);
     }
   }
+  if (unsourced) console.warn(`  ! ${where}: ${unsourced} exam-level drill(s) without "origin" (exam, adapted or made-up)`);
 }
 
 function checkPack(dir) {

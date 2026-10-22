@@ -45,6 +45,7 @@
       "id": "mask-21",
       "kind": "input",
       "level": "exam",
+      "origin": "made-up",
       "prompt": "Write the subnet mask of a /21 in dotted decimal notation.",
       "accept": ["255.255.248.0"],
       "explanation": "21 = 8 + 8 + 5 ones: the third byte is 11111000 = 248."

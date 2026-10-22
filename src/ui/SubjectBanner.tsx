@@ -37,10 +37,10 @@ export function SubjectBanner({
   const learnable = o.statusCounts.new + o.statusCounts.shaky + o.statusCounts.solid;
 
   const flags: { text: string; urgent: boolean }[] = [];
-  if (o.due.length) {
+  if (o.dueCards) {
     flags.push({
-      text: `${plural(o.due.length, 'review', 'reviews')} due${o.overdue.length ? ` (${o.overdue.length} overdue)` : ''}`,
-      urgent: o.overdue.length > 0,
+      text: `${plural(o.dueCards, 'card', 'cards')} due${o.overdueCards ? ` (${o.overdueCards} overdue)` : ''}`,
+      urgent: o.overdueCards > 0,
     });
   }
   if (o.openSheets.length) {

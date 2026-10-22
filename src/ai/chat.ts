@@ -26,22 +26,29 @@ const topicLine = (s: Subject, t: Topic) => `- ${s.id} / ${t.id}: ${t.title}${t.
 export function quizChatPrompt(a: {
   fs: Pick<PackFs, 'kind' | 'label' | 'sharedWithAi'>;
   pack: Pack;
-  blocks: { subject: Subject; topics: Topic[] }[];
+  blocks: { subject: Subject; topics: Topic[]; cards?: { topic: Topic; question: { id: string } }[] }[];
 }): string {
-  const n = a.blocks.reduce((k, b) => k + b.topics.length, 0);
+  const n = a.blocks.reduce((k, b) => k + (b.cards?.length ?? b.topics.length), 0);
   const files = a.fs.kind !== 'browser';
+  const cardIds = (b: (typeof a.blocks)[number], t: Topic) =>
+    (b.cards ?? []).filter((c) => c.topic.id === t.id && c.question.id !== '_').map((c) => c.question.id);
   return [
     `Quiz me here in the chat, one question at a time (${n} ${n === 1 ? 'question' : 'questions'}). ${packWhere(a.fs)}`,
     files ? 'Follow CLAUDE.md → "Quizzing directly in the chat".' : '',
     '',
-    'Topics, in this order (subject / topic id: title):',
-    ...a.blocks.flatMap((b) => b.topics.map((t) => topicLine(b.subject, t))),
+    'Topics, in this order (subject / topic id: title), with the prepared cards to ask:',
+    ...a.blocks.flatMap((b) =>
+      b.topics.map((t) => {
+        const ids = cardIds(b, t);
+        return `${topicLine(b.subject, t)}${ids.length ? ` → cards ${ids.join(', ')}` : ''}`;
+      }),
+    ),
     '',
-    `Ask in ${lang(a.pack)}, numbered "Question n/${n}". I may answer by voice, so ignore typos and filler words. Use the topic's prepared questions and notes if there are any.`,
+    `Ask in ${lang(a.pack)}, numbered "Question n/${n}". I may answer by voice, so ignore typos and filler words. Ask the listed cards (one question each); for a topic without cards, use its notes.`,
     'After each answer: a score 0–5 and the gaps in 1–3 sentences, then the next question.',
     files
-      ? `At the end record every grade with \`npm run review -- ${packArg(a.fs)} <subject> <topic> <score> quiz\`, write the session log, and tell me the next due dates.`
-      : 'At the end list topic, score and gaps as a short table.',
+      ? `At the end record every grade with \`npm run review -- ${packArg(a.fs)} <subject> <topic> <score> quiz --card <card id>\` (one call per card), write the session log, and tell me the next due dates.`
+      : 'At the end list topic, card, score and gaps as a short table.',
   ]
     .filter((l, i, all) => l !== '' || all[i - 1] !== '')
     .join('\n');

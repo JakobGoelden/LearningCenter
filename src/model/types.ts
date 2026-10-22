@@ -14,6 +14,8 @@ export interface PackSettings {
   reviewLadder?: number[];
   skipWeekends?: boolean;
   questionsPerQuiz?: number;
+  /** New cards (never answered) a day may bring in; default 20. */
+  newCardsPerDay?: number;
   language?: string;
 }
 
@@ -60,8 +62,14 @@ export interface TopicQuestion {
   answer?: string;
   /** Blocked on this machine: never asked again and not re-added by a sync. */
   blocked?: boolean;
-  /** How the learner does with this card; drives the endless-mode priority, not the schedule. */
+  /** How the learner does with this card; drives the endless-mode priority. */
   stats?: CardStats;
+  /** Next review of this card; missing for a new card. Written by the app. */
+  due?: ISODate;
+  /** Current interval of this card in days. Written by the app. */
+  intervalDays?: number;
+  /** Day the card was first answered (counts against newCardsPerDay). Written by the app. */
+  since?: ISODate;
 }
 
 export interface CardStats {
@@ -189,7 +197,19 @@ export interface Dojo {
   symbols?: string[];
   /** Prepared exercises that run and get graded in the app. */
   drills?: Drill[];
+  /** Weight of this procedure in the real exam, from old exams; drives the practice exam mix. */
+  exam?: DojoExamShare;
 }
+
+export interface DojoExamShare {
+  /** Typical points of tasks of this kind in one exam (only the ratio between dojos matters). */
+  points: number;
+  /** Where the number comes from, e.g. "Klausuren WiSe 23/24 und SoSe 24: je ca. 20 von 90 Punkten". */
+  basis?: string;
+}
+
+/** Where an exercise comes from: an old exam as is, adapted from one, or made up. */
+export type DrillOrigin = 'exam' | 'adapted' | 'made-up';
 
 /** Plain-data finite automaton; see src/dojo/automata.ts. */
 export interface AutomatonData {
@@ -210,6 +230,10 @@ interface DrillBase {
   explanation?: string;
   /** Time limit; defaults depend on level and kind. */
   seconds?: number;
+  /** Where the exercise comes from; expected for exam level. */
+  origin?: DrillOrigin;
+  /** The old exam (and task) it comes from, e.g. "Klausur WiSe 24/25, Aufgabe 3b". */
+  source?: string;
 }
 
 export interface LanguageReference {

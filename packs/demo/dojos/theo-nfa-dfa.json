@@ -81,6 +81,7 @@
       "id": "convert-contains-aa",
       "kind": "automaton",
       "level": "exam",
+      "origin": "made-up",
       "topic": "powerset",
       "prompt": "Convert this ε-NFA into an equivalent **DFA**. Start with the ε-closure of the start state.",
       "alphabet": ["a", "b"],

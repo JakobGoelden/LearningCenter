@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { ADAPTERS, DEFAULT_MODELS, type AiSettings, type Effort, type Provider } from '../ai/settings';
-import { DEFAULT_LADDER } from '../scheduling/scheduler';
+import { DEFAULT_LADDER, DEFAULT_NEW_CARDS_PER_DAY } from '../scheduling/scheduler';
 import { exportBundle, importBundle, toJson } from '../storage/repo';
 import { downloadText, pickTextFile } from '../lib/download';
 import { today } from '../lib/dates';
@@ -138,8 +138,18 @@ export function SettingsView() {
         </label>
         <div class="row">
           <div class="field">
-            <span>Questions per quiz when nothing is due (otherwise all due topics)</span>
+            <span>Cards per quiz when nothing is due (otherwise all due cards)</span>
             <Stepper value={settings.questionsPerQuiz ?? 5} onChange={(v) => savePackSettings({ questionsPerQuiz: v })} min={1} max={30} label="Questions per quiz" />
+          </div>
+          <div class="field">
+            <span>New cards per day (all subjects together)</span>
+            <Stepper
+              value={settings.newCardsPerDay ?? DEFAULT_NEW_CARDS_PER_DAY}
+              onChange={(v) => savePackSettings({ newCardsPerDay: v })}
+              min={0}
+              max={200}
+              label="New cards per day"
+            />
           </div>
           <label class="field">
             <span>AI language</span>

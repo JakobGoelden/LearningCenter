@@ -1,6 +1,6 @@
 import { activeTopics } from './chapters';
 import { diffDays, weekday } from '../lib/dates';
-import { isDue, isOverdue } from '../scheduling/scheduler';
+import { cardDue, dueCards, isDue, isOverdue } from '../scheduling/scheduler';
 import type { Check, ClassSlot, ISODate, LoadedPack, Sheet, Subject, Topic, TopicStatus, Weekday } from './types';
 
 /** Exams within this many days show up in the "Today" line. */
@@ -14,6 +14,9 @@ export interface SubjectOverview {
   statusCounts: Record<TopicStatus, number>;
   due: Topic[];
   overdue: Topic[];
+  /** Cards due today or earlier, and how many of them are overdue. */
+  dueCards: number;
+  overdueCards: number;
   upcoming: Topic[];
   sheetsSoon: Sheet[];
   openItems: number;
@@ -33,6 +36,11 @@ export function progressOf(c: Record<TopicStatus, number>): number {
   return total ? c.solid / total : 0;
 }
 
+function cardCounts(subject: Subject, on: ISODate) {
+  const cards = dueCards(subject, on);
+  return { dueCards: cards.length, overdueCards: cards.filter((c) => cardDue(c.topic, c.question)! < on).length };
+}
+
 export function overview(subject: Subject, on: ISODate): SubjectOverview {
   const statusCounts: Record<TopicStatus, number> = { new: 0, shaky: 0, solid: 0, skip: 0 };
   const topics = activeTopics(subject);
@@ -45,6 +53,7 @@ export function overview(subject: Subject, on: ISODate): SubjectOverview {
     statusCounts,
     due,
     overdue: due.filter((t) => isOverdue(t, on)),
+    ...cardCounts(subject, on),
     upcoming: topics
       .filter((t) => t.status !== 'skip' && t.due && t.due > on)
       .sort(byDue)
@@ -101,13 +110,13 @@ export function todayItems(loaded: LoadedPack, on: ISODate): TodayItem[] {
         time: c.start,
       });
     }
-    if (o.due.length) {
-      const over = o.overdue.length ? `, ${o.overdue.length} overdue` : '';
+    if (o.dueCards) {
+      const over = o.overdueCards ? `, ${o.overdueCards} overdue` : '';
       items.push({
         subject: s,
         kind: 'reviews',
-        text: `${o.due.length} ${o.due.length === 1 ? 'review' : 'reviews'} due${over}`,
-        urgent: o.overdue.length > 0,
+        text: `${o.dueCards} ${o.dueCards === 1 ? 'card' : 'cards'} due${over}`,
+        urgent: o.overdueCards > 0,
       });
     }
     if (o.examInDays !== null && o.examInDays >= 0 && o.examInDays <= EXAM_SOON_DAYS) {

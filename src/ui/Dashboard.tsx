@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { activeDojos } from '../model/chapters';
 import { usePack } from '../state/context';
 import { readEvents } from '../storage/repo';
 import { formatShort, today } from '../lib/dates';
@@ -35,7 +36,7 @@ export function Dashboard() {
               key={s.id}
               subject={s}
               on={on}
-              dojos={loaded.dojos.filter((d) => d.subject === s.id)}
+              dojos={activeDojos(s, loaded.dojos)}
               lastContent={lastContent.get(s.id)}
             />
           ))}

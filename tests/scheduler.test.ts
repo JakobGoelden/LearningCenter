@@ -81,7 +81,8 @@ describe('study plan', () => {
   it('groups the most pressing topics per subject', () => {
     const plan = studyPlan([subj('a', [fresh, later]), subj('b', [strong, weak, skipped])], FRI, 2);
     expect(plan.map((b) => [b.subject.id, b.topics.map((t) => t.id)])).toEqual([['b', ['weak', 'strong']]]);
-    expect(studyPlan([subj('a', [later])], FRI, 5)).toEqual([]);
+    // Nothing due and nothing new: only a bigger round reaches cards ahead of their date.
+    expect(studyPlan([subj('a', [later])], FRI, 5).map((b) => b.topics.map((t) => t.id))).toEqual([['later']]);
   });
 
   it('puts a due topic before a weak one that is not due', () => {
@@ -98,11 +99,12 @@ describe('study plan', () => {
     expect(studyPlan([subj('a', [answered, fresh])], FRI, 5).map((b) => b.topics.map((t) => t.id))).toEqual([['new']]);
   });
 
-  it('sizes a round to everything due, else the usual quiz size', () => {
+  it('sizes a round to everything due plus the new cards, else the usual quiz size', () => {
     const all = [subj('a', [fresh, later]), subj('b', [strong, weak, skipped])];
     expect(dueCount(all, FRI)).toBe(2);
-    expect(studyCount(all, FRI, 5)).toBe(2);
-    expect(studyCount([subj('a', [fresh, later])], FRI, 5)).toBe(5);
-    expect(studyCandidates(all, FRI)).toBe(3);
+    expect(studyCount(all, FRI, 5)).toBe(3);
+    expect(studyCount([subj('a', [fresh, later])], FRI, 5)).toBe(1);
+    expect(studyCount([subj('a', [later])], FRI, 5)).toBe(5);
+    expect(studyCandidates(all, FRI)).toBe(4);
   });
 });

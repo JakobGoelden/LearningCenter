@@ -48,6 +48,7 @@
       "id": "minimize-ends-a",
       "kind": "automaton",
       "level": "exam",
+      "origin": "made-up",
       "topic": "minimization",
       "prompt": "Give the **minimal DFA** for this automaton.",
       "alphabet": ["a", "b"],

@@ -24,7 +24,7 @@ function targetOf(e: CalendarEntry, today: ISODate): Route {
 }
 
 function entryTitle(e: CalendarEntry, today: ISODate): string {
-  if (e.kind === 'reviews') return e.date > today ? 'Review ahead: start a quiz with these topics now' : 'Start a quiz';
+  if (e.kind === 'reviews') return e.date > today ? 'Review ahead: start a quiz with these cards now' : 'Start a quiz';
   if (e.kind === 'sheet') return 'Open the sheet';
   return `Open ${e.subject.name}`;
 }
@@ -324,7 +324,7 @@ function LongTermPanel({
                       <span
                         class="tl-load"
                         style={{ left: `${x(w.start)}%`, '--a': Math.min(1, 0.25 + w.reviewsBy[s.id] * 0.2) }}
-                        title={`${s.name}: ${w.reviewsBy[s.id]} ${w.reviewsBy[s.id] === 1 ? 'review' : 'reviews'} due in week ${w.week}`}
+                        title={`${s.name}: ${w.reviewsBy[s.id]} ${w.reviewsBy[s.id] === 1 ? 'card' : 'cards'} due in week ${w.week}`}
                       >
                         {w.reviewsBy[s.id]}
                       </span>
@@ -363,7 +363,7 @@ function LongTermPanel({
       </div>
       <div class="lt-legend small muted">
         <span>
-          <i class="tl-swatch" /> reviews due
+          <i class="tl-swatch" /> cards due
         </span>
         <span>✎ sheet deadline</span>
         <span>★ exam</span>

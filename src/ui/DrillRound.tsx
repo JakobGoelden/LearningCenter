@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Dojo, Drill, Level } from '../model/types';
 import {
@@ -66,8 +67,11 @@ export function DrillPractice({
   chatPrompt,
   ai,
   onRunning,
+  fixed,
 }: {
   dojo: Dojo;
+  /** A fixed kind of round instead of level and count (the practice exam): its intro and how to pick it. */
+  fixed?: { title: string; intro: ComponentChildren; pick: () => Drill[]; startLabel: string };
   /** True while a round runs (not on the setup or the result). */
   onRunning?: (running: boolean) => void;
   /** Prompt for "Train in chat" at the chosen level. */
@@ -193,8 +197,8 @@ export function DrillPractice({
               Retry {mistakes.length} {mistakes.length === 1 ? 'mistake' : 'mistakes'}
             </button>
           )}
-          <button class={mistakes.length ? '' : 'primary'} onClick={() => start(pickRound(drills, level, count))}>
-            New round
+          <button class={mistakes.length ? '' : 'primary'} onClick={() => start(fixed ? fixed.pick() : pickRound(drills, level, count))}>
+            {fixed ? 'New practice exam' : 'New round'}
           </button>
           <button onClick={() => (setRound(null), setSummary(null))}>Done</button>
           <span style="flex:1" />
@@ -212,6 +216,27 @@ export function DrillPractice({
                 Save to progress
               </button>
             ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (fixed) {
+    return (
+      <section class="panel stack dojo-mat dojo-start">
+        <div>
+          <div class="dojo-eyebrow">Practice exam</div>
+          <h2>{fixed.title}</h2>
+        </div>
+        {fixed.intro}
+        <div class="row">
+          <button class="primary dojo-go" disabled={!drills.length} onClick={() => start(fixed.pick())}>
+            {fixed.startLabel}
+          </button>
+          <label class="row small" style="gap:4px">
+            <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.currentTarget.checked)} /> Timer per task
+          </label>
+          {bestPoints(dojo.id) > 0 && <span class="small muted">Best {bestPoints(dojo.id)} points</span>}
         </div>
       </section>
     );
@@ -367,6 +392,11 @@ function DrillRun({
         </span>
         <span class="badge">{KIND_HINT[drill.kind]}</span>
         {drill.level && <span class="badge">{LEVEL_LABEL[drill.level]}</span>}
+        {drill.origin && (
+          <span class={`badge origin-${drill.origin}`} title={drill.source ?? ''}>
+            {drill.origin === 'exam' ? `Old exam${drill.source ? `: ${drill.source}` : ''}` : drill.origin === 'adapted' ? `Adapted from ${drill.source ?? 'an old exam'}` : 'Made up'}
+          </span>
+        )}
         <span style="flex:1" />
         {streak >= 2 && (
           <span class={`combo${streak >= 5 ? ' hot' : streak >= 3 ? ' warm' : ''}`} key={streak} title={`${streak} right in a row`}>

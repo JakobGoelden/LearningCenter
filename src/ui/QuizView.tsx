@@ -2,17 +2,16 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { formatShort, nowIso, today } from '../lib/dates';
-import { applyReview, averageScore, isDue, pickQuizTopics } from '../scheduling/scheduler';
+import { applyCardReviews, averageScore, cardDue, dueCards, GENERIC_CARD, laterCards, newCards, type CardResult } from '../scheduling/scheduler';
 import { quizGradeRequest, quizStartRequest } from '../ai/requests';
 import { saveSession } from '../storage/repo';
-import type { Score, Session, SessionItem, Topic } from '../model/types';
-import { questionFor, SELF_SCORE, type SelfRating } from '../model/quiz';
-import { activeTopics } from '../model/chapters';
-import { withCardAnswer, withCardBlocked, type Card } from '../scheduling/cards';
+import type { Score, Session, SessionItem } from '../model/types';
+import { SELF_SCORE, type SelfRating } from '../model/quiz';
+import { cardKey, cardLine, withCardAnswer, withCardBlocked, type Card } from '../scheduling/cards';
 import { Markdown } from './Markdown';
 import { Cancelled, useAi } from './AiPanel';
 import { href } from './router';
-import { SCORE_LABEL, TOPIC_STATUS } from './labels';
+import { SCORE_LABEL } from './labels';
 import { Stepper } from './Stepper';
 import { ChatStart, copyText } from './ChatStart';
 import { quizChatPrompt, quizGradeChatPrompt } from '../ai/chat';
@@ -61,26 +60,33 @@ export function sessionId(type: string, subject: string): string {
 export interface QuizViewProps {
   subjectId: string;
   ahead?: string;
-  /** Preset topic ids: skip the setup and start right away (Study mode). */
-  topics?: string[];
+  /** Preset cards ("topic/question" keys): skip the setup and start right away (Study mode). */
+  cards?: string[];
   /** Replaces the page head (Study mode shows its own). */
   head?: ComponentChildren;
   /** Shown after saving instead of "Back to dashboard", e.g. the next Study block. */
   next?: { label: string; go: () => void };
 }
 
-export function QuizView({ subjectId, ahead, topics: preset, head, next: after }: QuizViewProps) {
+export function QuizView({ subjectId, ahead, cards: preset, head, next: after }: QuizViewProps) {
   const pack = usePack();
   const { fs, loaded, log, updateSubject, setNotice } = pack;
   const s = pack.subject(subjectId);
   const { run, busy, panel } = useAi();
   const on = today();
-  // Reviewing ahead: topics due by `ahead` are picked as if that day had come.
+  // Reviewing ahead: cards due by `ahead` are picked as if that day had come.
   const pickOn = ahead && ahead > on ? ahead : on;
-  const candidates = useMemo(() => (s ? pickQuizTopics(activeTopics(s), pickOn, s.topics.length) : []), [s, pickOn]);
-  const due = candidates.filter((t) => isDue(t, pickOn)).length;
-  // Everything due by default, else the usual quiz size.
-  const [count, setCount] = useState(Math.max(1, Math.min(candidates.length, due || (loaded.pack.settings?.questionsPerQuiz ?? 5))));
+  const settings = loaded.pack.settings;
+  // Due cards, then today's new cards (shared daily budget), then cards ahead of their date.
+  const [dueNow, fresh, candidates] = useMemo(() => {
+    if (!s) return [[], [], []] as Card[][];
+    const d = dueCards(s, pickOn);
+    const n = newCards(loaded.subjects, on, settings, s.id);
+    return [d, n, [...d, ...n, ...laterCards(s, pickOn)]];
+  }, [s, pickOn, loaded, on]);
+  const due = dueNow.length + fresh.length;
+  // Everything due plus the new cards by default, else the usual quiz size.
+  const [count, setCount] = useState(Math.max(1, Math.min(candidates.length, due || (settings?.questionsPerQuiz ?? 5))));
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [phase, setPhase] = useState<Phase>('setup');
   const [session, setSession] = useState<Session | null>(null);
@@ -110,7 +116,7 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
     return () => timers.forEach(clearTimeout);
   }, [phase]);
 
-  // Flashcards by keyboard: Space or Enter flips, 1 / 2 / 3 rate.
+  // Flashcards by keyboard: Space or Enter flips, 1 / 2 / 3 rate, Esc turns the card back.
   useEffect(() => {
     if (phase !== 'answer' || mode !== 'cards' || session?.adapter !== 'app') return;
     const onKey = (e: KeyboardEvent) => {
@@ -122,6 +128,9 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
       } else if (revealed && RATE_KEYS[e.key]) {
         e.preventDefault();
         void rateCard(RATE_KEYS[e.key]);
+      } else if (revealed && e.key === 'Escape') {
+        e.preventDefault();
+        setRevealed(false);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -130,9 +139,15 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
 
   if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
   const topicById = new Map(s.topics.map((t) => [t.id, t]));
-  const chosen = preset
-    ? preset.map((id) => topicById.get(id)).filter((t): t is Topic => !!t)
-    : candidates.filter((t) => !excluded.has(t.id)).slice(0, count);
+  const presetCards = (keys: string[]): Card[] =>
+    keys.flatMap((k) => {
+      const [tid, qid] = k.split('/');
+      const topic = topicById.get(tid);
+      const question = topic && (qid === GENERIC_CARD ? candidates.find((c) => c.topic.id === tid)?.question : topic.questions?.find((q) => q.id === qid));
+      return topic && question ? [{ topic, question }] : [];
+    });
+  const chosenCards = preset ? presetCards(preset) : candidates.filter((c) => !excluded.has(cardKey(c))).slice(0, count);
+  const chosen = [...new Set(chosenCards.map((c) => c.topic))];
 
   const persist = async (next: Session) => {
     setSession(next);
@@ -156,17 +171,14 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
   const start = () =>
     guard(async () => {
       const id = sessionId('quiz', s.id);
-      const items: SessionItem[] = chosen.map((t, i) => {
-        const q = questionFor(t);
-        return {
-          n: i + 1,
-          topicId: t.id,
-          ...(q.kind ? { kind: q.kind } : {}),
-          ...(q.id ? { question: q.id } : {}),
-          prompt: q.prompt,
-          ...(q.answer ? { solution: q.answer } : {}),
-        };
-      });
+      const items: SessionItem[] = chosenCards.map(({ topic: t, question: q }, i) => ({
+        n: i + 1,
+        topicId: t.id,
+        ...(q.kind ? { kind: q.kind } : {}),
+        ...(q.id !== GENERIC_CARD ? { question: q.id } : {}),
+        prompt: q.prompt,
+        ...(q.answer ? { solution: q.answer } : {}),
+      }));
       const next: Session = { id, type: 'quiz', subject: s.id, adapter: 'app', startedAt: nowIso(), items };
       await persist(next);
       await log({
@@ -268,11 +280,13 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
     guard(async () => {
       const session = graded;
       if (!session) return;
-      const perTopic = new Map<string, Score[]>();
+      const perTopic = new Map<string, CardResult[]>();
       for (const it of session.items) {
-        if (it.topicId && it.score !== undefined) perTopic.set(it.topicId, [...(perTopic.get(it.topicId) ?? []), it.score]);
+        if (it.topicId && it.score !== undefined) {
+          perTopic.set(it.topicId, [...(perTopic.get(it.topicId) ?? []), { ...(it.question ? { question: it.question } : {}), score: it.score }]);
+        }
       }
-      const scores = Object.fromEntries([...perTopic].map(([id, sc]) => [id, averageScore(sc)]));
+      const scores = Object.fromEntries([...perTopic].map(([id, rs]) => [id, averageScore(rs.map((r) => r.score))]));
       await updateSubject(
         s.id,
         (subj) =>
@@ -282,8 +296,8 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
           }, {
             ...subj,
             topics: subj.topics.map((t) =>
-              t.id in scores
-                ? applyReview(t, { date: on, score: scores[t.id] as Score, source: 'quiz', sessionId: session.id }, loaded.pack.settings)
+              perTopic.has(t.id)
+                ? applyCardReviews(t, perTopic.get(t.id)!, { date: on, source: 'quiz', sessionId: session.id }, loaded.pack.settings)
                 : t,
             ),
           }),
@@ -461,7 +475,7 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
       {phase === 'setup' && !busy && !preset && (
         <div class="panel stack">
           <div class="row">
-            <span>Number of questions</span>
+            <span>Number of cards</span>
             <Stepper value={count} onChange={setCount} min={1} max={Math.max(1, candidates.length)} label="Questions" />
             {due > 0 && count !== due && (
               <button class="small all-due" onClick={() => setCount(due)}>
@@ -471,37 +485,41 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
           </div>
           {candidates.length === 0 ? (
             <div class="muted">
-              No topics to quiz. Add some under <a href={href({ name: 'topics', subject: s.id })}>Topics</a>.
+              No cards to quiz. Add some under <a href={href({ name: 'topics', subject: s.id })}>Topics</a>.
             </div>
           ) : (
             <>
               <div class="small muted">
                 {pickOn > on
-                  ? `Reviewing ahead: topics due by ${formatShort(pickOn)} come first. Untick what you want to leave out:`
-                  : 'Due and shaky topics first. Untick what you want to leave out today:'}
+                  ? `Reviewing ahead: cards due by ${formatShort(pickOn)} come first. Untick what you want to leave out:`
+                  : `Due cards first${fresh.length ? `, then ${fresh.length} new` : ''}. Untick what you want to leave out today:`}
               </div>
               <ul class="list">
-                {candidates.slice(0, count + excluded.size).map((t: Topic) => (
-                  <li>
-                    <label class="row grow" style="gap:6px">
-                      <input
-                        type="checkbox"
-                        checked={!excluded.has(t.id)}
-                        onChange={(e) => {
-                          const next = new Set(excluded);
-                          if (e.currentTarget.checked) next.delete(t.id);
-                          else next.add(t.id);
-                          setExcluded(next);
-                        }}
-                      />
-                      {t.title}
-                    </label>
-                    <span class="small muted">
-                      {TOPIC_STATUS[t.status]}
-                      {t.due && ` · ${t.due < on ? 'overdue' : t.due === on ? 'today' : formatShort(t.due)}`}
-                    </span>
-                  </li>
-                ))}
+                {candidates.slice(0, count + excluded.size).map((c: Card) => {
+                  const key = cardKey(c);
+                  const d = cardDue(c.topic, c.question);
+                  return (
+                    <li>
+                      <label class="row grow" style="gap:6px">
+                        <input
+                          type="checkbox"
+                          checked={!excluded.has(key)}
+                          onChange={(e) => {
+                            const next = new Set(excluded);
+                            if (e.currentTarget.checked) next.delete(key);
+                            else next.add(key);
+                            setExcluded(next);
+                          }}
+                        />
+                        <span class="stack" style="gap:0">
+                          <span class="small muted">{c.topic.title}</span>
+                          <span class="card-line">{cardLine(c)}</span>
+                        </span>
+                      </label>
+                      <span class="small muted">{!d ? 'new' : d < on ? 'overdue' : d === on ? 'today' : formatShort(d)}</span>
+                    </li>
+                  );
+                })}
               </ul>
               <div class="row mode-row">
                 <span>Answer by</span>
@@ -513,12 +531,12 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
                 </span>
               </div>
               <div class="start-row">
-                <button class="primary" disabled={chosen.length === 0} onClick={start}>
-                  Start here · {chosen.length} {chosen.length === 1 ? 'question' : 'questions'}
+                <button class="primary" disabled={chosenCards.length === 0} onClick={start}>
+                  Start here · {chosenCards.length} {chosenCards.length === 1 ? 'card' : 'cards'}
                 </button>
                 <ChatStart
-                  disabled={chosen.length === 0}
-                  prompt={() => quizChatPrompt({ fs, pack: loaded.pack, blocks: [{ subject: s, topics: chosen }] })}
+                  disabled={chosenCards.length === 0}
+                  prompt={() => quizChatPrompt({ fs, pack: loaded.pack, blocks: [{ subject: s, topics: chosen, cards: chosenCards }] })}
                 />
                 {canAskAi && (
                   <button
@@ -611,13 +629,22 @@ export function QuizView({ subjectId, ahead, topics: preset, head, next: after }
                     </button>
                   ))}
                 </span>
-                {item.question && !blocked.has(item.n) && (
-                  <span class="row" onClick={(e) => e.stopPropagation()}>
+                <span class="row" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    class="ghost small"
+                    tabIndex={revealed ? 0 : -1}
+                    onClick={() => setRevealed(false)}
+                    title="Flipped by mistake? Turn the card back to the question"
+                  >
+                    ↺ Turn back <kbd>Esc</kbd>
+                  </button>
+                  {item.question && !blocked.has(item.n) && (
                     <button type="button" class="ghost small" tabIndex={revealed ? 0 : -1} onClick={() => blockItem(item, true)}>
                       🚫 Block this card
                     </button>
-                  </span>
-                )}
+                  )}
+                </span>
               </span>
             </span>
           </div>

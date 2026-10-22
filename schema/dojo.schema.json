@@ -31,6 +31,16 @@
       "type": "array",
       "items": { "$ref": "#/$defs/drill" },
       "description": "Prepared exercises that run in the app as a timed practice round and are graded without an AI."
+    },
+    "exam": {
+      "type": "object",
+      "required": ["points"],
+      "additionalProperties": false,
+      "description": "Weight of this procedure in the real exam, taken from old exams. The practice exam mixes the exam-level drills of all dojos of the subject in this ratio.",
+      "properties": {
+        "points": { "type": "number", "exclusiveMinimum": 0, "description": "Typical points of tasks of this kind in one exam (only the ratio between the dojos of a subject matters)." },
+        "basis": { "type": "string", "description": "Where the number comes from, e.g. 'Klausuren WiSe 23/24 und SoSe 24: je ca. 20 von 90 Punkten'. Say so if it is an estimate." }
+      }
     }
   },
   "$defs": {
@@ -70,7 +80,9 @@
         "topic": { "$ref": "common.schema.json#/$defs/id" },
         "prompt": { "type": "string", "minLength": 1, "description": "The question or task (Markdown with $…$ LaTeX; an ```automaton block is drawn as a state diagram)." },
         "explanation": { "type": "string", "description": "Shown after answering: why the answer is right (Markdown)." },
-        "seconds": { "type": "integer", "minimum": 5, "description": "Time limit. Default: 60/120/240 s for easy/medium/exam, doubled for automaton, regex and self." }
+        "seconds": { "type": "integer", "minimum": 5, "description": "Time limit. Default: 60/120/240 s for easy/medium/exam, doubled for automaton, regex and self." },
+        "origin": { "enum": ["exam", "adapted", "made-up"], "description": "Where the exercise comes from: exam = taken from an old exam, adapted = changed from an old exam task, made-up = not based on an old exam. Expected for every exam-level drill." },
+        "source": { "type": "string", "description": "The old exam and task, e.g. 'Klausur WiSe 24/25, Aufgabe 3b' (required with origin exam or adapted); for made-up drills optionally the model, e.g. a script exercise." }
       },
       "unevaluatedProperties": false,
       "oneOf": [

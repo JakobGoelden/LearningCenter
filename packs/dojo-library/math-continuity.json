@@ -43,6 +43,7 @@
       "id": "prove-square",
       "kind": "self",
       "level": "exam",
+      "origin": "made-up",
       "prompt": "Show with the sequence criterion that f(x) = x² is continuous at x0 = 2.",
       "solution": "Let x_n be any sequence with x_n → 2. By the limit rules for products, x_n · x_n → 2 · 2 = 4 = f(2). Since this holds for every such sequence, f is continuous at 2."
     }

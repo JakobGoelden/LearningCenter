@@ -1,10 +1,11 @@
 import { useRef, useState } from 'preact/hooks';
+import { activeDojos } from '../model/chapters';
 import { usePack } from '../state/context';
 import { nowIso, today } from '../lib/dates';
 import { applyReview } from '../scheduling/scheduler';
 import { dojoCheckRequest, dojoDrillsRequest, dojoHintRequest, dojoSolutionRequest, dojoTaskRequest, LEVEL_LABEL } from '../ai/requests';
 import { saveDojo, saveSession } from '../storage/repo';
-import type { Level, Score, Session, SessionItem } from '../model/types';
+import type { Dojo, Level, Score, Session, SessionItem } from '../model/types';
 import { Cancelled, useAi } from './AiPanel';
 import { Markdown } from './Markdown';
 import { href } from './router';
@@ -12,6 +13,7 @@ import { sessionId } from './QuizView';
 import { SCORE_LABEL } from './labels';
 import { DrillPractice, type RoundSummary } from './DrillRound';
 import { roundScore } from '../dojo/drills';
+import { DEFAULT_EXAM_MINUTES, examDrills, PRACTICE_EXAM, practiceExam, practiceExamDojo } from '../dojo/exam';
 import { Enso, Torii } from './Emblem';
 import { SymbolBar } from './SymbolBar';
 import { BackLink } from './BackLink';
@@ -25,8 +27,13 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
   const pack = usePack();
   const { fs, loaded, log, updateSubject, setNotice, reload } = pack;
   const s = pack.subject(subjectId);
-  const dojos = loaded.dojos.filter((d) => d.subject === subjectId);
-  const dojo = dojos.find((d) => d.id === dojoId);
+  const all = loaded.dojos.filter((d) => d.subject === subjectId);
+  // Dojos of switched-off chapters are not listed (a direct link still works).
+  const s0 = pack.subject(subjectId);
+  const dojos = s0 ? activeDojos(s0, all) : all;
+  const examMode = dojoId === PRACTICE_EXAM;
+  const examMinutes = s0?.exam.durationMinutes ?? DEFAULT_EXAM_MINUTES;
+  const dojo = examMode ? practiceExamDojo(subjectId, dojos) : all.find((d) => d.id === dojoId);
   const { run, busy, panel } = useAi();
   const levels = dojo?.levels?.length ? dojo.levels : ALL_LEVELS;
   const middleLevel = levels[Math.min(1, levels.length - 1)];
@@ -76,6 +83,14 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
           </div>
         ) : (
           <div class="cards">
+            {dojos.some((d) => examDrills(d).length) && (
+              <a class="dojo-card exam-card" style={{ '--c': s.color }} href={href({ name: 'dojo', subject: s.id, dojo: PRACTICE_EXAM })}>
+                <Torii class="dojo-card-torii" />
+                <h2>Practice exam</h2>
+                <span class="dojo-card-count">{dojos.reduce((n, d) => n + examDrills(d).length, 0)} exam tasks</span>
+                <div class="small muted">Exam-level tasks from all dojos, mixed like the real exam, {examMinutes} minutes.</div>
+              </a>
+            )}
             {dojos.map((d) => (
               <a class="dojo-card" style={{ '--c': s.color }} href={href({ name: 'dojo', subject: s.id, dojo: d.id })}>
                 <Torii class="dojo-card-torii" />
@@ -232,7 +247,8 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
   const applyRound = async (summary: RoundSummary) => {
     const byTopic = new Map<string, number[]>();
     for (const o of summary.outcomes) {
-      for (const t of o.drill.topic ? [o.drill.topic] : (dojo.topics ?? [])) {
+      // In the practice exam a drill without a topic cannot be traced to one: it counts for none.
+      for (const t of o.drill.topic ? [o.drill.topic] : examMode ? [] : (dojo.topics ?? [])) {
         if (!byTopic.has(t)) byTopic.set(t, []);
         byTopic.get(t)!.push(o.result.score);
       }
@@ -292,6 +308,21 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
         </>,
       )}
 
+      {examMode ? (
+        <DrillPractice
+          dojo={dojo}
+          fixed={{
+            title: `${s.name}, ${examMinutes} minutes`,
+            intro: <ExamIntro dojos={dojos} minutes={examMinutes} />,
+            pick: () => practiceExam(dojos, examMinutes).drills,
+            startLabel: 'Start practice exam',
+          }}
+          onStart={(round) => void log({ type: 'dojo.drill.start', subject: s.id, ref: PRACTICE_EXAM, data: { count: round.length, level: 'exam' } })}
+          onFinish={saveRound}
+          onApply={applyRound}
+          onRunning={setRunning}
+        />
+      ) : (
       <DrillPractice
         dojo={dojo}
         onStart={(round, lvl) => void log({ type: 'dojo.drill.start', subject: s.id, ref: dojo.id, data: { count: round.length, level: lvl } })}
@@ -301,6 +332,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
         onRunning={setRunning}
         ai={{ busy, drillCount: NEW_DRILLS, moreDrills: writeDrills, freshTask: (lvl) => newTask(lvl === 'all' ? middleLevel : lvl) }}
       />
+      )}
 
       {error && <div class="error">{error}</div>}
       {panel}
@@ -398,6 +430,47 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/** What the practice exam is made of: share per dojo, where the weights and the tasks come from. */
+function ExamIntro({ dojos, minutes }: { dojos: Dojo[]; minutes: number }) {
+  const plan = practiceExam(dojos, minutes, () => 0.5);
+  const tasks = dojos.flatMap(examDrills);
+  const fromExams = tasks.filter((d) => d.origin === 'exam' || d.origin === 'adapted').length;
+  const madeUp = tasks.filter((d) => d.origin === 'made-up').length;
+  return (
+    <div class="stack small">
+      <table class="exam-plan">
+        <thead>
+          <tr>
+            <th>Part</th>
+            <th>Share</th>
+            <th>Tasks</th>
+            <th>Weight from</th>
+          </tr>
+        </thead>
+        <tbody>
+          {plan.parts.map((p) => (
+            <tr>
+              <td>{p.dojo.title}</td>
+              <td>{Math.round(p.share * 100)} %</td>
+              <td>{examDrills(p.dojo).length}</td>
+              <td class="muted">{p.dojo.exam?.basis ?? (p.dojo.exam ? 'old exams' : 'no data, equal share')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {!plan.fromBlueprint && (
+        <span class="muted">
+          Not every dojo knows its weight in the real exam yet, so all parts count the same. Your AI can add <code>exam.points</code> from old exams.
+        </span>
+      )}
+      <span class="muted">
+        Tasks: {fromExams} from old exams, {madeUp} made up{tasks.length - fromExams - madeUp ? `, ${tasks.length - fromExams - madeUp} without a source` : ''}. Each start draws a new mix.
+      </span>
+      {plan.missing.length > 0 && <span class="muted">No exam-level tasks yet in: {plan.missing.map((d) => d.title).join(', ')}.</span>}
     </div>
   );
 }
