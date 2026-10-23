@@ -234,6 +234,8 @@ interface DrillBase {
   origin?: DrillOrigin;
   /** The old exam (and task) it comes from, e.g. "Klausur WiSe 24/25, Aufgabe 3b". */
   source?: string;
+  /** Points of the task in the real exam it comes from. */
+  points?: number;
 }
 
 export interface LanguageReference {

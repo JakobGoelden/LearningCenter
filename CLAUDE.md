@@ -450,7 +450,8 @@ with all data, tables as Markdown tables), and optionally `level`
 (`easy`/`medium`/`exam`), `topic` (topic id of the subject), `explanation`
 (shown after answering: why the answer is right), `seconds` (time limit;
 default 60/120/240 by level, doubled for `automaton`, `regex`, `self`),
-`origin` and `source` (where it comes from, see above).
+`origin` and `source` (where it comes from, see above), `points`
+(what the task is worth in that exam).
 
 | `kind` | Fields | Graded by |
 | --- | --- | --- |
