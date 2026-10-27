@@ -124,4 +124,25 @@ describe('sharing', () => {
     expect(bob1.loaded.subjects[0].topics[0].questions).toHaveLength(1);
     expect(push(bob1.loaded, t2, bob1.state).written).toEqual([]);
   });
+  it('topic notes stay private: never pushed, repo notes come in once and local notes survive pulls', () => {
+    const { tree, alice } = aliceRepo();
+    const withNotes = structuredClone(alice);
+    withNotes.subjects[0].topics[0].notes = 'Stand 26.10.: falsch';
+    const r = push(withNotes, tree, emptyState(), { subjects: ['db'], author: 'alice', now: '2026-10-19T10:00:00Z' });
+    expect(r.tree.get('db/ch1/topics/nf.json')).not.toContain('Stand 26.10.');
+
+    const repo = new Map(r.tree);
+    const f = JSON.parse(repo.get('db/ch1/topics/nf.json')!);
+    repo.set('db/ch1/topics/nf.json', JSON.stringify({ ...f, notes: 'Shared hint' }));
+    const bob = pull(pack(), repo, emptyState());
+    expect(bob.loaded.subjects[0].topics[0].notes).toBe('Shared hint');
+
+    const bobLocal = structuredClone(bob.loaded);
+    bobLocal.subjects[0].topics[0].notes = 'my own';
+    const again = pull(bobLocal, repo, bob.state);
+    expect(again.loaded.subjects[0].topics[0].notes).toBe('my own');
+    const back = push(bobLocal, repo, bob.state, { subjects: ['db'], author: 'bob', now: '2026-10-20T10:00:00Z' });
+    expect(back.tree.get('db/ch1/topics/nf.json')).toContain('Shared hint');
+    expect(back.tree.get('db/ch1/topics/nf.json')).not.toContain('my own');
+  });
 });

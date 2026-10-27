@@ -96,7 +96,9 @@ export function hash(v: unknown): string {
 }
 
 const cardBody = (q: SharedCard) => ({ prompt: q.prompt, kind: q.kind, answer: q.answer });
-const topicBody = (t: { title: string; notes?: string; chapter?: string }) => ({ title: t.title, notes: t.notes, chapter: t.chapter });
+// Topic notes are private: they never count as a change and are never pushed. Notes that already
+// exist in the repo come in with a new topic and are left untouched in the repo on push.
+const topicBody = (t: { title: string; chapter?: string }) => ({ title: t.title, chapter: t.chapter });
 
 const keys = {
   subject: (s: string) => `subject:${s}`,
@@ -247,7 +249,7 @@ export function pull(loaded: LoadedPack, tree: SharedTree, stateIn: ShareState, 
       const tk = keys.topic(sid, st.id);
       seenKeys.add(tk);
       const idx = topics.findIndex((t) => t.id === st.id);
-      const sBody = topicBody({ title: st.title, notes: st.notes, chapter: st.chapter });
+      const sBody = topicBody({ title: st.title, chapter: st.chapter });
       if (idx < 0) {
         const topic: Topic = {
           id: st.id,
@@ -270,8 +272,7 @@ export function pull(loaded: LoadedPack, tree: SharedTree, stateIn: ShareState, 
       let topic = topics[idx];
       const v = reconcile(state, tk, hash(topicBody(topic)), hash(sBody));
       if (v === 'update') {
-        topic = { ...topic, title: st.title, ...(st.notes ? { notes: st.notes } : {}), ...(st.chapter ? { chapter: st.chapter } : {}) };
-        if (!st.notes) delete topic.notes;
+        topic = { ...topic, title: st.title, ...(st.chapter ? { chapter: st.chapter } : {}) };
         if (!st.chapter) delete topic.chapter;
         report.push(`${subj.name} / ${st.title}: topic updated`);
         changed = true;
@@ -414,7 +415,7 @@ export function push(loaded: LoadedPack, treeIn: SharedTree, stateIn: ShareState
       const existing = shared.topics.get(tk);
       if (t.chapter) chapterIds.add(t.chapter);
 
-      const metaAction = toPush(tk, hash(topicBody(t)), existing ? hash(topicBody({ title: existing.title, notes: existing.notes, chapter: existing.chapter })) : undefined, `${subj.name} / ${t.title}`);
+      const metaAction = toPush(tk, hash(topicBody(t)), existing ? hash(topicBody({ title: existing.title, chapter: existing.chapter })) : undefined, `${subj.name} / ${t.title}`);
       const merged = new Map<string, SharedCard>((existing?.questions ?? []).map((q) => [q.id, q]));
       let cardChanges = 0;
       for (const q of cardsHere) {
@@ -433,7 +434,7 @@ export function push(loaded: LoadedPack, treeIn: SharedTree, stateIn: ShareState
         tree.delete(existing.path);
         written.push(existing.path);
       }
-      put(path, json({ id: t.id, title: t.title, ...(t.notes ? { notes: t.notes } : {}), questions: [...merged.values()] }));
+      put(path, json({ id: t.id, title: t.title, ...(existing?.notes ? { notes: existing.notes } : {}), questions: [...merged.values()] }));
       if (metaAction) {
         state.items[tk] = hash(topicBody(t));
         entry(metaAction, 'topic', subj.id, t.id);

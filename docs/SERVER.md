@@ -18,7 +18,8 @@ The app also runs as a multi-user web app. Read this before changing storage, sh
 
 ## To-do (in this order)
 
-1. **Topic notes private.** `share push` currently sends topic `notes` to Semester3, and they contain
+1. ~~**Topic notes private.**~~ Done 2026-10-27: notes are never pushed or compared; repo notes come in
+   with a new topic only. `share push` currently sends topic `notes` to Semester3, and they contain
    personal progress remarks ("Stand 26.10.: … falsch"). Notes should stay local, while shared notes
    from the repo can still come in. Careful: push and pull share the hash state in `shared.json`
    (`state.items[topicKey]`); if only push stops sending notes, pull may overwrite local notes.
