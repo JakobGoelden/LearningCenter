@@ -24,9 +24,10 @@ The app also runs as a multi-user web app. Read this before changing storage, sh
    from the repo can still come in. Careful: push and pull share the hash state in `shared.json`
    (`state.items[topicKey]`); if only push stops sending notes, pull may overwrite local notes.
    Add tests for both directions.
-2. **Don't overwrite pulled cards.** The sync job rewrites `subjects/*.json` while the app is open. If
-   the app later saves a stale in-memory subject, the pulled cards are lost. Check the file's mtime
-   (`repo.ts` `fingerprint()`) before every save and reload on change.
+2. ~~**Don't overwrite pulled cards.**~~ Done: `updateSubjectFile`/`updatePackFile` (`repo.ts`) compare
+   the file's mtime with the one stored when it was loaded or last saved (`context.tsx`) and, if it
+   changed, apply the change to the version on disk instead (`tests/freshsave.test.ts`). A small
+   window remains between the mtime check and the write.
 3. **PWA + offline** (the admin learns on the train). Installable app, service worker for the app
    shell, cards, dojos and progress cached on the device, per-subject "available offline" for PDFs,
    answers queued while offline and written when back online.

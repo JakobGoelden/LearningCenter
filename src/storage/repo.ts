@@ -35,15 +35,74 @@ export async function loadPack(fs: PackFs): Promise<LoadedPack> {
   return { pack, subjects, dojos };
 }
 
-/** Modification times of all files the app reads, to notice outside edits. */
-export async function fingerprint(fs: PackFs, loaded: LoadedPack): Promise<string> {
+export type FileTimes = Record<string, number | null>;
+
+export const subjectPath = (id: string) => `subjects/${id}.json`;
+
+/** Modification time of every file the app reads, keyed by path. */
+export async function fileTimes(fs: PackFs, loaded: LoadedPack): Promise<FileTimes> {
   const paths = [
     'pack.json',
-    ...loaded.pack.subjects.map((id) => `subjects/${id}.json`),
+    ...loaded.pack.subjects.map(subjectPath),
     ...(loaded.pack.dojos ?? []).map((id) => `dojos/${id}.json`),
   ];
   const times = await Promise.all(paths.map((p) => fs.mtime(p)));
-  return times.join(',');
+  return Object.fromEntries(paths.map((p, i) => [p, times[i]]));
+}
+
+/** Modification times of all files the app reads, to notice outside edits. */
+export async function fingerprint(fs: PackFs, loaded: LoadedPack): Promise<string> {
+  return Object.values(await fileTimes(fs, loaded)).join(',');
+}
+
+/**
+ * Applies `change` to a file and saves it, without losing outside edits.
+ * `known` is the file's mtime when `current` was loaded. If the file changed
+ * since (e.g. the sync job pulled new cards while the app was open), the
+ * change is applied to the version on disk instead of the stale `current`.
+ * Pass `known` as undefined when it is not known; then `current` is used.
+ */
+async function updateFile<T>(
+  fs: PackFs,
+  path: string,
+  current: T,
+  known: number | null | undefined,
+  change: (value: T) => T,
+  load: (data: unknown) => T,
+  save: (value: T) => Promise<void>,
+): Promise<{ value: T; reloaded: boolean }> {
+  let base = current;
+  let reloaded = false;
+  if (known !== undefined && (await fs.mtime(path)) !== known) {
+    base = load(await readJson(fs, path));
+    reloaded = true;
+  }
+  const value = change(base);
+  await save(value);
+  return { value, reloaded };
+}
+
+export function updateSubjectFile(
+  fs: PackFs,
+  current: Subject,
+  known: number | null | undefined,
+  change: (s: Subject) => Subject,
+): Promise<{ value: Subject; reloaded: boolean }> {
+  const path = subjectPath(current.id);
+  return updateFile(fs, path, current, known, change, (d) => assertValid('subject', d, path), (s) =>
+    saveSubject(fs, s),
+  );
+}
+
+export function updatePackFile(
+  fs: PackFs,
+  current: Pack,
+  known: number | null | undefined,
+  change: (p: Pack) => Pack,
+): Promise<{ value: Pack; reloaded: boolean }> {
+  return updateFile(fs, 'pack.json', current, known, change, (d) => assertValid('pack', d, 'pack.json'), (p) =>
+    savePack(fs, p),
+  );
 }
 
 export async function savePack(fs: PackFs, pack: Pack) {
