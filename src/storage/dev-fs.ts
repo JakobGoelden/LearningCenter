@@ -12,12 +12,14 @@ export class DevFs implements PackFs {
 
   constructor(readonly label: string) {}
 
-  /** Returns a DevFs when the dev server exposes a pack folder. */
+  /**
+   * Returns a DevFs when a server exposes a pack folder: the Vite dev server
+   * (LC_PACK_DIR) or a hosted LearningCenter server with the same /__lc/fs API.
+   */
   static async detect(): Promise<DevFs | null> {
-    if (!import.meta.env.DEV) return null;
     try {
       const res = await fetch(`${API}/info`);
-      if (!res.ok) return null;
+      if (!res.ok || !(res.headers.get('content-type') ?? '').includes('json')) return null;
       const info = (await res.json()) as { dir: string };
       return new DevFs(info.dir);
     } catch {
