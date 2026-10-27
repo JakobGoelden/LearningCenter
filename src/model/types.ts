@@ -14,7 +14,7 @@ export interface PackSettings {
   reviewLadder?: number[];
   skipWeekends?: boolean;
   questionsPerQuiz?: number;
-  /** New cards (never answered) a day may bring in; default 20. */
+  /** New cards (never answered) each subject may bring in per day; default 10. */
   newCardsPerDay?: number;
   language?: string;
 }

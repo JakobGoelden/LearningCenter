@@ -79,17 +79,18 @@ describe('applyCardReviews', () => {
 describe('new cards', () => {
   const fresh = (id: string, n: number): Topic => ({ id, title: id, status: 'new', questions: Array.from({ length: n }, (_, i) => q(`${id}${i}`)) });
 
-  it('brings in at most the daily budget, subjects taking turns from the nearest exam', () => {
+  it('brings in at most the daily budget per subject, subjects taking turns from the nearest exam', () => {
     const math = subj('math', [fresh('m', 5)], '2026-12-14');
     const db = subj('db', [fresh('d', 5)], '2026-12-16');
-    const cards = newCards([db, math], THU, { newCardsPerDay: 4 });
+    const cards = newCards([db, math], THU, { newCardsPerDay: 2 });
     expect(cards.map((c) => c.question.id)).toEqual(['m0', 'd0', 'm1', 'd1']);
-    expect(newCards([db, math], THU, { newCardsPerDay: 4 }, 'db').map((c) => c.question.id)).toEqual(['d0', 'd1']);
+    expect(newCards([db, math], THU, { newCardsPerDay: 2 }, 'db').map((c) => c.question.id)).toEqual(['d0', 'd1']);
   });
 
-  it('counts cards started today against the budget', () => {
+  it("counts cards started today against their own subject's budget only", () => {
     const started = subj('s', [{ ...fresh('a', 3), questions: [q('x', { since: THU, due: '2026-10-23' }), q('y'), q('z')] }]);
-    expect(newCards([started], THU, { newCardsPerDay: 2 }).map((c) => c.question.id)).toEqual(['y']);
+    const other = subj('o', [fresh('o', 3)]);
+    expect(newCards([started, other], THU, { newCardsPerDay: 2 }).map((c) => c.question.id)).toEqual(['y', 'o0', 'o1']);
   });
 
   it('puts due cards before new ones, and both before cards ahead of their date', () => {

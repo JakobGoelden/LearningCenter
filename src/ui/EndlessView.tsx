@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { today } from '../lib/dates';
 import { cardKey, deckOf, drawCard, withCardAnswer, withCardBlocked, type Card } from '../scheduling/cards';
+import { applyCardReviews } from '../scheduling/scheduler';
+import type { Subject } from '../model/types';
 import { SELF_SCORE, type SelfRating } from '../model/quiz';
 import type { Score } from '../model/types';
 import { Markdown } from './Markdown';
@@ -12,8 +14,10 @@ const RATE_KEYS: Record<string, SelfRating> = { '1': 'right', '2': 'partly', '3'
 
 /**
  * Endless mode: cards of one subject, as long as the learner wants. Weak cards
- * come up more often (see scheduling/cards.ts). Answers only feed the card
- * stats; the topic schedule is not touched.
+ * come up more often (see scheduling/cards.ts). The first answer to a card on
+ * a day also counts as a real review: the card gets its next date and is no
+ * longer new. Further answers that day only feed the card stats, so wrong
+ * cards keep coming back in this session without being pushed around.
  */
 export function EndlessView({ subjectId }: { subjectId: string }) {
   const pack = usePack();
@@ -39,7 +43,18 @@ export function EndlessView({ subjectId }: { subjectId: string }) {
     const score = SELF_SCORE[r] as Score;
     setCounts((c) => ({ ...c, [r]: c[r] + 1 }));
     next(withCardAnswer(s, card, score, on));
-    await pack.updateSubject(s.id, (subj) => withCardAnswer(subj, card, score, on), {
+    const settings = pack.loaded.pack.settings;
+    const review = (subj: Subject): Subject => {
+      const q = subj.topics.find((t) => t.id === card.topic.id)?.questions?.find((x) => x.id === card.question.id);
+      if (!q || q.stats?.last === on) return subj;
+      return {
+        ...subj,
+        topics: subj.topics.map((t) =>
+          t.id === card.topic.id ? applyCardReviews(t, [{ question: card.question.id, score }], { date: on, source: 'quiz' }, settings) : t,
+        ),
+      };
+    };
+    await pack.updateSubject(s.id, (subj) => withCardAnswer(review(subj), card, score, on), {
       type: 'card.answer',
       ref: `${card.topic.id}/${card.question.id}`,
       data: { mode: 'endless', score },

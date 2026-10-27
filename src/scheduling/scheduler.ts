@@ -87,10 +87,10 @@ export function applyReview(topic: Topic, review: Review, settings?: PackSetting
 // Cards. Every prepared question has its own due date and interval, scheduled
 // with the same ladder as topics. A topic is due as soon as one of its cards
 // is; its status and history summarise the cards. Cards never answered are
-// new: they come in through a daily budget (settings.newCardsPerDay) so a
-// fresh script does not flood the day.
+// new: they come in through a daily budget per subject (settings.newCardsPerDay)
+// so a fresh script does not flood the day and one busy subject cannot starve the others.
 
-export const DEFAULT_NEW_CARDS_PER_DAY = 20;
+export const DEFAULT_NEW_CARDS_PER_DAY = 10;
 
 /** Id of the one generic card of a topic without prepared questions. */
 export const GENERIC_CARD = '_';
@@ -196,28 +196,32 @@ export function dueCards(subject: Subject, on: ISODate, exactDay = false): Card[
     .map(({ topic, question }) => ({ topic, question }));
 }
 
-/** New cards already started on `on` (they count against the daily budget). */
+/** New cards already started on `on` (they count against each subject's daily budget). */
 export function newCardsStarted(subjects: Subject[], on: ISODate): number {
-  return subjects.reduce((n, s) => n + s.topics.reduce((k, t) => k + (t.questions ?? []).filter((q) => q.since === on).length, 0), 0);
+  return subjects.reduce((n, s) => n + startedIn(s, on), 0);
 }
 
+const startedIn = (s: Subject, on: ISODate) =>
+  s.topics.reduce((k, t) => k + (t.questions ?? []).filter((q) => q.since === on).length, 0);
+
 /**
- * New cards for today within the budget: subjects take turns (the nearest
- * exam first), each in the order of its topics and cards, so a script is
- * learned front to back.
+ * New cards for today: every subject brings in up to its own daily budget
+ * (minus the cards it started today), in the order of its topics and cards, so
+ * a script is learned front to back. Subjects take turns, nearest exam first.
  */
 export function newCards(subjects: Subject[], on: ISODate, settings?: PackSettings, only?: string): Card[] {
-  const budget = Math.max(0, newCardsPerDay(settings) - newCardsStarted(subjects, on));
+  const perSubject = newCardsPerDay(settings);
   const queues = [...subjects]
     .sort((a, b) => (a.exam.date ?? '9999').localeCompare(b.exam.date ?? '9999'))
     .map((s) =>
       activeTopics(s)
         .filter(quizzable)
-        .flatMap((topic) => cardsOf(topic).filter((q) => !cardDue(topic, q)).map((question) => ({ subject: s.id, card: { topic, question } }))),
+        .flatMap((topic) => cardsOf(topic).filter((q) => !cardDue(topic, q)).map((question) => ({ subject: s.id, card: { topic, question } })))
+        .slice(0, Math.max(0, perSubject - startedIn(s, on))),
     );
   const out: { subject: string; card: Card }[] = [];
-  for (let i = 0; out.length < budget && queues.some((q) => i < q.length); i++) {
-    for (const q of queues) if (i < q.length && out.length < budget) out.push(q[i]);
+  for (let i = 0; queues.some((q) => i < q.length); i++) {
+    for (const q of queues) if (i < q.length) out.push(q[i]);
   }
   return out.filter((x) => !only || x.subject === only).map((x) => x.card);
 }
