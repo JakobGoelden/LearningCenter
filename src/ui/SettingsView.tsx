@@ -142,13 +142,13 @@ export function SettingsView() {
             <Stepper value={settings.questionsPerQuiz ?? 5} onChange={(v) => savePackSettings({ questionsPerQuiz: v })} min={1} max={30} label="Questions per quiz" />
           </div>
           <div class="field">
-            <span>New cards per day (all subjects together)</span>
+            <span>New cards per day, per subject</span>
             <Stepper
               value={settings.newCardsPerDay ?? DEFAULT_NEW_CARDS_PER_DAY}
               onChange={(v) => savePackSettings({ newCardsPerDay: v })}
               min={0}
               max={200}
-              label="New cards per day"
+              label="New cards per day per subject"
             />
           </div>
           <label class="field">
