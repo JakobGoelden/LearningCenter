@@ -3,6 +3,12 @@
 Für alle, die mit einer KI (Claude Code o. ä.) am LearningCenter arbeiten, das auf
 learn.goelden.dev läuft.
 
+## 0. Repo holen (nur beim ersten Mal)
+```sh
+git clone https://github.com/JakobGoelden/LearningCenter.git
+```
+Du brauchst [Node.js](https://nodejs.org) ab Version 18 und git.
+
 ## 1. Vorbereiten
 ```sh
 cd LearningCenter
