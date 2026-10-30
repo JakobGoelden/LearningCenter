@@ -431,9 +431,20 @@ app also adds the symbols it finds in a task and its answer key, so set
 The dojo page of every subject has a **Practice exam**: exam-level drills of
 all dojos whose chapter is switched on, mixed by their `exam.points` (equal
 shares while a dojo has none) and filled up to `exam.durationMinutes`
-(default 90). It shows where the weights and the tasks come from. A good
-practice exam therefore needs, per dojo, enough `exam` drills from old exams
-and an `exam.points` from the same exams.
+(default 90). It shows where the weights and the tasks come from, runs on one
+clock for the whole exam, and reports real exam points per part (from each
+drill's `points`) when every task has them. A good practice exam therefore
+needs, per dojo, enough `exam` drills from old exams and an `exam.points` from
+the same exams.
+
+To mirror a real exam exactly, make one dojo per task type of the exam with
+`exam.points` = the points of that task, and make every `exam`-level drill of
+it a **whole** task with `points` = those points and `seconds` = points ×
+exam seconds per point (54 for 100 points in 90 minutes). Each mock then
+draws exactly one variant per task type. Parts of a task belong to `easy` or
+`medium`: at `exam` level they would land in the same mock as the whole task.
+A dojo without `exam.points` next to dojos with one is plain training and
+stays out of the mock.
 
 #### Drills (practice rounds in the app)
 
@@ -462,6 +473,7 @@ default 60/120/240 by level, doubled for `automaton`, `regex`, `self`),
 | `regex` | `alphabet` (single characters), `reference`, `given?` | same language as `reference`, shortest counterexample otherwise |
 | `automaton` | `alphabet`, `reference`, `given?`, `deterministic?`, `minimal?` | same language; checks DFA/minimality if asked |
 | `self` | `solution` (Markdown) | learner compares and rates right/partly/wrong |
+| `fields` | `fields`: `[{label, accept, options?}]`, a whole task with several blanks | each blank like `input` (`options` shows buttons instead of a text box); the task earns the share of right blanks |
 
 `reference` is exactly one of `{"regex": "..."}` or `{"automaton": {...}}`;
 an automaton is `{states, start, final, transitions: [[from, symbol, to]]}`
@@ -475,7 +487,9 @@ Writing good drills (for you as an AI):
 - Pick the kind that lets the app check the real skill: a result as a number
   (`number`), a canonical short answer (`input`), a constructed language
   (`regex`/`automaton`), steps of a procedure (`order`), concepts and typical
-  mistakes (`choice`). Use `self` only for proofs and explanations.
+  mistakes (`choice`). Use `fields` for a whole calculation or table
+  task with several results, so it earns partial credit like in the exam.
+  Use `self` only for proofs and explanations.
 - One clearly right answer. For `input`, list every form you would accept
   (e.g. `{q0,q1}` and `{q1,q0}`); if there are too many, use `choice` or
   `number` instead.

@@ -71,6 +71,8 @@ function answerTexts(d: Drill): string[] {
       return d.reference.regex !== undefined ? [d.reference.regex] : d.reference.automaton!.states;
     case 'self':
       return [d.solution];
+    case 'fields':
+      return d.fields.flatMap((f) => f.accept);
     default:
       return [];
   }

@@ -75,7 +75,7 @@
       "required": ["id", "kind", "prompt"],
       "properties": {
         "id": { "$ref": "common.schema.json#/$defs/id" },
-        "kind": { "enum": ["choice", "input", "number", "order", "automaton", "regex", "self"] },
+        "kind": { "enum": ["choice", "input", "number", "order", "automaton", "regex", "self", "fields"] },
         "level": { "$ref": "common.schema.json#/$defs/level" },
         "topic": { "$ref": "common.schema.json#/$defs/id" },
         "prompt": { "type": "string", "minLength": 1, "description": "The question or task (Markdown with $…$ LaTeX; an ```automaton block is drawn as a state diagram)." },
@@ -145,6 +145,27 @@
             "solution": { "type": "string", "minLength": 1, "description": "Model solution the learner compares with (Markdown)." }
           },
           "required": ["solution"]
+        },
+        {
+          "properties": {
+            "kind": { "const": "fields" },
+            "fields": {
+              "type": "array",
+              "minItems": 1,
+              "description": "The blanks of a whole task, each graded on its own; the score is the share of right blanks.",
+              "items": {
+                "type": "object",
+                "required": ["label", "accept"],
+                "additionalProperties": false,
+                "properties": {
+                  "label": { "type": "string", "minLength": 1 },
+                  "accept": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "All accepted spellings; the first is shown as the right answer. Compared like an input drill." },
+                  "options": { "type": "array", "minItems": 2, "items": { "type": "string" }, "description": "Fixed choices shown as buttons; must contain accept[0]." }
+                }
+              }
+            }
+          },
+          "required": ["fields"]
         }
       ]
     }

@@ -243,6 +243,15 @@ export interface LanguageReference {
   automaton?: AutomatonData;
 }
 
+/** One blank of a `fields` drill. */
+export interface DrillField {
+  label: string;
+  /** All accepted spellings; the first one is shown as the right answer. */
+  accept: string[];
+  /** Fixed choices (buttons instead of a text box); must contain accept[0]. */
+  options?: string[];
+}
+
 export type Drill = DrillBase &
   (
     | { kind: 'choice'; options: string[]; correct: number[] }
@@ -252,6 +261,7 @@ export type Drill = DrillBase &
     | { kind: 'automaton'; alphabet: string[]; reference: LanguageReference; given?: AutomatonData; deterministic?: boolean; minimal?: boolean }
     | { kind: 'regex'; alphabet: string[]; reference: LanguageReference; given?: AutomatonData }
     | { kind: 'self'; solution: string }
+    | { kind: 'fields'; fields: DrillField[] }
   );
 
 export interface Step {

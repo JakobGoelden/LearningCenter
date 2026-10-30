@@ -1,5 +1,5 @@
 // Drills: prepared dojo exercises that run and get graded inside the app,
-// without asking an AI. Six kinds cover most subjects:
+// without asking an AI. These kinds cover most subjects:
 //   choice    multiple choice (one or several correct options)
 //   input     short text answer, compared after normalizing
 //   number    numeric answer with a tolerance
@@ -7,8 +7,9 @@
 //   automaton build a finite automaton, checked for language equivalence
 //   regex     write a regular expression, checked for language equivalence
 //   self      open answer, then the learner compares with the solution and rates it
+//   fields    a whole task with several blanks, each graded on its own
 
-import type { Drill, Level, Score } from '../model/types';
+import type { Drill, DrillField, Level, Score } from '../model/types';
 import {
   accepts,
   automatonProblems,
@@ -26,18 +27,21 @@ export type DrillAnswer =
   | { kind: 'choice'; picked: number[] }
   | { kind: 'input' | 'number' | 'regex' | 'self'; text: string }
   | { kind: 'order'; order: number[] }
-  | { kind: 'automaton'; automaton: Automaton };
+  | { kind: 'automaton'; automaton: Automaton }
+  | { kind: 'fields'; values: string[] };
 
 export interface DrillResult {
   correct: boolean;
   score: Score;
   /** Short explanation of what was wrong, shown before the drill's own explanation. */
   feedback: string;
+  /** Share of the task that was right, 0–1, when it is graded in parts (fields drills). */
+  share?: number;
 }
 
 /** Default time per drill when the drill sets none. */
 export const DEFAULT_SECONDS: Record<Level, number> = { easy: 60, medium: 120, exam: 240 };
-const SLOW_KINDS = new Set(['automaton', 'regex', 'self']);
+const SLOW_KINDS = new Set(['automaton', 'regex', 'self', 'fields']);
 
 export function secondsFor(d: Drill): number {
   if (d.seconds) return d.seconds;
@@ -76,6 +80,12 @@ const result = (correct: boolean, feedback = ''): DrillResult => ({ correct, sco
 export function referenceAutomaton(d: Drill & { kind: 'automaton' | 'regex' }): Automaton {
   if (d.reference.regex !== undefined) return regexToAutomaton(d.reference.regex, d.alphabet);
   return d.reference.automaton!;
+}
+
+/** Whether one blank of a fields drill is filled in correctly. */
+export function fieldRight(f: DrillField, value: string): boolean {
+  const got = normalize(value);
+  return !!got && f.accept.some((a) => normalize(a) === got);
 }
 
 export function gradeDrill(d: Drill, answer: DrillAnswer): DrillResult {
@@ -159,6 +169,14 @@ export function gradeDrill(d: Drill, answer: DrillAnswer): DrillResult {
         `Not the right language: ${wordLabel(w)} ${accepts(ref, w, d.alphabet) ? 'should match but does not' : 'matches but should not'}.`,
       );
     }
+    case 'fields': {
+      if (answer.kind !== 'fields') break;
+      const right = d.fields.filter((f, i) => fieldRight(f, answer.values[i] ?? '')).length;
+      const share = right / d.fields.length;
+      if (right === d.fields.length) return { correct: true, score: 5, feedback: '', share };
+      if (!answer.values.some((v) => v?.trim())) return { correct: false, score: 0, feedback: 'No answer.', share: 0 };
+      return { correct: false, score: Math.min(4, Math.max(1, Math.round(share * 5))) as Score, feedback: `${right} of ${d.fields.length} right.`, share };
+    }
     case 'self':
       // Graded by the learner after seeing the solution; see selfResult.
       break;
@@ -189,6 +207,13 @@ export function drillProblems(d: Drill): string[] {
       break;
     case 'order':
       if (d.items.length < 2) out.push('needs at least 2 items');
+      break;
+    case 'fields':
+      if (!d.fields.length) out.push('needs at least one field');
+      for (const f of d.fields) {
+        if (!f.accept.length) out.push(`field "${f.label}" needs an accepted answer`);
+        if (f.options && !f.options.includes(f.accept[0])) out.push(`field "${f.label}": options must contain "${f.accept[0]}"`);
+      }
       break;
     case 'automaton':
     case 'regex':
@@ -247,6 +272,8 @@ export function answerText(d: Drill, a: DrillAnswer): string {
       return a.order.map((i) => (d.kind === 'order' ? d.items[i] : String(i))).join(' → ');
     case 'automaton':
       return JSON.stringify(a.automaton);
+    case 'fields':
+      return a.values.map((v, i) => `${d.kind === 'fields' ? d.fields[i].label : i}: ${v ?? ''}`).join(' | ');
     default:
       return a.text;
   }
@@ -260,6 +287,7 @@ const KIND_KEYS: Record<Drill['kind'], string[]> = {
   regex: ['alphabet', 'reference', 'given'],
   automaton: ['alphabet', 'reference', 'given', 'deterministic', 'minimal'],
   self: ['solution'],
+  fields: ['fields'],
 };
 const COMMON_KEYS = ['id', 'kind', 'level', 'topic', 'prompt', 'explanation', 'seconds'];
 

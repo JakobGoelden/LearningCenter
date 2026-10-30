@@ -13,7 +13,7 @@ import { sessionId } from './QuizView';
 import { SCORE_LABEL } from './labels';
 import { DrillPractice, type RoundSummary } from './DrillRound';
 import { roundScore } from '../dojo/drills';
-import { DEFAULT_EXAM_MINUTES, examDrills, PRACTICE_EXAM, practiceExam, practiceExamDojo } from '../dojo/exam';
+import { DEFAULT_EXAM_MINUTES, examDrills, ownerDojo, PRACTICE_EXAM, practiceExam, practiceExamDojo } from '../dojo/exam';
 import { Enso, Torii } from './Emblem';
 import { SymbolBar } from './SymbolBar';
 import { BackLink } from './BackLink';
@@ -247,8 +247,9 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
   const applyRound = async (summary: RoundSummary) => {
     const byTopic = new Map<string, number[]>();
     for (const o of summary.outcomes) {
-      // In the practice exam a drill without a topic cannot be traced to one: it counts for none.
-      for (const t of o.drill.topic ? [o.drill.topic] : examMode ? [] : (dojo.topics ?? [])) {
+      // In the practice exam a drill without a topic counts for the topics of the dojo it came from.
+      const owner = examMode ? ownerDojo(dojos, o.drill.id) : dojo;
+      for (const t of o.drill.topic ? [o.drill.topic] : (owner?.topics ?? [])) {
         if (!byTopic.has(t)) byTopic.set(t, []);
         byTopic.get(t)!.push(o.result.score);
       }
@@ -316,6 +317,8 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
             intro: <ExamIntro dojos={dojos} minutes={examMinutes} />,
             pick: () => practiceExam(dojos, examMinutes).drills,
             startLabel: 'Start practice exam',
+            ownerOf: (id) => ownerDojo(dojos, id)?.id ?? id,
+            partTitle: (id) => dojos.find((d) => d.id === id)?.title ?? id,
           }}
           onStart={(round) => void log({ type: 'dojo.drill.start', subject: s.id, ref: PRACTICE_EXAM, data: { count: round.length, level: 'exam' } })}
           onFinish={saveRound}

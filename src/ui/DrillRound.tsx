@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/ho
 import type { Dojo, Drill, Level } from '../model/types';
 import {
   answerText,
+  fieldRight,
   gradeDrill,
   pickRound,
   roundScore,
@@ -19,6 +20,7 @@ import { Markdown } from './Markdown';
 import { SCORE_LABEL } from './labels';
 import { Belt, beltFor, TimerRing } from './Emblem';
 import { bestPoints, drillPoints, recordPoints, roundPoints, type DrillPoints } from '../dojo/points';
+import { examScore } from '../dojo/exam';
 import { drillSymbols } from '../dojo/symbols';
 import { SymbolBar } from './SymbolBar';
 import { Cheer } from './QuizView';
@@ -53,6 +55,7 @@ const KIND_HINT: Record<Drill['kind'], string> = {
   automaton: 'Build the automaton',
   regex: 'Regular expression',
   self: 'Open task',
+  fields: 'Fill in the blanks',
 };
 
 /**
@@ -71,7 +74,15 @@ export function DrillPractice({
 }: {
   dojo: Dojo;
   /** A fixed kind of round instead of level and count (the practice exam): its intro and how to pick it. */
-  fixed?: { title: string; intro: ComponentChildren; pick: () => Drill[]; startLabel: string };
+  fixed?: {
+    title: string;
+    intro: ComponentChildren;
+    pick: () => Drill[];
+    startLabel: string;
+    /** Which part of the exam a drill belongs to, and that part's name. */
+    ownerOf: (drillId: string) => string;
+    partTitle: (id: string) => string;
+  };
   /** True while a round runs (not on the setup or the result). */
   onRunning?: (running: boolean) => void;
   /** Prompt for "Train in chat" at the chosen level. */
@@ -118,6 +129,7 @@ export function DrillPractice({
         dojo={dojo}
         drills={round}
         timed={timed}
+        exam={fixed}
         onDone={async (outcomes) => {
           const pts = roundPoints(outcomes.map((o) => ({ level: o.drill.level, result: o.result, limit: secondsFor(o.drill), seconds: o.seconds, timed })));
           const bestBefore = bestPoints(dojo.id);
@@ -143,11 +155,32 @@ export function DrillPractice({
     const right = summary.outcomes.filter((o) => o.result.correct).length;
     const total = summary.outcomes.reduce((s, o) => s + o.seconds, 0);
     const mistakes = summary.outcomes.filter((o) => !o.result.correct).map((o) => o.drill);
+    const exam = fixed ? examScore(summary.outcomes, fixed.ownerOf) : null;
     return (
       <section class="panel stack dojo-mat">
+        {exam && fixed && (
+          <div class="exam-result">
+            <div class="dojo-eyebrow">Exam result</div>
+            <div class="round-result-big">
+              {exam.earned}/{exam.max} <span>points ({Math.round((100 * exam.earned) / exam.max)} %)</span>
+            </div>
+            <table class="exam-plan">
+              <tbody>
+                {exam.parts.map((p) => (
+                  <tr>
+                    <td>{fixed.partTitle(p.id)}</td>
+                    <td class="exam-part-points">
+                      {p.earned}/{p.max}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         <div class="round-result">
           <Belt score={summary.score} />
-          <div class="round-points">
+          <div class="round-points" style={exam ? { display: 'none' } : undefined}>
             <CountUp value={summary.points} duration={1200} />
             <span class="round-points-label">points</span>
             {summary.record ? (
@@ -234,7 +267,7 @@ export function DrillPractice({
             {fixed.startLabel}
           </button>
           <label class="row small" style="gap:4px">
-            <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.currentTarget.checked)} /> Timer per task
+            <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.currentTarget.checked)} /> Exam clock
           </label>
           {bestPoints(dojo.id) > 0 && <span class="small muted">Best {bestPoints(dojo.id)} points</span>}
         </div>
@@ -334,12 +367,15 @@ function DrillRun({
   dojo,
   drills,
   timed,
+  exam,
   onDone,
   onCancel,
 }: {
   dojo: Dojo;
   drills: Drill[];
   timed: boolean;
+  /** Practice exam: one clock for the whole round instead of one per drill, and exam points. */
+  exam?: { ownerOf: (drillId: string) => string };
   onDone: (outcomes: DrillOutcome[]) => void;
   onCancel: () => void;
 }) {
@@ -347,32 +383,44 @@ function DrillRun({
   const [outcomes, setOutcomes] = useState<DrillOutcome[]>([]);
   const drill = drills[idx];
   const done = outcomes.length > idx;
-  const limit = secondsFor(drill);
+  const drillLimit = secondsFor(drill);
+  const limit = useMemo(() => (exam ? drills.reduce((s, d) => s + secondsFor(d), 0) : drillLimit), [exam, drills, drillLimit]);
+  const roundStart = useMemo(() => Date.now(), []);
   // Set during render so the first frame of a new exercise already uses it.
   const startedAt = useMemo(() => Date.now(), [idx]);
   const [now, setNow] = useState(Date.now());
   const symbols = useMemo(() => drillSymbols(dojo, drill), [dojo, drill]);
 
   useEffect(() => {
-    if (done) return;
+    if (done && !exam) return;
     const t = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(t);
   }, [idx, done]);
 
-  const elapsed = Math.max(0, (now - startedAt) / 1000);
+  const elapsed = Math.max(0, (now - (exam ? roundStart : startedAt)) / 1000);
   const left = Math.max(0, limit - elapsed);
   const total = outcomes.reduce((s, o) => s + o.points.points, 0);
+  const scored = exam ? examScore(outcomes, exam.ownerOf) : null;
+  const clock = exam || !done ? left : Math.max(0, limit - outcomes[idx].seconds);
   const streak = outcomes.length ? outcomes[outcomes.length - 1].points.streak : 0;
 
   const finish = (answer: string, result: DrillResult) => {
     if (done) return;
     const seconds = Math.round((Date.now() - startedAt) / 1000);
-    const points = drillPoints({ level: drill.level, result, limit, seconds, timed }, streak);
+    const points = drillPoints({ level: drill.level, result, limit: drillLimit, seconds, timed }, streak);
     setOutcomes([...outcomes, { drill, answer, result, seconds, points }]);
   };
 
   useEffect(() => {
-    if (timed && !done && left <= 0) finish('', { correct: false, score: 0, feedback: 'Time is up.' });
+    if (!timed || left > 0) return;
+    if (exam) {
+      // The exam clock ran out: everything not answered yet counts as blank.
+      const blank = (d: Drill): DrillOutcome => {
+        const result: DrillResult = { correct: false, score: 0, feedback: 'Time is up.' };
+        return { drill: d, answer: '', result, seconds: 0, points: drillPoints({ level: d.level, result, limit: secondsFor(d), seconds: 0, timed }, 0) };
+      };
+      onDone([...outcomes, ...drills.slice(outcomes.length).map(blank)]);
+    } else if (!done) finish('', { correct: false, score: 0, feedback: 'Time is up.' });
   }, [left <= 0, done]);
 
   const next = () => (idx + 1 < drills.length ? setIdx(idx + 1) : onDone(outcomes));
@@ -398,7 +446,7 @@ function DrillRun({
           </span>
         )}
         <span style="flex:1" />
-        {streak >= 2 && (
+        {!exam && streak >= 2 && (
           <span class={`combo${streak >= 5 ? ' hot' : streak >= 3 ? ' warm' : ''}`} key={streak} title={`${streak} right in a row`}>
             <span class="combo-flame" aria-hidden="true">
               🔥
@@ -407,19 +455,28 @@ function DrillRun({
             {streak >= 3 && <b>×{streak >= 5 ? 2 : 1.5}</b>}
           </span>
         )}
-        <span class="score-counter" aria-label={`${total} points`}>
-          <CountUp value={total} />
-          <small>pts</small>
-          {done && outcome.points.points > 0 && (
-            <span class="points-pop" aria-hidden="true">
-              +{outcome.points.points}
-            </span>
-          )}
-        </span>
+        {exam ? (
+          drill.points !== undefined && <span class="badge">{drill.points} P</span>
+        ) : (
+          <span class="score-counter" aria-label={`${total} points`}>
+            <CountUp value={total} />
+            <small>pts</small>
+            {done && outcome.points.points > 0 && (
+              <span class="points-pop" aria-hidden="true">
+                +{outcome.points.points}
+              </span>
+            )}
+          </span>
+        )}
+        {scored && (
+          <span class="badge">
+            {scored.earned}/{scored.max} P
+          </span>
+        )}
         <TimerRing
-          fraction={timed ? (done ? Math.max(0, limit - outcome.seconds) : left) / limit : 1}
-          label={timed ? fmt(done ? Math.max(0, limit - outcome.seconds) : left) : fmt(done ? outcome.seconds : elapsed)}
-          urgent={timed && left < 10 && !done}
+          fraction={timed ? clock / limit : 1}
+          label={timed ? fmt(clock) : fmt(done && !exam ? outcome.seconds : elapsed)}
+          urgent={timed && left < 10 && (!done || !!exam)}
         />
         <button class="ghost small" onClick={onCancel}>
           Stop
@@ -427,7 +484,7 @@ function DrillRun({
       </div>
       {timed && (
         <div class="timebar" aria-hidden="true">
-          <div style={{ width: `${(100 * (done ? Math.max(0, limit - outcome.seconds) : left)) / limit}%` }} />
+          <div style={{ width: `${(100 * clock) / limit}%` }} />
         </div>
       )}
       <div class="prompt">
@@ -451,7 +508,7 @@ function DrillRun({
               <strong>{outcome.result.correct ? 'Right!' : outcome.result.score >= 3 ? 'Almost.' : 'Not quite.'}</strong>{' '}
               {outcome.result.feedback}
             </span>
-            <PointsBreakdown p={outcome.points} />
+            {!exam && <PointsBreakdown p={outcome.points} />}
           </div>
           {drill.explanation && <Markdown text={drill.explanation} />}
           <div>
@@ -524,6 +581,8 @@ function DrillInput({
   const [order, setOrder] = useState<number[]>(() => (drill.kind === 'order' ? shuffledOrder(drill.items.length) : []));
   const [table, setTable] = useState<TableState>(emptyTable);
   const [revealed, setRevealed] = useState(false);
+  const [values, setValues] = useState<string[]>([]);
+  const setValue = (i: number, v: string) => setValues((old) => Object.assign([...old], { [i]: v }));
   const built = useMemo(
     () => (drill.kind === 'automaton' ? tableToAutomaton(table, drill.deterministic ? drill.alphabet : [...drill.alphabet, 'ε']) : null),
     [drill, table],
@@ -635,6 +694,47 @@ function DrillInput({
             </div>
           )}
           {check(() => ({ kind: 'automaton', automaton: built! }))}
+        </div>
+      );
+    case 'fields':
+      return (
+        <div class="stack">
+          <div class="drill-fields">
+            {drill.fields.map((f, i) => {
+              const value = values[i] ?? '';
+              const right = locked && fieldRight(f, value);
+              return (
+                <div class={`drill-field${locked ? (right ? ' right' : ' wrong') : ''}`}>
+                  <span class="drill-field-label">{f.label}</span>
+                  {f.options ? (
+                    <div class="segmented" role="radiogroup" aria-label={f.label}>
+                      {f.options.map((o) => (
+                        <button class={`small${value === o ? ' primary' : ''}`} aria-pressed={value === o} disabled={locked} onClick={() => setValue(i, o)}>
+                          {o}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <input
+                      class="mono"
+                      value={value}
+                      disabled={locked}
+                      aria-label={f.label}
+                      onInput={(e) => setValue(i, e.currentTarget.value)}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return;
+                        e.preventDefault();
+                        const inputs = [...(e.currentTarget.closest('.drill-fields')?.querySelectorAll('input') ?? [])];
+                        inputs[inputs.indexOf(e.currentTarget) + 1]?.focus();
+                      }}
+                    />
+                  )}
+                  {locked && !right && <span class="drill-field-want mono">{f.accept[0]}</span>}
+                </div>
+              );
+            })}
+          </div>
+          {check(() => ({ kind: 'fields', values }))}
         </div>
       );
     case 'self':
@@ -793,7 +893,7 @@ function fmt(seconds: number): string {
 }
 
 function firstLine(md: string): string {
-  const line = md.split('\n').find((l) => l.trim()) ?? '';
+  const line = md.split('\n').find((l) => l.trim() && !l.startsWith('```')) ?? '';
   const plain = line.replace(/[*`#>]/g, '').trim();
   return plain.length > 90 ? `${plain.slice(0, 88)}…` : plain;
 }

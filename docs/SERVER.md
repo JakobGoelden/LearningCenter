@@ -16,6 +16,14 @@ The app also runs as a multi-user web app. Read this before changing storage, sh
 - Deploying: the admin runs `learn/deploy-app.sh` (pulls main, `npm ci`, `npm test`, build, upload).
   Tests must pass or nothing is deployed.
 
+## Format changes
+
+The sync job on the T480 runs its own `~/LearningCenter` and validates every pack with that copy's
+schema, and `sync.sh` does not update it. A new drill kind or field in a pack makes the sync fail for
+that user until the T480 copy is updated. So for a format change: deploy the app, update the T480
+(`git -C ~/LearningCenter pull --ff-only && (cd ~/LearningCenter && npm ci)`), and only then let the
+new format reach Semester3.
+
 ## To-do (in this order)
 
 1. ~~**Topic notes private.**~~ Done 2026-10-27: notes are never pushed or compared; repo notes come in

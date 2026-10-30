@@ -302,6 +302,15 @@ a.chip { text-decoration: none; display: inline-block; }
 .verdict.ok { background: var(--ok-bg); color: var(--ok); }
 .verdict.partly { background: var(--warn-bg); color: var(--warn); }
 .verdict.wrong { background: var(--danger-bg); color: var(--danger); }
+.drill-fields { display: flex; flex-direction: column; gap: 6px; }
+.drill-field { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 4px 10px; align-items: center; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; }
+.drill-field input { width: 100%; min-width: 0; }
+.drill-field.right { border-color: var(--ok); background: var(--ok-bg); }
+.drill-field.wrong { border-color: var(--danger); background: var(--danger-bg); }
+.drill-field-want { grid-column: 2; font-size: 0.85rem; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .drill-field { grid-template-columns: minmax(0, 1fr); } .drill-field-want { grid-column: 1; } }
+.exam-result { display: flex; flex-direction: column; gap: 6px; }
+.exam-part-points { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .panel-inset { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
 table.automaton { border-collapse: collapse; }
 table.automaton th, table.automaton td { padding: 3px 6px; text-align: center; }

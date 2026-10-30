@@ -9,7 +9,7 @@ import {
   regexToAutomaton,
   type Automaton,
 } from '../src/dojo/automata';
-import { gradeDrill, normalize, parseNumber, pickRound, roundScore, shuffledOrder } from '../src/dojo/drills';
+import { drillProblems, gradeDrill, normalize, parseNumber, pickRound, roundScore, shuffledOrder } from '../src/dojo/drills';
 import type { Drill } from '../src/model/types';
 
 const AB = ['a', 'b'];
@@ -255,5 +255,40 @@ describe('AI-written drills', async () => {
 
   it('fails when nothing is usable', () => {
     expect(() => finalizeResponse(req, { drills: [{ ...flat, id: 'x', options: ['a'], correct: [3] }] })).toThrow(/None of the exercises/);
+  });
+});
+
+describe('fields drills', () => {
+  const d: Drill = {
+    id: 'f',
+    kind: 'fields',
+    prompt: 'p',
+    fields: [
+      { label: 'CIDR', accept: ['/22', '22'] },
+      { label: 'Maske', accept: ['255.255.252.0'] },
+      { label: 'Paket 1', accept: ['blockiert'], options: ['zugelassen', 'blockiert'] },
+      { label: 'Hosts', accept: ['1022'] },
+    ],
+  };
+
+  it('is right only with every blank, in any accepted spelling', () => {
+    expect(gradeDrill(d, { kind: 'fields', values: ['22', ' 255.255.252.0 ', 'blockiert', '1022'] })).toMatchObject({ correct: true, score: 5, share: 1 });
+  });
+
+  it('gives a share of the task for the right blanks', () => {
+    const r = gradeDrill(d, { kind: 'fields', values: ['/22', '255.255.0.0', 'blockiert', '1024'] });
+    expect(r).toMatchObject({ correct: false, share: 0.5, score: 3 });
+    expect(r.feedback).toBe('2 of 4 right.');
+  });
+
+  it('counts empty as no answer and handles a sparse answer', () => {
+    expect(gradeDrill(d, { kind: 'fields', values: [] })).toMatchObject({ score: 0, share: 0 });
+    // eslint-disable-next-line no-sparse-arrays
+    expect(gradeDrill(d, { kind: 'fields', values: [, '255.255.252.0'] as string[] })).toMatchObject({ correct: false, share: 0.25 });
+  });
+
+  it('reports broken definitions', () => {
+    expect(drillProblems({ ...d, fields: [] } as Drill)).toEqual(['needs at least one field']);
+    expect(drillProblems({ ...d, fields: [{ label: 'x', accept: ['a'], options: ['b', 'c'] }] } as Drill)[0]).toContain('options must contain');
   });
 });
