@@ -314,6 +314,10 @@ When the person clicks "Quiz" or works in a dojo, the app writes a request to
 
 ### Processing new results
 
+On the hosted app (`docs/SERVER.md`) your files are out of reach: the prompts
+carry all the data, and you end with a JSON block of grades that the person
+pastes into the app. Follow the prompt there, not the steps below.
+
 Everything the learner does in the app is saved: quizzes, dojo rounds, sheet
 answers. Until you have looked at it, the dashboard shows a banner "New
 results for your AI" with a prompt to copy. When the person pastes it (or

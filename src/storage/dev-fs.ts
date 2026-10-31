@@ -4,13 +4,19 @@ const API = '/__lc/fs';
 
 /**
  * Pack folder served by the Vite dev server (see tools/vite-pack-fs.ts).
- * Works in every browser while `npm run dev` runs with LC_PACK_DIR set.
+ * Works in every browser while `npm run dev` runs with LC_PACK_DIR set. A
+ * production build talks to a hosted LearningCenter with the same API instead;
+ * there the files are on the server, out of reach of the person's AI.
  */
 export class DevFs implements PackFs {
-  readonly kind = 'dev';
-  readonly sharedWithAi = true;
+  readonly sharedWithAi: boolean;
 
-  constructor(readonly label: string) {}
+  constructor(
+    readonly label: string,
+    readonly kind: 'dev' | 'server' = 'dev',
+  ) {
+    this.sharedWithAi = kind === 'dev';
+  }
 
   /**
    * Returns a DevFs when a server exposes a pack folder: the Vite dev server
@@ -21,7 +27,7 @@ export class DevFs implements PackFs {
       const res = await fetch(`${API}/info`);
       if (!res.ok || !(res.headers.get('content-type') ?? '').includes('json')) return null;
       const info = (await res.json()) as { dir: string };
-      return new DevFs(info.dir);
+      return new DevFs(info.dir, import.meta.env.PROD ? 'server' : 'dev');
     } catch {
       return null;
     }

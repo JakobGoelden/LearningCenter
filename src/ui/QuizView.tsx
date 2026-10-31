@@ -2,12 +2,12 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { formatShort, nowIso, today } from '../lib/dates';
-import { applyCardReviews, averageScore, cardDue, dueCards, GENERIC_CARD, laterCards, newCards, type CardResult } from '../scheduling/scheduler';
+import { averageScore, cardDue, dueCards, GENERIC_CARD, laterCards, newCards } from '../scheduling/scheduler';
 import { quizGradeRequest, quizStartRequest } from '../ai/requests';
 import { saveSession } from '../storage/repo';
 import type { Score, Session, SessionItem } from '../model/types';
 import { SELF_SCORE, type SelfRating } from '../model/quiz';
-import { cardKey, cardLine, withCardAnswer, withCardBlocked, type Card } from '../scheduling/cards';
+import { cardKey, cardLine, quizScores, withCardBlocked, withQuizResults, type Card } from '../scheduling/cards';
 import { Markdown } from './Markdown';
 import { Cancelled, useAi } from './AiPanel';
 import { href } from './router';
@@ -16,6 +16,7 @@ import { Stepper } from './Stepper';
 import { ChatStart, copyText } from './ChatStart';
 import { quizChatPrompt, quizGradeChatPrompt } from '../ai/chat';
 import { BackLink } from './BackLink';
+import { PasteGrades } from './PasteGrades';
 
 /** review: compare with the key points and grade yourself (quizzes run in the app). */
 type Phase = 'setup' | 'answer' | 'review' | 'results';
@@ -280,29 +281,8 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
     guard(async () => {
       const session = graded;
       if (!session) return;
-      const perTopic = new Map<string, CardResult[]>();
-      for (const it of session.items) {
-        if (it.topicId && it.score !== undefined) {
-          perTopic.set(it.topicId, [...(perTopic.get(it.topicId) ?? []), { ...(it.question ? { question: it.question } : {}), score: it.score }]);
-        }
-      }
-      const scores = Object.fromEntries([...perTopic].map(([id, rs]) => [id, averageScore(rs.map((r) => r.score))]));
-      await updateSubject(
-        s.id,
-        (subj) =>
-          session.items.reduce((acc, it) => {
-            const card = it.topicId && it.question && it.score !== undefined ? cardOf(acc, it) : null;
-            return card ? withCardAnswer(acc, card, it.score!, on) : acc;
-          }, {
-            ...subj,
-            topics: subj.topics.map((t) =>
-              perTopic.has(t.id)
-                ? applyCardReviews(t, perTopic.get(t.id)!, { date: on, source: 'quiz', sessionId: session.id }, loaded.pack.settings)
-                : t,
-            ),
-          }),
-        { type: 'quiz.applied', ref: session.id, data: { scores } },
-      );
+      const scores = quizScores(session);
+      await updateSubject(s.id, (subj) => withQuizResults(subj, session, on, loaded.pack.settings), { type: 'quiz.applied', ref: session.id, data: { scores } });
       await persist({ ...session, applied: true });
       if (averageScore(Object.values(scores) as Score[]) >= 4) setCheer(true);
     });
@@ -432,9 +412,10 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
             {copied
               ? 'Saved. The prompt is copied: paste it into your AI chat and go through the answers together.'
               : 'Saved. Copy the prompt and paste it into your AI chat to go through the answers together.'}{' '}
-            <span class="muted">If you do it later, the dashboard banner has the prompt too.</span>
+            <span class="muted">If you do it later, the dashboard banner has this too.</span>
           </span>
           {local && <ChatStart label={copied ? 'Copy prompt again' : 'Copy prompt'} prompt={chatGradePrompt} />}
+          {!fs.sharedWithAi && <PasteGrades session={sess.id} onDone={(saved) => setSession(saved.find((x) => x.id === sess.id) ?? sess)} />}
         </span>
       )}
       {cheer && <Cheer />}

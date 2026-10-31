@@ -3,10 +3,10 @@
  * the pack root and use '/' (e.g. "subjects/db.json").
  */
 export interface PackFs {
-  readonly kind: 'folder' | 'dev' | 'browser';
+  readonly kind: 'folder' | 'dev' | 'server' | 'browser';
   /** Shown in the UI, e.g. the folder name. */
   readonly label: string;
-  /** True when an outside AI (Claude Code) can see the files, so the file bridge works. */
+  /** True when an outside AI (Claude Code) can see the files, so the file bridge and file-based prompts work. */
   readonly sharedWithAi: boolean;
   read(path: string): Promise<string | null>;
   write(path: string, text: string): Promise<void>;

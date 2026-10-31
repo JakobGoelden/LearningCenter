@@ -920,6 +920,8 @@ button.study-go { padding: 10px 20px; font-size: 1rem; }
 /* Results waiting for the AI */
 .pending-results { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; border-left: 4px solid var(--gold); animation: rise 0.3s ease-out; }
 .pending-results-text { flex: 1 1 260px; display: grid; gap: 2px; }
+.pending-results-paste { flex-basis: 100%; }
+.paste-grades textarea { min-height: 90px; font-size: 0.8rem; }
 .pending-results-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gold); position: relative; flex: none; }
 .pending-results-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--gold); animation: ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite; }
 

@@ -5,7 +5,7 @@ import { today } from '../lib/dates';
 import { href } from './router';
 import { Logo } from './Emblem';
 
-const SOURCE: Record<string, string> = { folder: 'Folder', dev: 'Dev server', browser: 'Browser' };
+const SOURCE: Record<string, string> = { folder: 'Folder', dev: 'Dev server', server: 'Server', browser: 'Browser' };
 
 export function Header() {
   const { loaded, fs, close } = usePack();

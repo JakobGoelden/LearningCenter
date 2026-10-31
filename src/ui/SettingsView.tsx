@@ -164,7 +164,7 @@ export function SettingsView() {
       <section class="panel stack">
         <h2>Data</h2>
         <div class="small muted">
-          Stored in: {fs.kind === 'browser' ? 'this browser (IndexedDB)' : `folder "${fs.label}"`}.
+          Stored in: {fs.kind === 'browser' ? 'this browser (IndexedDB)' : fs.kind === 'server' ? 'your account on the server' : `folder "${fs.label}"`}.
         </div>
         <div class="row">
           <button onClick={async () => downloadText(`${loaded.pack.id}-${today()}.pack.json`, toJson(await exportBundle(fs)))}>

@@ -1,7 +1,8 @@
 import { diffDays } from '../lib/dates';
 import { activeTopics } from '../model/chapters';
 import { activeQuestions } from '../model/quiz';
-import type { CardStats, ISODate, Score, Subject, Topic, TopicQuestion } from '../model/types';
+import type { CardStats, ISODate, PackSettings, Score, Session, Subject, Topic, TopicQuestion } from '../model/types';
+import { applyCardReviews, averageScore, type CardResult } from './scheduler';
 
 /**
  * Card priority for endless mode. It depends only on how the learner does with
@@ -87,4 +88,36 @@ export function drawCard(deck: Card[], on: ISODate, recent: string[] = [], rando
     if (r <= 0) return pool[i];
   }
   return pool[pool.length - 1];
+}
+
+/** The graded answers of a quiz, per topic. */
+function quizResults(session: Session): Map<string, CardResult[]> {
+  const perTopic = new Map<string, CardResult[]>();
+  for (const it of session.items) {
+    if (it.topicId && it.score !== undefined) {
+      perTopic.set(it.topicId, [...(perTopic.get(it.topicId) ?? []), { ...(it.question ? { question: it.question } : {}), score: it.score }]);
+    }
+  }
+  return perTopic;
+}
+
+/** Average score per topic of a graded quiz. */
+export const quizScores = (session: Session) => Object.fromEntries([...quizResults(session)].map(([id, rs]) => [id, averageScore(rs.map((r) => r.score))]));
+
+/** A graded quiz applied to its subject: card stats, card schedules and one review per topic. */
+export function withQuizResults(subject: Subject, session: Session, on: ISODate, settings?: PackSettings): Subject {
+  const perTopic = quizResults(session);
+  return session.items.reduce(
+    (acc, it) => {
+      const topic = acc.topics.find((t) => t.id === it.topicId);
+      const question = topic?.questions?.find((q) => q.id === it.question && !q.blocked);
+      return topic && question && it.score !== undefined ? withCardAnswer(acc, { topic, question }, it.score, on) : acc;
+    },
+    {
+      ...subject,
+      topics: subject.topics.map((t) =>
+        perTopic.has(t.id) ? applyCardReviews(t, perTopic.get(t.id)!, { date: on, source: 'quiz', sessionId: session.id }, settings) : t,
+      ),
+    },
+  );
 }

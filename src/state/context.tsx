@@ -79,9 +79,9 @@ export function PackProvider(props: {
     reload().catch((e) => setNotice(`Reload failed: ${(e as Error).message}`));
   }, []);
 
-  // Pick up edits made outside the app, e.g. by Claude Code in the pack folder.
+  // Pick up edits made outside the app, e.g. by Claude Code in the pack folder or the hosted sync job.
   useEffect(() => {
-    if (!fs.sharedWithAi) return;
+    if (fs.kind === 'browser') return;
     const timer = setInterval(async () => {
       if (busy.current || document.hidden) return;
       try {

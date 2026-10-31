@@ -16,6 +16,8 @@ export interface PendingResults {
   total: number;
   /** Time of the last ai.sync, if any. */
   lastSync?: string;
+  /** What the counts stand for: session ids, sheets as `subject/sheet`. */
+  refs: { quizzes: string[]; toGrade: string[]; dojo: string[]; sheets: string[] };
 }
 
 export function pendingResults(events: LogEvent[]): PendingResults {
@@ -37,7 +39,12 @@ export function pendingResults(events: LogEvent[]): PendingResults {
     if (e.type === 'sheet.work' || (e.type === 'sheet.status' && e.data?.to === 'done')) sheets.add(`${e.subject ?? ''}/${key}`);
   });
   const r = { quizzes: quizzes.size, toGrade: gradeLater.size, dojo: dojo.size, sheets: sheets.size };
-  return { ...r, total: r.quizzes + r.toGrade + r.dojo + r.sheets, ...(lastSyncAt >= 0 ? { lastSync: events[lastSyncAt].ts } : {}) };
+  return {
+    ...r,
+    total: r.quizzes + r.toGrade + r.dojo + r.sheets,
+    ...(lastSyncAt >= 0 ? { lastSync: events[lastSyncAt].ts } : {}),
+    refs: { quizzes: [...quizzes], toGrade: [...gradeLater], dojo: [...dojo], sheets: [...sheets] },
+  };
 }
 
 /** Event types that mean new learning content arrived (see CLAUDE.md → When editing). */

@@ -16,6 +16,19 @@ The app also runs as a multi-user web app. Read this before changing storage, sh
 - Deploying: the admin runs `learn/deploy-app.sh` (pulls main, `npm ci`, `npm test`, build, upload).
   Tests must pass or nothing is deployed.
 
+## AI prompts on the hosted app
+
+A production build reports its pack as `kind: 'server'` with `sharedWithAi: false` (`DevFs.detect`),
+because the person's AI cannot reach the files. So nothing may send it to a folder, `CLAUDE.md` or
+`npm run review`, and the file bridge is off. Instead:
+
+- Every "Start in chat" prompt carries its data (`src/ai/chat.ts`), and the results prompt is built
+  from the log, sessions and sheet answers (`src/ai/results.ts`).
+- Grades come back as a JSON block the person pastes into the app (`PasteGrades`, on the quiz page and
+  in the dashboard banner). "Done, hide this" writes `ai.sync` with `actor: "user"`.
+- Not covered yet: grades from a quiz run entirely in the chat and answers to a sheet stay in the
+  chat, and the AI cannot change notes or cards from there.
+
 ## Format changes
 
 The sync job on the T480 runs its own `~/LearningCenter` and validates every pack with that copy's

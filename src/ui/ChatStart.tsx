@@ -34,7 +34,7 @@ export function ChatStart({
   class: cls = '',
   disabled,
 }: {
-  prompt: () => string;
+  prompt: () => string | Promise<string>;
   label?: string;
   class?: string;
   disabled?: boolean;
@@ -48,7 +48,7 @@ export function ChatStart({
   }, [state]);
 
   const go = async () => {
-    const p = prompt();
+    const p = await prompt();
     setText(p);
     setState((await copyText(p)) ? 'copied' : 'manual');
   };

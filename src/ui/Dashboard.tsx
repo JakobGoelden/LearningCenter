@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { activeDojos } from '../model/chapters';
 import { usePack } from '../state/context';
-import { readEvents } from '../storage/repo';
+import { appendEvent, readEvents } from '../storage/repo';
 import { formatShort, today } from '../lib/dates';
 import { Calendar } from './Calendar';
 import { SubjectBanner } from './SubjectBanner';
@@ -9,6 +9,8 @@ import { StudyCta } from './StudyView';
 import { ChatStart } from './ChatStart';
 import { lastContentBySubject, pendingResults, type PendingResults as PendingResultsData } from '../model/sync';
 import { syncPrompt } from '../ai/chat';
+import { collectResults } from '../ai/results';
+import { PasteGrades } from './PasteGrades';
 
 export function Dashboard() {
   const { fs, loaded } = usePack();
@@ -48,28 +50,37 @@ export function Dashboard() {
 
 /**
  * Results the AI has not processed yet (since its last ai.sync), with a prompt
- * to copy. The AI appends ai.sync when done, and the banner goes away.
+ * to copy. The AI appends ai.sync when done, and the banner goes away. An AI
+ * that cannot reach the pack gets everything in the prompt; the person brings
+ * the grades back by pasting them and closes the banner themselves.
  */
 function PendingResults() {
   const { fs, loaded } = usePack();
   const [p, setP] = useState<PendingResultsData | null>(null);
+  const check = useRef(() => {});
   useEffect(() => {
     let alive = true;
-    const check = () =>
+    const look = () =>
       readEvents(fs, 5000)
         .then((events) => alive && setP(pendingResults(events)))
         .catch(() => alive && setP(null));
-    void check();
+    check.current = look;
+    void look();
     // The AI writes ai.sync while the app is open; look again now and then and when the tab comes back.
-    const t = window.setInterval(check, 8000);
-    window.addEventListener('focus', check);
+    const t = window.setInterval(look, 8000);
+    window.addEventListener('focus', look);
     return () => {
       alive = false;
       window.clearInterval(t);
-      window.removeEventListener('focus', check);
+      window.removeEventListener('focus', look);
     };
   }, [fs, loaded]);
   if (!p?.total) return null;
+  const reviewed = p.quizzes + p.dojo + p.sheets;
+  const markSeen = async () => {
+    await appendEvent(fs, { type: 'ai.sync', actor: 'user', data: { quizzes: p.quizzes, dojo: p.dojo, sheets: p.sheets } });
+    check.current();
+  };
   const parts = [
     p.quizzes && `${p.quizzes} ${p.quizzes === 1 ? 'quiz' : 'quizzes'}`,
     p.dojo && `${p.dojo} dojo ${p.dojo === 1 ? 'round' : 'rounds'}`,
@@ -83,11 +94,33 @@ function PendingResults() {
         <strong>New results for your AI</strong>
         <span class="small">
           {parts.join(' · ')}
-          {p.lastSync ? ` since its last look on ${formatShort(p.lastSync.slice(0, 10))}` : ''}. Copy the prompt into your AI chat: it grades what is open,
-          updates your learning state and then hides this banner.
+          {p.lastSync ? ` since its last look on ${formatShort(p.lastSync.slice(0, 10))}` : ''}.{' '}
+          {fs.sharedWithAi
+            ? 'Copy the prompt into your AI chat: it grades what is open, updates your learning state and then hides this banner.'
+            : 'Copy the prompt into your AI chat: all your results are in it, so it can grade what is open and find what keeps going wrong.'}
         </span>
       </div>
-      <ChatStart label="Copy prompt" prompt={() => syncPrompt(fs)} />
+      <ChatStart
+        label="Copy prompt"
+        prompt={async () =>
+          syncPrompt({
+            fs,
+            pack: loaded.pack,
+            subjects: loaded.subjects,
+            ...(fs.sharedWithAi ? {} : { digest: await collectResults(fs, loaded.subjects, p) }),
+          })
+        }
+      />
+      {!fs.sharedWithAi && reviewed > 0 && (
+        <button class="ghost small" onClick={markSeen}>
+          Done, hide this
+        </button>
+      )}
+      {!fs.sharedWithAi && p.toGrade > 0 && (
+        <div class="pending-results-paste">
+          <PasteGrades onDone={() => check.current()} />
+        </div>
+      )}
     </div>
   );
 }
