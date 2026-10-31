@@ -89,3 +89,23 @@ describe('saving does not overwrite outside edits', () => {
     expect(reloaded).toBe(false);
   });
 });
+
+describe('checking file times', () => {
+  it('asks for a few files at a time and keeps every path', async () => {
+    const { fs, loaded, times } = await open();
+    let now = 0;
+    let most = 0;
+    const mtime = fs.mtime.bind(fs);
+    fs.mtime = async (p: string) => {
+      most = Math.max(most, ++now);
+      await new Promise((r) => setTimeout(r, 1));
+      now--;
+      return mtime(p);
+    };
+    const pack = { ...loaded, pack: { ...loaded.pack, dojos: [...(loaded.pack.dojos ?? []), ...Array.from({ length: 40 }, (_, i) => `x${i}`)] } };
+    const seen = await fileTimes(fs, pack);
+    expect(most).toBeLessThanOrEqual(6);
+    expect(Object.keys(seen)).toHaveLength(Object.keys(times).length + 40);
+    expect(seen['dojos/x39.json']).toBeNull();
+  });
+});

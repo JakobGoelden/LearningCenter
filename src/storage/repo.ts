@@ -39,6 +39,9 @@ export type FileTimes = Record<string, number | null>;
 
 export const subjectPath = (id: string) => `subjects/${id}.json`;
 
+/** Most file checks at once: a pack has dozens of files, and a hosted server queues only so many. */
+const PARALLEL_CHECKS = 6;
+
 /** Modification time of every file the app reads, keyed by path. */
 export async function fileTimes(fs: PackFs, loaded: LoadedPack): Promise<FileTimes> {
   const paths = [
@@ -46,7 +49,15 @@ export async function fileTimes(fs: PackFs, loaded: LoadedPack): Promise<FileTim
     ...loaded.pack.subjects.map(subjectPath),
     ...(loaded.pack.dojos ?? []).map((id) => `dojos/${id}.json`),
   ];
-  const times = await Promise.all(paths.map((p) => fs.mtime(p)));
+  const times = new Array<number | null>(paths.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < paths.length) {
+      const i = next++;
+      times[i] = await fs.mtime(paths[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: PARALLEL_CHECKS }, worker));
   return Object.fromEntries(paths.map((p, i) => [p, times[i]]));
 }
 

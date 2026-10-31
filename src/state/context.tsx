@@ -40,6 +40,8 @@ export function usePack(): PackApi {
 }
 
 const POLL_MS = 3000;
+/** A hosted pack only changes through the sync job or another device, and every look costs a request per file. */
+const SERVER_POLL_MS = 30000;
 
 export function PackProvider(props: {
   fs: PackFs;
@@ -84,16 +86,16 @@ export function PackProvider(props: {
     if (fs.kind === 'browser') return;
     const timer = setInterval(async () => {
       if (busy.current || document.hidden) return;
+      // A failed look is not worth a message: nothing was lost and the next one tries again.
+      const now = await fileTimes(fs, loadedRef.current).catch(() => null);
+      if (!now || sameTimes(now, times.current)) return;
       try {
-        const now = await fileTimes(fs, loadedRef.current);
-        if (!sameTimes(now, times.current)) {
-          await reload();
-          setNotice('The pack was changed outside the app and has been reloaded.');
-        }
+        await reload();
+        setNotice('The pack was changed outside the app and has been reloaded.');
       } catch (e) {
         setNotice(`Reload failed: ${(e as Error).message}`);
       }
-    }, POLL_MS);
+    }, fs.kind === 'server' ? SERVER_POLL_MS : POLL_MS);
     return () => clearInterval(timer);
   }, [fs, reload]);
 
