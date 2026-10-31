@@ -198,7 +198,7 @@ per subject:
 
 ```
 repo.json, changelog.jsonl
-<subject>/subject.json                    {id, name, short?, color?}
+<subject>/subject.json                    {id, name, short?, color?, exam?}
 <subject>/topics/<topic>.json             {id, title, notes?, questions: [...]}
 <subject>/dojos/<dojo>.json               a dojo file
 <subject>/<chapter>/chapter.json          {id, title, order?}
@@ -206,7 +206,10 @@ repo.json, changelog.jsonl
 ```
 
 Only content is shared (a card's `prompt`, `kind`, `answer`; topic title and
-notes; whole dojos with drills). Stats, blocks, schedules, history, sheets and
+notes; whole dojos with drills) and the exam facts a course has in common
+(`format`, `date`, `time`, `durationMinutes`, `location`; not `aids` or `notes`).
+A pull takes the repo's exam date unless the person changed theirs since the
+last sync. Stats, blocks, schedules, history, sheets and
 sessions stay in the pack. Commands (`src/sharing/shared.ts`, `scripts/share.ts`):
 
 - `npm run share -- status local/<name> --repo <clone>`: the new changelog
@@ -478,6 +481,7 @@ default 60/120/240 by level, doubled for `automaton`, `regex`, `self`),
 | `automaton` | `alphabet`, `reference`, `given?`, `deterministic?`, `minimal?` | same language; checks DFA/minimality if asked |
 | `self` | `solution` (Markdown) | learner compares and rates right/partly/wrong |
 | `fields` | `fields`: `[{label, accept, options?}]`, a whole task with several blanks | each blank like `input` (`options` shows buttons instead of a text box); the task earns the share of right blanks |
+| `sql` | `solution` (PostgreSQL), `setup?` (SQL for the task's database), `check?` (query after the statement), `ordered?` | runs in the browser (PGlite, real PostgreSQL) on a fresh database: rows of the statement, or of `check`, must match the solution's |
 
 `reference` is exactly one of `{"regex": "..."}` or `{"automaton": {...}}`;
 an automaton is `{states, start, final, transitions: [[from, symbol, to]]}`
@@ -485,6 +489,14 @@ with `ε` for ε-transitions. Regex syntax: `|`, juxtaposition, `* + ?`,
 parentheses, `ε` (or `eps`), `∅`. `given` shows an automaton as a table and a
 state diagram in the task (e.g. "turn this NFA into a DFA"); the automaton
 the learner types into the table is drawn live below it.
+
+SQL drills: the learner writes real statements, so use `sql` for anything
+they should write instead of `self`. Without `check` the returned rows are
+compared (DQL); for DML and DDL write a `check` that shows the state, e.g.
+`SELECT * FROM t ORDER BY id`, or one that tests behaviour instead of a
+constraint's name. Set `ordered` only if the task asks for an order. After
+changing them run `npm run check-sql -- local/<name>`: it runs every solution
+and flags ones that fail or checks that pass without doing anything.
 
 Writing good drills (for you as an AI):
 

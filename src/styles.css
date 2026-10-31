@@ -324,15 +324,8 @@ table.automaton.readonly td, table.automaton.readonly th { border: 1px solid var
 .automaton-diagram text { font-family: var(--mono); fill: currentColor; text-anchor: middle; dominant-baseline: central; }
 .automaton-diagram .edge-label { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
 
-/* Dashboard calendar: today | this week, long term below */
-.calendar {
-  display: grid; gap: 12px; margin-bottom: 16px;
-  grid-template-columns: minmax(240px, 1fr) minmax(0, 2.4fr);
-  grid-template-areas: 'today week' 'long long';
-}
-.cal-today { grid-area: today; }
-.cal-week { grid-area: week; min-width: 0; }
-.cal-long { grid-area: long; min-width: 0; }
+/* Dashboard calendar */
+.cal-long { min-width: 0; margin-bottom: 16px; display: grid; gap: 10px; align-content: start; padding: 14px 16px; }
 .calendar > .panel { display: grid; gap: 10px; align-content: start; padding: 14px 16px; }
 .cal-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .cal-nav { display: flex; gap: 4px; margin-left: auto; align-self: center; }
@@ -448,9 +441,6 @@ table.automaton.readonly td, table.automaton.readonly th { border: 1px solid var
 .tl-swatch { display: inline-block; width: 12px; height: 10px; border-radius: 2px; background: color-mix(in srgb, var(--accent) 55%, transparent); vertical-align: -1px; }
 .tl-swatch-now { display: inline-block; height: 10px; vertical-align: -1px; width: 2px; border-radius: 0; background: var(--danger); }
 
-@media (max-width: 900px) {
-  .calendar { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'today' 'week' 'long'; }
-}
 @media (max-width: 640px) {
   .week-grid { display: none; }
   .week-list { display: block; }
@@ -921,6 +911,10 @@ button.study-go { padding: 10px 20px; font-size: 1rem; }
 .pending-results { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; border-left: 4px solid var(--gold); animation: rise 0.3s ease-out; }
 .pending-results-text { flex: 1 1 260px; display: grid; gap: 2px; }
 .pending-results-paste { flex-basis: 100%; }
+/* SQL feedback lists rows, one per line */
+.verdict-text { white-space: pre-line; }
+.sql-input { min-height: 140px; font-size: 0.9rem; }
+.sql-solution { margin: 0; white-space: pre-wrap; font-size: 0.85rem; }
 .paste-grades textarea { min-height: 90px; font-size: 0.8rem; }
 .pending-results-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gold); position: relative; flex: none; }
 .pending-results-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--gold); animation: ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite; }

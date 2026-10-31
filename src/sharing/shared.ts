@@ -1,4 +1,4 @@
-import type { Chapter, Dojo, LoadedPack, Topic, TopicQuestion } from '../model/types';
+import type { Chapter, Dojo, Exam, LoadedPack, Topic, TopicQuestion } from '../model/types';
 
 /**
  * Sharing cards and dojos through a git repository (one per semester).
@@ -6,7 +6,7 @@ import type { Chapter, Dojo, LoadedPack, Topic, TopicQuestion } from '../model/t
  * Layout of the repo (paths are what `SharedTree` keys look like):
  *   repo.json                                   marker with title
  *   changelog.jsonl                             one line per change, append only
- *   <subject>/subject.json                      {id, name, short?, color?}
+ *   <subject>/subject.json                      {id, name, short?, color?, exam?}
  *   <subject>/topics/<topic>.json               {id, title, notes?, questions: [...]}
  *   <subject>/dojos/<dojo>.json                 a dojo file
  *   <subject>/<chapter>/chapter.json            {id, title, order?}  (optional chapters)
@@ -58,8 +58,30 @@ interface SharedTopic {
   questions: SharedCard[];
 }
 
+/** What everybody in the course has in common about an exam. `aids` and `notes` stay in the pack. */
+export type SharedExam = Pick<Exam, 'format' | 'date' | 'time' | 'durationMinutes' | 'location'>;
+
+export interface SharedSubject {
+  name: string;
+  short?: string;
+  color?: string;
+  exam?: SharedExam;
+}
+
+/** The shareable part of an exam; nothing until it has a date. */
+function sharedExam(e: Exam): SharedExam | undefined {
+  if (!e.date) return undefined;
+  return {
+    format: e.format,
+    date: e.date,
+    ...(e.time ? { time: e.time } : {}),
+    ...(e.durationMinutes ? { durationMinutes: e.durationMinutes } : {}),
+    ...(e.location ? { location: e.location } : {}),
+  };
+}
+
 export interface SharedContent {
-  subjects: Map<string, { name: string; short?: string; color?: string }>;
+  subjects: Map<string, SharedSubject>;
   chapters: Map<string, { subject: string; chapter: Chapter; order: number }>;
   topics: Map<string, SharedTopic>;
   dojos: Map<string, { path: string; dojo: Dojo }>;
@@ -102,6 +124,7 @@ const topicBody = (t: { title: string; chapter?: string }) => ({ title: t.title,
 
 const keys = {
   subject: (s: string) => `subject:${s}`,
+  exam: (s: string) => `exam:${s}`,
   chapter: (s: string, c: string) => `chapter:${s}/${c}`,
   topic: (s: string, t: string) => `topic:${s}/${t}`,
   card: (s: string, t: string, q: string) => `card:${s}/${t}/${q}`,
@@ -130,8 +153,8 @@ export function readTree(tree: SharedTree, problems: string[] = []): SharedConte
     if (!SLUG.test(subject)) continue;
     const file = p[p.length - 1];
     if (p.length === 2 && file === 'subject.json') {
-      const d = parseJson<{ name?: string; short?: string; color?: string }>(path, text, problems);
-      if (d?.name) out.subjects.set(subject, { name: d.name, ...(d.short ? { short: d.short } : {}), ...(d.color ? { color: d.color } : {}) });
+      const d = parseJson<SharedSubject>(path, text, problems);
+      if (d?.name) out.subjects.set(subject, { name: d.name, ...(d.short ? { short: d.short } : {}), ...(d.color ? { color: d.color } : {}), ...(d.exam?.date ? { exam: d.exam } : {}) });
     } else if (p.length === 3 && file === 'chapter.json') {
       const d = parseJson<{ title?: string; order?: number }>(path, text, problems);
       if (d?.title) out.chapters.set(`${subject}/${p[1]}`, { subject, chapter: { id: p[1], title: d.title }, order: d.order ?? 0 });
@@ -223,6 +246,20 @@ export function pull(loaded: LoadedPack, tree: SharedTree, stateIn: ShareState, 
     }
     seenKeys.add(keys.subject(sid));
     state.items[keys.subject(sid)] = hash(info);
+
+    // Exam: take the repo's date unless the person changed theirs since the last sync.
+    const examKey = keys.exam(sid);
+    seenKeys.add(examKey);
+    if (info.exam) {
+      const theirs = hash(info.exam);
+      const mine = sharedExam(subj.exam);
+      if (theirs !== (mine && hash(mine)) && (!mine || hash(mine) === state.items[examKey])) {
+        subj.exam = { ...subj.exam, ...info.exam };
+        report.push(`${info.name}: exam on ${info.exam.date}`);
+        changed = true;
+      }
+      state.items[examKey] = theirs;
+    }
 
     // chapters
     const chapters = [...(subj.chapters ?? [])];
@@ -407,6 +444,21 @@ export function push(loaded: LoadedPack, treeIn: SharedTree, stateIn: ShareState
       put(`${subj.id}/subject.json`, json({ id: subj.id, name: subj.name, ...(subj.short ? { short: subj.short } : {}), ...(subj.color ? { color: subj.color } : {}) }));
       entry('add', 'subject', subj.id, subj.id);
       state.items[keys.subject(subj.id)] = hash({ name: subj.name, ...(subj.short ? { short: subj.short } : {}), ...(subj.color ? { color: subj.color } : {}) });
+    }
+    const exam = sharedExam(subj.exam);
+    const examKey = keys.exam(subj.id);
+    if (exam && hash(exam) !== state.items[examKey]) {
+      const inRepoNow = shared.subjects.get(subj.id);
+      const theirs = inRepoNow?.exam;
+      if (theirs && hash(theirs) !== state.items[examKey] && hash(theirs) !== hash(exam)) {
+        report.push(`${subj.name}: exam date changed in the repo too, pull first`);
+      } else if (!theirs || hash(theirs) !== hash(exam)) {
+        put(`${subj.id}/subject.json`, json({ id: subj.id, name: subj.name, ...(subj.short ? { short: subj.short } : {}), ...(subj.color ? { color: subj.color } : {}), ...inRepoNow, exam }));
+        entry('update', 'subject', subj.id, subj.id);
+        state.items[examKey] = hash(exam);
+      } else {
+        state.items[examKey] = hash(exam);
+      }
     }
     const chapterIds = new Set<string>();
     for (const t of subj.topics) {

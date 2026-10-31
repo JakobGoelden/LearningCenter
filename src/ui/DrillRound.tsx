@@ -21,6 +21,7 @@ import { SCORE_LABEL } from './labels';
 import { Belt, beltFor, TimerRing } from './Emblem';
 import { bestPoints, drillPoints, recordPoints, roundPoints, type DrillPoints } from '../dojo/points';
 import { examScore } from '../dojo/exam';
+import { gradeSqlDrill, sqlEngine } from '../dojo/sql';
 import { drillSymbols } from '../dojo/symbols';
 import { SymbolBar } from './SymbolBar';
 import { Cheer } from './QuizView';
@@ -56,6 +57,7 @@ const KIND_HINT: Record<Drill['kind'], string> = {
   regex: 'Regular expression',
   self: 'Open task',
   fields: 'Fill in the blanks',
+  sql: 'Write SQL',
 };
 
 /**
@@ -504,7 +506,7 @@ function DrillRun({
             <span class={`stamp${mood === 'wrong' ? ' cross' : ''}`} aria-hidden="true">
               {outcome.result.correct ? '一本' : outcome.result.score >= 3 ? '技有' : '×'}
             </span>
-            <span class="grow">
+            <span class="grow verdict-text">
               <strong>{outcome.result.correct ? 'Right!' : outcome.result.score >= 3 ? 'Almost.' : 'Not quite.'}</strong>{' '}
               {outcome.result.feedback}
             </span>
@@ -589,6 +591,10 @@ function DrillInput({
   );
 
   const submit = (a: DrillAnswer) => onSubmit(answerText(drill, a), gradeDrill(drill, a));
+  const [checking, setChecking] = useState(false);
+  useEffect(() => {
+    if (drill.kind === 'sql') void sqlEngine();
+  }, [drill]);
   const onEnter = (e: KeyboardEvent, a: () => DrillAnswer) => {
     if (e.key === 'Enter' && !locked) {
       e.preventDefault();
@@ -737,6 +743,43 @@ function DrillInput({
           {check(() => ({ kind: 'fields', values }))}
         </div>
       );
+    case 'sql': {
+      const run = async () => {
+        setChecking(true);
+        try {
+          onSubmit(text, await gradeSqlDrill(drill, text));
+        } catch (e) {
+          onSubmit(text, { correct: false, score: 0, feedback: `The database could not start: ${(e as Error).message}` });
+        }
+        setChecking(false);
+      };
+      return (
+        <div class="stack">
+          <textarea
+            class="mono sql-input"
+            value={text}
+            disabled={locked || checking}
+            onInput={(e) => setText(e.currentTarget.value)}
+            spellcheck={false}
+            placeholder="Your SQL …"
+            aria-label="Your SQL"
+          />
+          {!locked && (
+            <div>
+              <button class="primary" disabled={checking || !text.trim()} onClick={run}>
+                {checking ? 'Running …' : 'Run and check'}
+              </button>
+            </div>
+          )}
+          {locked && (
+            <div class="panel-inset stack">
+              <strong class="small">Solution</strong>
+              <pre class="mono sql-solution">{drill.solution}</pre>
+            </div>
+          )}
+        </div>
+      );
+    }
     case 'self':
       return (
         <div class="stack">

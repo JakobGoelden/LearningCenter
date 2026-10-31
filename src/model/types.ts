@@ -261,6 +261,7 @@ export type Drill = DrillBase &
     | { kind: 'automaton'; alphabet: string[]; reference: LanguageReference; given?: AutomatonData; deterministic?: boolean; minimal?: boolean }
     | { kind: 'regex'; alphabet: string[]; reference: LanguageReference; given?: AutomatonData }
     | { kind: 'self'; solution: string }
+    | { kind: 'sql'; solution: string; setup?: string; check?: string; ordered?: boolean }
     | { kind: 'fields'; fields: DrillField[] }
   );
 

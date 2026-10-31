@@ -29,6 +29,12 @@ because the person's AI cannot reach the files. So nothing may send it to a fold
 - Not covered yet: grades from a quiz run entirely in the chat and answers to a sheet stay in the
   chat, and the AI cannot change notes or cards from there.
 
+## SQL drills
+
+`sql` drills run in the learner's browser (PGlite), so grading costs the server nothing. The engine
+is a separate download of several MB, fetched only when a SQL drill opens and then cached by the
+browser. Keep it that way: never import `@electric-sql/pglite` statically in app code.
+
 ## Format changes
 
 The sync job on the T480 runs its own `~/LearningCenter` and validates every pack with that copy's

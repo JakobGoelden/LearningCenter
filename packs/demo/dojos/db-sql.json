@@ -131,6 +131,15 @@
         }
       ],
       "explanation": "The pair identifies a row, so it is the key; `grade` depends on it. Each blank is graded on its own."
+    },
+    {
+      "id": "write-a-join",
+      "kind": "sql",
+      "level": "medium",
+      "prompt": "`dept(id PK, name)` and `emp(id PK, name, dept → dept)`\n\n**Task:** List each employee's name with the name of their department. Employees without a department drop out.",
+      "setup": "CREATE TABLE dept (id int PRIMARY KEY, name text);\nCREATE TABLE emp (id int PRIMARY KEY, name text, dept int REFERENCES dept(id));\nINSERT INTO dept VALUES (1, 'Sales'), (2, 'IT');\nINSERT INTO emp VALUES (1, 'Ann', 1), (2, 'Bo', 2), (3, 'Cy', NULL);",
+      "solution": "SELECT e.name, d.name FROM emp e JOIN dept d ON e.dept = d.id;",
+      "explanation": "The inner join keeps matching pairs only, so Cy drops out."
     }
   ]
 }

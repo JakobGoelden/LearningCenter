@@ -8,6 +8,7 @@
 //   regex     write a regular expression, checked for language equivalence
 //   self      open answer, then the learner compares with the solution and rates it
 //   fields    a whole task with several blanks, each graded on its own
+//   sql       write real SQL; it runs on a database and the result is compared (see sql.ts)
 
 import type { Drill, DrillField, Level, Score } from '../model/types';
 import {
@@ -25,7 +26,7 @@ import {
 /** What the learner entered, per drill kind. */
 export type DrillAnswer =
   | { kind: 'choice'; picked: number[] }
-  | { kind: 'input' | 'number' | 'regex' | 'self'; text: string }
+  | { kind: 'input' | 'number' | 'regex' | 'self' | 'sql'; text: string }
   | { kind: 'order'; order: number[] }
   | { kind: 'automaton'; automaton: Automaton }
   | { kind: 'fields'; values: string[] };
@@ -41,7 +42,7 @@ export interface DrillResult {
 
 /** Default time per drill when the drill sets none. */
 export const DEFAULT_SECONDS: Record<Level, number> = { easy: 60, medium: 120, exam: 240 };
-const SLOW_KINDS = new Set(['automaton', 'regex', 'self', 'fields']);
+const SLOW_KINDS = new Set(['automaton', 'regex', 'self', 'fields', 'sql']);
 
 export function secondsFor(d: Drill): number {
   if (d.seconds) return d.seconds;
@@ -180,6 +181,9 @@ export function gradeDrill(d: Drill, answer: DrillAnswer): DrillResult {
     case 'self':
       // Graded by the learner after seeing the solution; see selfResult.
       break;
+    case 'sql':
+      // Needs the database, which is asynchronous; see gradeSqlDrill.
+      break;
   }
   throw new Error(`Answer of kind ${answer.kind} does not fit drill kind ${d.kind}.`);
 }
@@ -214,6 +218,9 @@ export function drillProblems(d: Drill): string[] {
         if (!f.accept.length) out.push(`field "${f.label}" needs an accepted answer`);
         if (f.options && !f.options.includes(f.accept[0])) out.push(`field "${f.label}": options must contain "${f.accept[0]}"`);
       }
+      break;
+    case 'sql':
+      if (!d.solution.trim()) out.push('needs a solution');
       break;
     case 'automaton':
     case 'regex':
@@ -288,6 +295,7 @@ const KIND_KEYS: Record<Drill['kind'], string[]> = {
   automaton: ['alphabet', 'reference', 'given', 'deterministic', 'minimal'],
   self: ['solution'],
   fields: ['fields'],
+  sql: ['setup', 'solution', 'check', 'ordered'],
 };
 const COMMON_KEYS = ['id', 'kind', 'level', 'topic', 'prompt', 'explanation', 'seconds'];
 

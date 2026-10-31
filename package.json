@@ -17,10 +17,12 @@
     "test": "vitest run",
     "validate": "vite-node scripts/validate-packs.mjs --",
     "review": "vite-node scripts/review.ts --",
-    "share": "vite-node scripts/share.ts --"
+    "share": "vite-node scripts/share.ts --",
+    "check-sql": "vite-node scripts/check-sql.ts --"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
+    "@electric-sql/pglite": "0.5.10",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "katex": "^0.16.11",

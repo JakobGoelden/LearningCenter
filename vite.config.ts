@@ -10,6 +10,7 @@ export default defineConfig({
   base: './',
   plugins: [preact(), packFs()],
   server: { open: true },
+  optimizeDeps: { exclude: ['@electric-sql/pglite'] }, // loads its WebAssembly relative to itself
   preview: { open: true },
   test: {
     environment: 'node',

@@ -115,6 +115,48 @@ describe('sharing', () => {
     expect(push(bob, r.tree, r.state).written).toEqual([]);
   });
 
+  it('shares exam dates, but not notes or aids', () => {
+    const { tree, alice } = aliceRepo();
+    const a = structuredClone(alice);
+    a.subjects[0].exam = { format: 'written', date: '2026-12-16', time: '09:30', durationMinutes: 90, location: '136.1B', aids: ['Cheat sheet'], notes: 'laut Alice unklar' };
+    const r = push(a, tree, emptyState(), { now: '2026-10-19T10:00:00Z' });
+    const file = r.tree.get('db/subject.json')!;
+    expect(JSON.parse(file)).toEqual({ id: 'db', name: 'Databases', exam: { format: 'written', date: '2026-12-16', time: '09:30', durationMinutes: 90, location: '136.1B' } });
+    expect(readChangelog(r.tree).at(-1)).toMatchObject({ action: 'update', kind: 'subject' });
+    expect(push(a, r.tree, r.state).written).toEqual([]);
+
+    const bob = pull(pack(), r.tree, emptyState());
+    expect(bob.loaded.subjects[0].exam).toMatchObject({ date: '2026-12-16', location: '136.1B', format: 'written' });
+    expect(bob.loaded.subjects[0].exam.notes).toBeUndefined();
+    expect(bob.report.join()).toContain('exam on 2026-12-16');
+    expect(push(bob.loaded, r.tree, bob.state).written).toEqual([]);
+  });
+
+  it('a pack without a date gets one and keeps its own notes; a moved date comes through; an own date stays', () => {
+    const { tree, alice } = aliceRepo();
+    const a = structuredClone(alice);
+    a.subjects[0].exam = { format: 'written', date: '2026-12-16' };
+    const r = push(a, tree, emptyState());
+
+    const bob0 = pull(pack(), tree, emptyState());
+    const bobPack = structuredClone(bob0.loaded);
+    bobPack.subjects[0].exam.notes = 'mine';
+    const bob1 = pull(bobPack, r.tree, bob0.state);
+    expect(bob1.loaded.subjects[0].exam).toMatchObject({ date: '2026-12-16', notes: 'mine' });
+
+    const moved = new Map(r.tree);
+    moved.set('db/subject.json', JSON.stringify({ id: 'db', name: 'Databases', exam: { format: 'written', date: '2026-12-20' } }));
+    const bob2 = pull(bob1.loaded, moved, bob1.state);
+    expect(bob2.loaded.subjects[0].exam).toMatchObject({ date: '2026-12-20', notes: 'mine' });
+
+    const own = structuredClone(bob1.loaded);
+    own.subjects[0].exam.date = '2026-12-01';
+    expect(pull(own, moved, bob1.state).loaded.subjects[0].exam.date).toBe('2026-12-01');
+    const conflict = push(own, moved, bob1.state);
+    expect(conflict.written).toEqual([]);
+    expect(conflict.report.join()).toContain('pull first');
+  });
+
   it('a card removed upstream stays with the learner but is not pushed back', () => {
     const { tree } = aliceRepo();
     const bob0 = pull(pack(), tree, emptyState());
