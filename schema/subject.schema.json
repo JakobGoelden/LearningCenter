@@ -55,6 +55,7 @@
         "intervalDays": { "type": "integer", "minimum": 0, "description": "Interval that produced 'due'." },
         "history": { "type": "array", "items": { "$ref": "#/$defs/review" } },
         "chapter": { "$ref": "common.schema.json#/$defs/id", "description": "Id of an entry of the subject's `chapters`." },
+        "enabled": { "type": "boolean", "description": "false = the learner switched the topic off: it is left out of quizzes, study, endless mode and the calendar. Status, schedule, history and card statistics stay untouched, so switching it on restores them. Default true. Never shared." },
         "questions": {
           "type": "array",
           "description": "Cards: prepared questions for understanding, each with its own schedule (due cards are asked, new ones come in through settings.newCardsPerDay). The learner grades themselves or lets the AI grade later. Calculations and constructions belong in dojo drills. Without this field the topic gets one generic \"explain it\" card; an empty array means the topic is trained only in dojos.",

@@ -14,6 +14,8 @@ export class DevFs implements PackFs {
   constructor(
     readonly label: string,
     readonly kind: 'dev' | 'server' = 'dev',
+    /** Reaching a server from outside the browser: its address and login. */
+    private readonly remote?: { origin: string; headers?: Record<string, string> },
   ) {
     this.sharedWithAi = kind === 'dev';
   }
@@ -34,9 +36,10 @@ export class DevFs implements PackFs {
   }
 
   private async call(op: string, path: string, body?: string): Promise<Response> {
-    const res = await fetch(`${API}/${op}?path=${encodeURIComponent(path)}`, {
+    const res = await fetch(`${this.remote?.origin ?? ''}${API}/${op}?path=${encodeURIComponent(path)}`, {
       method: body === undefined ? 'GET' : 'POST',
       body,
+      headers: this.remote?.headers,
     });
     if (!res.ok && res.status !== 404) throw new Error(`${op} ${path}: ${res.status} ${await res.text()}`);
     return res;

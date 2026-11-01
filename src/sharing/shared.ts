@@ -182,6 +182,11 @@ export function readTree(tree: SharedTree, problems: string[] = []): SharedConte
       }
     }
   }
+  // A chapter folder without chapter.json still is a chapter, or its topics would count as always on.
+  for (const item of [...out.topics.values(), ...[...out.dojos.values()].map((d) => d.dojo)]) {
+    const { subject, chapter: id } = item;
+    if (id && !out.chapters.has(`${subject}/${id}`)) out.chapters.set(`${subject}/${id}`, { subject, chapter: { id, title: id }, order: Number.MAX_SAFE_INTEGER });
+  }
   return out;
 }
 
@@ -210,6 +215,8 @@ export interface PullResult {
   state: ShareState;
   report: string[];
   changed: boolean;
+  /** Subjects that got new content. */
+  subjects: string[];
 }
 
 type Verdict = 'add' | 'update' | 'same' | 'local-edit' | 'conflict' | 'skip';
@@ -222,6 +229,9 @@ function reconcile(state: ShareState, key: string, local: string | undefined, sh
   if (local === st) return 'update';
   return shared === st ? 'local-edit' : 'conflict';
 }
+
+const sameContent = (a: { topics: Topic[]; chapters?: Chapter[] }, b?: { topics: Topic[]; chapters?: Chapter[] }) =>
+  canonical({ t: a.topics, c: a.chapters }) === canonical({ t: b?.topics, c: b?.chapters });
 
 export function pull(loaded: LoadedPack, tree: SharedTree, stateIn: ShareState, opts: PullOptions = {}): PullResult {
   const problems: string[] = [];
@@ -269,7 +279,9 @@ export function pull(loaded: LoadedPack, tree: SharedTree, stateIn: ShareState, 
       seenKeys.add(key);
       const have = chapters.find((x) => x.id === c.chapter.id);
       if (!have) {
-        chapters.push({ ...c.chapter, enabled: opts.enableNewChapters ? true : false });
+        // In the repo's order, also when a chapter goes in between; the person's own chapters stay in place.
+        const later = wanted.slice(wanted.indexOf(c) + 1).map((x) => chapters.findIndex((y) => y.id === x.chapter.id)).filter((i) => i >= 0);
+        chapters.splice(later.length ? Math.min(...later) : chapters.length, 0, { ...c.chapter, enabled: opts.enableNewChapters ? true : false });
         report.push(`${subj.name}: new chapter "${c.chapter.title}"${opts.enableNewChapters ? '' : ' (switched off, turn it on on the subject page)'}`);
         changed = true;
       } else if (have.title !== c.chapter.title && (state.items[key] === undefined || state.items[key] === hash({ title: have.title }))) {
@@ -343,6 +355,7 @@ export function pull(loaded: LoadedPack, tree: SharedTree, stateIn: ShareState, 
     }
     subj.topics = topics;
   }
+  const grown = new Set(subjects.filter((s) => s.topics !== loaded.subjects.find((l) => l.id === s.id)?.topics && !sameContent(s, loaded.subjects.find((l) => l.id === s.id))).map((s) => s.id));
 
   // dojos
   for (const [dk, sd] of shared.dojos) {
@@ -351,11 +364,13 @@ export function pull(loaded: LoadedPack, tree: SharedTree, stateIn: ShareState, 
     const v = reconcile(state, dk, idx < 0 ? undefined : hash(dojos[idx]), hash(sd.dojo));
     if (v === 'add') {
       dojos.push(sd.dojo);
+      grown.add(sd.dojo.subject);
       if (!packDojos.includes(sd.dojo.id)) packDojos.push(sd.dojo.id);
       report.push(`new dojo ${sd.dojo.title} (${sd.dojo.subject})`);
       changed = true;
     } else if (v === 'update') {
       dojos[idx] = sd.dojo;
+      grown.add(sd.dojo.subject);
       report.push(`dojo ${sd.dojo.title} updated`);
       changed = true;
     } else if (v === 'conflict') report.push(`dojo ${sd.dojo.title} differs from the repo, kept yours`);
@@ -378,6 +393,7 @@ export function pull(loaded: LoadedPack, tree: SharedTree, stateIn: ShareState, 
     state,
     report,
     changed,
+    subjects: [...grown],
   };
 }
 

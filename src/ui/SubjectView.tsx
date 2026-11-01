@@ -166,6 +166,12 @@ export function SubjectView({ subjectId }: { subjectId: string }) {
           </section>
         )}
 
+        {s.topics.some((t) => t.enabled === false) && (
+          <div class="small muted">
+            {s.topics.filter((t) => t.enabled === false).length} of {s.topics.length} topics are switched off. <a href={href({ name: 'topics', subject: s.id })}>Change</a>
+          </div>
+        )}
+
         <section class="panel">
           <h3>Exercise sheets</h3>
           {(s.sheets?.length ?? 0) > 0 ? (

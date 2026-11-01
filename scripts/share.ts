@@ -89,7 +89,11 @@ if (command === 'pull') {
   for (const d of res.loaded.dojos) if (beforeDojos.get(d.id) !== toJson(d)) await saveDojo(fs, d);
   if (toJson(res.loaded.pack) !== toJson(loaded.pack)) await savePack(fs, res.loaded.pack);
   await fs.write(STATE_PATH, toJson({ ...res.state, changelogSeen: log.length }));
-  if (res.changed) await appendEvent(fs, { type: 'share.pull', actor: 'app', data: { changes: res.report.length } });
+  if (res.changed) {
+    for (const subject of res.subjects.length ? res.subjects : [undefined]) {
+      await appendEvent(fs, { type: 'share.pull', actor: 'app', ...(subject ? { subject } : {}), data: { changes: res.report.length } });
+    }
+  }
   for (const l of newLog.slice(-20)) console.log(`  ${l.ts.slice(0, 10)} ${l.by ?? '?'}: ${l.action} ${l.kind} ${l.subject}/${l.ref}`);
   console.log(res.report.length ? res.report.map((r) => `- ${r}`).join('\n') : 'Nothing new.');
 }

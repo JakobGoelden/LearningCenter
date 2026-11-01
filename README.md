@@ -35,6 +35,9 @@ the next reviews.
   when you want to answer by voice. The AI records the grades in your pack.
   Exercise sheets have **Work on it in chat** too: your AI guides you
   through the tasks with hints and saves the answers you settle on.
+- **API for your AI:** your AI can ask where you are weak and how you are
+  progressing, read and fix your cards, and record grades, over MCP or the
+  command line (`docs/API.md`).
 - **Results banner:** what you do in the app is saved right away. As long
   as your AI has not looked at the new results, the dashboard shows a
   banner with a prompt to copy; the AI grades what is open, updates your

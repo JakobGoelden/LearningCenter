@@ -52,6 +52,8 @@ export interface Topic {
   questions?: TopicQuestion[];
   /** Id of the chapter (see Subject.chapters) the topic belongs to. */
   chapter?: string;
+  /** False: left out of quizzes, study, endless mode and the calendar; all its progress stays. Default true. */
+  enabled?: boolean;
 }
 
 export interface TopicQuestion {

@@ -29,6 +29,10 @@ because the person's AI cannot reach the files. So nothing may send it to a fold
 - Not covered yet: grades from a quiz run entirely in the chat and answers to a sheet stay in the
   chat, and the AI cannot change notes or cards from there.
 
+- With the AI tools (`docs/API.md`) a person's own AI reaches the hosted pack through the file API
+  with their login: `LC_URL`, `LC_USER`, `LC_PASSWORD`. Grades and card edits then work from the
+  chat too.
+
 ## SQL drills
 
 `sql` drills run in the learner's browser (PGlite), so grading costs the server nothing. The engine

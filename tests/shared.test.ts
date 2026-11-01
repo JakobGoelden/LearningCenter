@@ -188,3 +188,43 @@ describe('sharing', () => {
     expect(back.tree.get('db/ch1/topics/nf.json')).not.toContain('my own');
   });
 });
+
+describe('chapters from the repo', () => {
+  const itr = (chapters: LoadedPack['subjects'][0]['chapters']) =>
+    pack({ pack: { schemaVersion: 1, id: 'p', title: 'P', subjects: ['itr'] }, subjects: [{ id: 'itr', name: 'IT-Recht', exam: { format: 'written' }, chapters, topics: [] }] });
+  const tree = (extra: Record<string, string>): SharedTree =>
+    new Map(Object.entries({ 'itr/subject.json': JSON.stringify({ id: 'itr', name: 'IT-Recht' }), ...extra }));
+  const chapter = (id: string, order?: number) => ({ [`itr/${id}/chapter.json`]: JSON.stringify({ id, title: id.toUpperCase(), ...(order !== undefined ? { order } : {}) }) });
+
+  it('puts a new chapter where the repo has it and leaves it switched off', () => {
+    const local = itr([{ id: 't1', title: 'T1', enabled: true }, { id: 't2', title: 'T2', enabled: false }]);
+    const res = pull(local, tree({ ...chapter('t1', 0), ...chapter('t1b', 1), ...chapter('t2', 2), ...chapter('t3', 3) }), emptyState());
+    const out = res.loaded.subjects[0].chapters!;
+    expect(out.map((c) => c.id)).toEqual(['t1', 't1b', 't2', 't3']);
+    expect(out.find((c) => c.id === 't1b')?.enabled).toBe(false);
+    expect(out.find((c) => c.id === 't1')?.enabled).toBe(true);
+    expect(res.subjects).toEqual(['itr']);
+  });
+
+  it('keeps chapters only the person has in their place', () => {
+    const local = itr([{ id: 'mine', title: 'Mine' }, { id: 't2', title: 'T2' }]);
+    const out = pull(local, tree({ ...chapter('t1', 0), ...chapter('t2', 1) }), emptyState()).loaded.subjects[0].chapters!;
+    expect(out.map((c) => c.id)).toEqual(['mine', 't1', 't2']);
+  });
+
+  it('treats a folder without chapter.json as a switched-off chapter', () => {
+    const repo = tree({ 'itr/teil-8/topics/neu.json': JSON.stringify({ id: 'neu', title: 'Neu', questions: [{ id: 'q', prompt: 'Warum?' }] }) });
+    const res = pull(itr([]), repo, emptyState());
+    const s = res.loaded.subjects[0];
+    expect(s.chapters).toEqual([{ id: 'teil-8', title: 'teil-8', enabled: false }]);
+    expect(s.topics[0].chapter).toBe('teil-8');
+    expect(check('subject', s)).toBeNull();
+  });
+
+  it('reports no subject when nothing came in', () => {
+    const local = itr([{ id: 't1', title: 'T1' }]);
+    const first = pull(local, tree(chapter('t1', 0)), emptyState());
+    expect(pull(first.loaded, tree(chapter('t1', 0)), first.state).subjects).toEqual([]);
+  });
+});
+

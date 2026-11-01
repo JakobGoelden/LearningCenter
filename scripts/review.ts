@@ -5,9 +5,7 @@
 // topic gets the history entry; without it the whole topic is graded.
 // Example:
 //   npm run review -- local/my-pack db sql-basics 4 quiz "Terminal-Abfrage" --card joins
-import { today } from '../src/lib/dates';
-import { applyCardReviews, applyReview } from '../src/scheduling/scheduler';
-import { appendEvent, loadPack, saveSubject } from '../src/storage/repo';
+import { recordReview } from '../src/api/edit';
 import type { Review, Score } from '../src/model/types';
 import { NodeFs } from './node-fs';
 
@@ -24,25 +22,16 @@ const score = Number(scoreArg);
 if (!Number.isInteger(score) || score < 0 || score > 5) throw new Error('score must be an integer 0-5');
 if (!['quiz', 'dojo', 'manual'].includes(source)) throw new Error('source must be quiz, dojo or manual');
 
-const fs = new NodeFs(dir);
-const { pack, subjects } = await loadPack(fs);
-const subject = subjects.find((s) => s.id === subjectId);
-if (!subject) throw new Error(`Unknown subject "${subjectId}". Known: ${subjects.map((s) => s.id).join(', ')}`);
-const topic = subject.topics.find((t) => t.id === topicId);
-if (!topic) throw new Error(`Unknown topic "${topicId}". Known: ${subject.topics.map((t) => t.id).join(', ')}`);
-
-if (cardId && !topic.questions?.some((q) => q.id === cardId)) {
-  throw new Error(`Unknown card "${cardId}". Known: ${(topic.questions ?? []).map((q) => q.id).join(', ')}`);
-}
-const review: Review = { date: today(), score: score as Score, source: source as Review['source'], ...(note ? { note } : {}) };
-const updated = cardId
-  ? applyCardReviews(topic, [{ question: cardId, score: score as Score }], { date: review.date, source: review.source, ...(note ? { note } : {}) }, pack.settings)
-  : applyReview(topic, review, pack.settings);
-await saveSubject(fs, { ...subject, topics: subject.topics.map((t) => (t.id === topicId ? updated : t)) });
-await appendEvent(fs, { type: 'topic.review', actor: 'ai', subject: subjectId, ref: topicId, data: { score, source, ...(cardId ? { card: cardId } : {}) } });
-const card = cardId ? updated.questions?.find((q) => q.id === cardId) : undefined;
+const r = await recordReview(new NodeFs(dir), {
+  subject: subjectId,
+  topic: topicId,
+  score: score as Score,
+  source: source as Review['source'],
+  ...(note ? { note } : {}),
+  ...(cardId ? { card: cardId } : {}),
+});
 console.log(
-  card
-    ? `${subject.name} / ${topic.title} / ${cardId}: score ${score} → card next ${card.due} (${card.intervalDays} days); topic ${updated.status}, next ${updated.due ?? '-'}`
-    : `${subject.name} / ${topic.title}: score ${score} → ${updated.status}, next review ${updated.due ?? '-'} (${updated.intervalDays ?? '-'} days)`,
+  r.card
+    ? `${subjectId} / ${topicId} / ${cardId}: score ${score} → card next ${r.card.due} (${r.card.intervalDays} days); topic ${r.status}, next ${r.topicDue ?? '-'}`
+    : `${subjectId} / ${topicId}: score ${score} → ${r.status}, next review ${r.topicDue ?? '-'} (${r.intervalDays ?? '-'} days)`,
 );

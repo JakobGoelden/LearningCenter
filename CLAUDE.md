@@ -179,6 +179,26 @@ edit or reset them; read them):
   file; do not delete, unblock or re-create it, and do not write a replacement
   that asks the same thing. A topic whose cards are all blocked is not quizzed.
 
+### The API for AIs
+
+`docs/API.md` describes tools for all of this: over MCP (`.mcp.json`, server
+`learningcenter`) or `npm run ai -- <tool> --<arg> <value>`. Prefer them to
+reading the files by hand: `get_progress` for the overview, `get_weak_spots`
+for what keeps going wrong, `get_topic` and `list_cards` for the details,
+`get_new_results` for "Processing new results", and `add_card`, `edit_card`,
+`set_topic_notes`, `record_review`, `mark_results_processed` for changes. They
+apply the rules below. Add a tool to `src/api/tools.ts` when an AI needs
+something new; it then works in both ways.
+
+### Switching topics off
+
+`enabled: false` on a topic takes it out of quizzes, study, endless mode and the
+calendar like a switched-off chapter, and changes nothing else, so switching it
+on restores it exactly. The person does this on the Topics page ("Study only
+these") or asks you (`set_topics_enabled`). It is never shared. Use it, not
+`status: "skip"`, which clears the schedule. Do not switch topics on or off
+unless the person asks.
+
 ### Chapters
 
 A subject can be split into `chapters` (`{id, title, enabled?}`) with the

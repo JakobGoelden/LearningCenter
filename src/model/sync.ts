@@ -48,7 +48,7 @@ export function pendingResults(events: LogEvent[]): PendingResults {
 }
 
 /** Event types that mean new learning content arrived (see CLAUDE.md → When editing). */
-export const CONTENT_EVENTS = new Set(['topic.add', 'question.add', 'sheet.add', 'material.add', 'dojo.add', 'dojo.drills.add']);
+export const CONTENT_EVENTS = new Set(['topic.add', 'question.add', 'sheet.add', 'material.add', 'dojo.add', 'dojo.drills.add', 'share.pull']);
 
 /** Time of the latest content event per subject id. */
 export function lastContentBySubject(events: LogEvent[]): Map<string, string> {

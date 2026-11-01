@@ -18,7 +18,9 @@
     "validate": "vite-node scripts/validate-packs.mjs --",
     "review": "vite-node scripts/review.ts --",
     "share": "vite-node scripts/share.ts --",
-    "check-sql": "vite-node scripts/check-sql.ts --"
+    "check-sql": "vite-node scripts/check-sql.ts --",
+    "ai": "vite-node scripts/ai.ts --",
+    "mcp": "vite-node scripts/mcp.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

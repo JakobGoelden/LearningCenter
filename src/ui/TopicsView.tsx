@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { formatShort, today } from '../lib/dates';
 import { uniqueId } from '../lib/download';
+import { withTopicsEnabled } from '../model/chapters';
 import { applyReview, ladderIndex, ladderOf, withTopicDue } from '../scheduling/scheduler';
 import type { Score, Topic, TopicStatus } from '../model/types';
 import { SCORE_LABEL, TOPIC_STATUS } from './labels';
@@ -14,6 +15,7 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [open, setOpen] = useState<string | null>(null);
+  const [filter, setFilter] = useState('');
   if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
   const on = today();
   const settings = loaded.pack.settings;
@@ -79,6 +81,25 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
   };
 
   const ladder = ladderOf(settings);
+  const needle = filter.trim().toLowerCase();
+  const shown = s.topics.filter((t) => t.title.toLowerCase().includes(needle));
+  const switchedOff = s.topics.filter((t) => t.enabled === false).length;
+
+  const setEnabled = (which: (t: Topic) => boolean, enabled: boolean) =>
+    updateSubject(s.id, (subj) => withTopicsEnabled(subj, which, enabled), {
+      type: 'topic.enabled',
+      data: { enabled, topics: s.topics.filter(which).map((t) => t.id) },
+    });
+
+  /** Only what the filter shows stays on. */
+  const studyOnlyShown = () => {
+    const keep = new Set(shown.map((t) => t.id));
+    return updateSubject(
+      s.id,
+      (subj) => withTopicsEnabled(withTopicsEnabled(subj, (t) => !keep.has(t.id), false), (t) => keep.has(t.id), true),
+      { type: 'topic.enabled', data: { enabled: true, only: [...keep] } },
+    );
+  };
 
   return (
     <div class="stack">
@@ -90,10 +111,26 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
           Start quiz
         </a>
       </div>
+      <section class="panel stack">
+        <div class="small muted">
+          Switch off the topics you do not want to study right now. They leave quizzes, study, endless mode and the calendar; status, due dates, history and
+          card statistics stay and come back when you switch them on again. {switchedOff > 0 && <strong>{switchedOff} of {s.topics.length} topics are off.</strong>}
+        </div>
+        <div class="row">
+          <input placeholder="Filter topics, e.g. Klausurfragen" value={filter} onInput={(e) => setFilter(e.currentTarget.value)} style="flex:1" aria-label="Filter topics" />
+          <button class="small" disabled={!needle || !shown.length} onClick={() => void studyOnlyShown()}>
+            Study only these ({shown.length})
+          </button>
+          <button class="small" disabled={!switchedOff} onClick={() => void setEnabled(() => true, true)}>
+            Switch all on
+          </button>
+        </div>
+      </section>
       <div class="panel table-wrap">
         <table>
           <thead>
             <tr>
+              <th>On</th>
               <th>Topic</th>
               <th>Status</th>
               <th>Next review</th>
@@ -103,11 +140,19 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
             </tr>
           </thead>
           <tbody>
-            {s.topics.map((t) => {
+            {shown.map((t) => {
               const step = ladderIndex(ladder, t.intervalDays);
               return (
                 <>
-                  <tr key={t.id}>
+                  <tr key={t.id} style={t.enabled === false ? 'opacity:.5' : undefined}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={t.enabled !== false}
+                        onChange={(e) => void setEnabled((x) => x.id === t.id, e.currentTarget.checked)}
+                        aria-label={`Study ${t.title}`}
+                      />
+                    </td>
                     <td>
                       <button
                         class="ghost small"
@@ -179,7 +224,7 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
                   </tr>
                   {open === t.id && (
                     <tr>
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <label class="field">
                           <span>Notes (help the AI ask good questions)</span>
                           <textarea
