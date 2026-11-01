@@ -5,7 +5,8 @@ const setup = `CREATE TABLE t (id int PRIMARY KEY, name text, wert numeric(8,2))
 INSERT INTO t VALUES (1, 'a', 10), (2, 'b', NULL), (3, 'c', 30);`;
 const drill = (over: Partial<SqlDrill>): SqlDrill => ({ id: 'x', kind: 'sql', prompt: 'p', setup, solution: 'SELECT name FROM t WHERE wert > 5', ...over }) as SqlDrill;
 
-describe('sql drills', () => {
+// Starting PostgreSQL (PGlite) takes seconds on a slow machine, and every drill starts a fresh one.
+describe('sql drills', { timeout: 30_000 }, () => {
   it('accepts another way of writing the same query, in any row order', async () => {
     const d = drill({});
     expect((await gradeSqlDrill(d, 'select name from t where wert is not null order by id desc;')).correct).toBe(true);
