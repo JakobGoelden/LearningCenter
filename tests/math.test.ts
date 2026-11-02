@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { splitMath, splitScripts } from '../src/ui/math';
+import { splitEmphasis, splitMath, splitScripts } from '../src/ui/math';
 
 const tex = (text: string) => splitMath(text).filter((p) => p.kind === 'tex');
 
@@ -52,3 +52,35 @@ describe('splitScripts', () => {
     expect(render("f_x'")).toBe("f<sub>x</sub>'");
   });
 });
+
+describe('splitEmphasis', () => {
+  const plain = (text: string) => expect(splitEmphasis(text)).toEqual([{ kind: 'text', text }]);
+
+  it('keeps stars that belong to a formula', () => {
+    plain('Warum liegt {} ⊆ Σ*, und ist Σ*, also L*, unendlich?');
+    plain('L(r)*: Sprache von (ab)* und {}*, nicht [ab]*.');
+    plain('2*3*4 und x**2 + y**2 und 2 ** 3 ** 2');
+    plain('r₁* + r₂*, dann a* · b*');
+    plain('COUNT(*) AS n HAVING COUNT(*) > 1, (.*) = {}*');
+    plain('"*" expr und "/" und /* Kommentar */ und .*?');
+  });
+
+  it('still finds real emphasis', () => {
+    expect(splitEmphasis('ein *wichtiges* Wort')).toEqual([
+      { kind: 'text', text: 'ein ' },
+      { kind: 'em', text: 'wichtiges' },
+      { kind: 'text', text: ' Wort' },
+    ]);
+    expect(splitEmphasis('**Wörter**: fett')[0]).toEqual({ kind: 'strong', text: 'Wörter' });
+    expect(splitEmphasis('(*wie* hier)')[1]).toEqual({ kind: 'em', text: 'wie' });
+    expect(splitEmphasis('**C**onfidentiality')[0]).toEqual({ kind: 'strong', text: 'C' });
+    expect(splitEmphasis('ff0**2** = Link')[1]).toEqual({ kind: 'strong', text: '2' });
+  });
+
+  it('allows a formula star inside emphasis', () => {
+    expect(splitEmphasis('**Σ* ist unendlich**')).toEqual([{ kind: 'strong', text: 'Σ* ist unendlich' }]);
+    expect(splitEmphasis('**L***')).toEqual([{ kind: 'strong', text: 'L*' }]);
+    expect(splitEmphasis('L*: **L* ist Sprache** und Σ*').map((p) => p.kind)).toEqual(['text', 'strong', 'text']);
+  });
+});
+

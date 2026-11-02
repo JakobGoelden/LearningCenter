@@ -3,7 +3,7 @@ import 'katex/dist/katex.min.css';
 import type { JSX } from 'preact';
 import { parseAutomatonBlock } from '../dojo/automatonBlock';
 import { AutomatonDiagram } from './AutomatonDiagram';
-import { splitMath, splitScripts } from './math';
+import { splitEmphasis, splitMath, splitScripts } from './math';
 
 // Small, safe Markdown subset for AI output: paragraphs, headings, lists,
 // fenced code, pipe tables, **bold**, *italic* and `code`. No raw HTML.
@@ -21,18 +21,7 @@ function scripts(text: string): (string | JSX.Element)[] {
 }
 
 function emphasis(text: string): (string | JSX.Element)[] {
-  const out: (string | JSX.Element)[] = [];
-  const re = /(\*\*[^*]+\*\*|\*[^*\s][^*]*\*)/g;
-  let last = 0;
-  for (let m = re.exec(text); m; m = re.exec(text)) {
-    if (m.index > last) out.push(...scripts(text.slice(last, m.index)));
-    const t = m[0];
-    if (t.startsWith('**')) out.push(<strong>{scripts(t.slice(2, -2))}</strong>);
-    else out.push(<em>{scripts(t.slice(1, -1))}</em>);
-    last = m.index + t.length;
-  }
-  if (last < text.length) out.push(...scripts(text.slice(last)));
-  return out;
+  return splitEmphasis(text).flatMap((p) => (p.kind === 'strong' ? [<strong>{scripts(p.text)}</strong>] : p.kind === 'em' ? [<em>{scripts(p.text)}</em>] : scripts(p.text)));
 }
 
 function inline(text: string): (string | JSX.Element)[] {

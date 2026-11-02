@@ -27,6 +27,30 @@ export function splitMath(text: string): MathPart[] {
   return out;
 }
 
+export type EmphasisPart = { kind: 'text' | 'strong' | 'em'; text: string };
+
+// Stars in L*, Σ*, {}*, (r)*, 2*3, x ** y, COUNT(*) and .* are not emphasis.
+// **strong** opens after anything but a word or closing bracket and may be
+// followed by a word (**C**onfidentiality); a single word also works inside a
+// word (ff0**2**). *em* opens only at the start of a word, after a space or an
+// opening bracket or quote, and closes before anything but a word.
+const EMPHASIS = /(?<![\p{L}\p{N})\]}*])\*\*(?=\S)(.+?)(?<=\S)\*\*(?!\*)|(?<=[\p{L}\p{N}])\*\*([\p{L}\p{N}]+)\*\*(?!\*)|(?<![^\s(\[{„"'–—-])\*(?=[\p{L}\p{N}])([^\n]*?[^\s*])\*(?![*\p{L}\p{N}])/gu;
+
+/** Splits plain text into text, **strong** and *em* parts. */
+export function splitEmphasis(text: string): EmphasisPart[] {
+  const out: EmphasisPart[] = [];
+  let last = 0;
+  EMPHASIS.lastIndex = 0;
+  for (let m = EMPHASIS.exec(text); m; m = EMPHASIS.exec(text)) {
+    if (m.index > last) out.push({ kind: 'text', text: text.slice(last, m.index) });
+    const strong = m[1] ?? m[2];
+    out.push(strong !== undefined ? { kind: 'strong', text: strong } : { kind: 'em', text: m[3] });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push({ kind: 'text', text: text.slice(last) });
+  return out;
+}
+
 export type ScriptPart = { kind: 'text' | 'sub' | 'sup'; text: string };
 
 // Base: one letter, digit, ) or } that does not continue a word, name or
