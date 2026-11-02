@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { today } from '../lib/dates';
-import { overview } from '../model/derive';
 import { cardKey, deckOf, drawCard, withCardAnswer, withCardBlocked, type Card } from '../scheduling/cards';
 import { applyCardReviews } from '../scheduling/scheduler';
 import type { Subject } from '../model/types';
@@ -102,7 +101,7 @@ export function EndlessView({ subjectId }: { subjectId: string }) {
         <h1>Endless · {s.name}</h1>
         <span class="spacer" />
         <span class="small muted">
-          <strong>{overview(s, on).toGrind} to grind</strong> · {total} answered · {counts.right} knew it{counts.blocked ? ` · ${counts.blocked} blocked` : ''}
+          {total} answered · {counts.right} knew it{counts.blocked ? ` · ${counts.blocked} blocked` : ''}
         </span>
       </div>
 

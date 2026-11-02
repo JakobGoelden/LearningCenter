@@ -56,12 +56,11 @@ function CardTotals() {
   const on = today();
   const all = loaded.subjects.map((s) => overview(s, on));
   const solid = all.reduce((n, o) => n + o.cardCounts.solid, 0);
-  const toGrind = all.reduce((n, o) => n + o.toGrind, 0);
-  const total = solid + toGrind;
+  const total = all.reduce((n, o) => n + o.cardCounts.new + o.cardCounts.shaky + o.cardCounts.solid, 0);
   if (!total) return null;
   return (
     <div class="panel card-totals">
-      <strong>{total} cards</strong> in your chapters · {solid} solid · <strong>{toGrind} to grind</strong> in endless mode
+      <strong>{total} cards</strong> in your chapters · {solid} solid
     </div>
   );
 }

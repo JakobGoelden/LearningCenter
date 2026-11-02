@@ -128,7 +128,6 @@ describe('saving a quiz card by card', () => {
     const o = overview(subj, on);
     expect(o.cardCounts).toEqual({ new: 1, shaky: 0, solid: 1, skip: 0 });
     expect(o.progress).toBe(0.5);
-    expect(o.toGrind).toBe(1);
     expect(o.dueByTopic).toEqual([{ topic: t, cards: 1, oldest: on }]);
   });
 });
