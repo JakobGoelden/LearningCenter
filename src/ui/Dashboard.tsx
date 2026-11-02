@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { activeDojos } from '../model/chapters';
+import { overview } from '../model/derive';
 import { usePack } from '../state/context';
 import { appendEvent, readEvents } from '../storage/repo';
 import { formatShort, today } from '../lib/dates';
@@ -24,6 +25,7 @@ export function Dashboard() {
   return (
     <>
       {loaded.subjects.length > 0 && <StudyCta />}
+      <CardTotals />
       <PendingResults />
       <Calendar loaded={loaded} today={on} />
       {loaded.subjects.length === 0 ? (
@@ -45,6 +47,22 @@ export function Dashboard() {
         </div>
       )}
     </>
+  );
+}
+
+/** Every card of the switched-on chapters, not only what today's reviews ask. */
+function CardTotals() {
+  const { loaded } = usePack();
+  const on = today();
+  const all = loaded.subjects.map((s) => overview(s, on));
+  const solid = all.reduce((n, o) => n + o.cardCounts.solid, 0);
+  const toGrind = all.reduce((n, o) => n + o.toGrind, 0);
+  const total = solid + toGrind;
+  if (!total) return null;
+  return (
+    <div class="panel card-totals">
+      <strong>{total} cards</strong> in your chapters · {solid} solid · <strong>{toGrind} to grind</strong> in endless mode
+    </div>
   );
 }
 

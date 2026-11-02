@@ -9,8 +9,8 @@ the next reviews.
 ![Dashboard with the demo pack](docs/dashboard.png)
 
 - **Dashboard:** one banner per subject with a progress bar (share of cards
-  that are solid) and, below it, flags for due reviews, open sheets and open
-  tasks. Subjects with dojos get a Dojo button right next to their banner.
+  that are solid) and, below it, flags for what is left to grind in endless
+  mode, due reviews, open sheets and open tasks. Subjects with dojos get a Dojo button right next to their banner.
   Above them, a calendar: **Today** (top left) lists today's classes and
   what is due, **This week** (top right) shows your timetable as a week grid
   with reviews, sheet deadlines and exams on their day, so you see when you

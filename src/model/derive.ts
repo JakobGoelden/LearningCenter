@@ -17,6 +17,8 @@ export interface SubjectOverview {
   overdue: Topic[];
   /** The cards that take part, by status (`skip` stays 0: skipped topics bring no cards). */
   cardCounts: Record<TopicStatus, number>;
+  /** Cards of the switched-on chapters that are not solid yet: what is left to grind in endless mode. */
+  toGrind: number;
   /** Cards due today or earlier, and how many of them are overdue. */
   dueCards: number;
   overdueCards: number;
@@ -82,6 +84,7 @@ export function overview(subject: Subject, on: ISODate): SubjectOverview {
     examInDays: subject.exam.date ? diffDays(on, subject.exam.date) : null,
     statusCounts,
     cardCounts: byCard,
+    toGrind: byCard.new + byCard.shaky,
     due,
     overdue: due.filter((t) => isOverdue(t, on)),
     ...cardCounts(subject, on),

@@ -37,6 +37,7 @@ export function SubjectBanner({
   const learnable = o.cardCounts.new + o.cardCounts.shaky + o.cardCounts.solid;
 
   const flags: { text: string; urgent: boolean }[] = [];
+  if (o.toGrind) flags.push({ text: `${o.toGrind} to grind`, urgent: false });
   if (o.dueCards) {
     flags.push({
       text: `${plural(o.dueCards, 'card', 'cards')} due${o.overdueCards ? ` (${o.overdueCards} overdue)` : ''}`,
@@ -59,7 +60,7 @@ export function SubjectBanner({
       </span>
       <div class="banner-head">
         <h2>{s.name}</h2>
-        <span class="muted small">
+        <span class="muted small" title="All cards of the chapters you switched on. To grind: cards that are not solid yet, for endless mode.">
           {learnable ? `${pct}% solid · ${o.cardCounts.solid}/${learnable} cards` : 'no cards yet'}
         </span>
         <span class="chevron" aria-hidden="true">
@@ -71,7 +72,7 @@ export function SubjectBanner({
         {flags.length ? (
           flags.map((f) => <span class={`flag${f.urgent ? ' urgent' : ''}`}>{f.text}</span>)
         ) : (
-          <span class="flag ok">All caught up</span>
+          <span class="flag ok">{learnable ? 'All solid' : 'All caught up'}</span>
         )}
         <span class="flag content" title="When new topics, questions, sheets, material or exercises last arrived">
           {lastContent ? `New content ${ago(lastContent.slice(0, 10), on)}` : 'No new content yet'}
