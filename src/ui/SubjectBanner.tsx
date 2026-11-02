@@ -34,7 +34,7 @@ export function SubjectBanner({
 }) {
   const o = overview(s, on);
   const pct = Math.round(o.progress * 100);
-  const learnable = o.statusCounts.new + o.statusCounts.shaky + o.statusCounts.solid;
+  const learnable = o.cardCounts.new + o.cardCounts.shaky + o.cardCounts.solid;
 
   const flags: { text: string; urgent: boolean }[] = [];
   if (o.dueCards) {
@@ -60,13 +60,13 @@ export function SubjectBanner({
       <div class="banner-head">
         <h2>{s.name}</h2>
         <span class="muted small">
-          {learnable ? `${pct}% solid · ${o.statusCounts.solid}/${learnable} topics` : 'no topics yet'}
+          {learnable ? `${pct}% solid · ${o.cardCounts.solid}/${learnable} cards` : 'no cards yet'}
         </span>
         <span class="chevron" aria-hidden="true">
           ›
         </span>
       </div>
-      <StatusBar counts={o.statusCounts} />
+      <StatusBar counts={o.cardCounts} />
       <div class="flags">
         {flags.length ? (
           flags.map((f) => <span class={`flag${f.urgent ? ' urgent' : ''}`}>{f.text}</span>)

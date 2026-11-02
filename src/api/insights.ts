@@ -5,6 +5,7 @@ import { activeDojos, activeTopics, chapterEnabled } from '../model/chapters';
 import { overview, todayItems } from '../model/derive';
 import { addDays, diffDays, weekday } from '../lib/dates';
 import { activeQuestions } from '../model/quiz';
+import { cardStatus } from '../scheduling/cards';
 import { cardDue, dueCards, studyPlan } from '../scheduling/scheduler';
 import type { Dojo, ISODate, LoadedPack, Review, Score, Session, Subject, Topic, TopicQuestion } from '../model/types';
 
@@ -37,11 +38,6 @@ function weighted(scores: number[]): number | null {
   return sum / weights;
 }
 
-const cardState = (q: TopicQuestion): 'new' | 'shaky' | 'solid' => {
-  const last = q.stats?.recent.at(-1);
-  return last === undefined ? 'new' : last < 4 ? 'shaky' : 'solid';
-};
-
 /** Went from right to wrong again: knew it once, did not keep it. */
 const relapsed = (recent: Score[]) => recent.length >= 2 && recent.slice(0, -1).some((s) => s >= 4) && recent.at(-1)! < 3;
 
@@ -54,8 +50,8 @@ function subjectProgress(s: Subject, dojos: Dojo[], on: ISODate) {
   const cards = activeTopics(s)
     .filter((t) => t.status !== 'skip')
     .flatMap((t) => activeQuestions(t));
-  const states = { new: 0, shaky: 0, solid: 0 };
-  for (const q of cards) states[cardState(q)]++;
+  const { new: fresh, shaky, solid } = o.cardCounts;
+  const states = { new: fresh, shaky, solid };
   const seen = states.shaky + states.solid;
   const daysLeft = o.examInDays !== null && o.examInDays > 0 ? o.examInDays : null;
   const off = (s.chapters ?? []).filter((c) => c.enabled === false);
@@ -66,7 +62,7 @@ function subjectProgress(s: Subject, dojos: Dojo[], on: ISODate) {
     name: s.name,
     exam: { format: s.exam.format, date: s.exam.date ?? null, inDays: o.examInDays },
     topics: o.statusCounts,
-    /** Share of non-skipped topics that are solid, as on the dashboard. */
+    /** Share of the cards that are solid, as on the dashboard. */
     progress: round(o.progress),
     cards: {
       total: cards.length,
@@ -283,7 +279,7 @@ const cardView = (t: Topic, q: TopicQuestion) => ({
   prompt: q.prompt,
   kind: q.kind ?? null,
   answer: q.answer ?? null,
-  state: cardState(q),
+  state: cardStatus(t, q),
   blocked: !!q.blocked,
   due: cardDue(t, q) ?? null,
   intervalDays: q.intervalDays ?? null,
@@ -299,7 +295,7 @@ export function listCards(snap: Snapshot, opts: CardOptions) {
       case 'due':
         return due.has(`${t.id}/${q.id}`);
       case 'new':
-        return !q.blocked && cardState(q) === 'new';
+        return !q.blocked && cardStatus(t, q) === 'new';
       case 'weak':
         return !q.blocked && !!q.stats?.recent.length && (weighted(q.stats.recent)! < WEAK_BELOW || relapsed(q.stats.recent));
       case 'blocked':

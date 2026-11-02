@@ -1,8 +1,8 @@
 import { diffDays } from '../lib/dates';
 import { activeTopics } from '../model/chapters';
 import { activeQuestions } from '../model/quiz';
-import type { CardStats, ISODate, PackSettings, Score, Session, Subject, Topic, TopicQuestion } from '../model/types';
-import { applyCardReviews, averageScore, type CardResult } from './scheduler';
+import type { CardStats, ISODate, PackSettings, Score, Session, SessionItem, Subject, Topic, TopicQuestion } from '../model/types';
+import { applyCardReviews, averageScore, cardDue, GENERIC_CARD, type CardResult } from './scheduler';
 
 /**
  * Card priority for endless mode. It depends only on how the learner does with
@@ -54,6 +54,19 @@ export function cardPriority(stats: CardStats | undefined, on: ISODate): number 
   const weakness = 1 - sum / weights / 5; // 0 = always right … 1 = always wrong
   const idle = stats.last ? Math.min(diffDays(stats.last, on), 30) / 30 : 0;
   return 0.3 + weakness * 4 + idle;
+}
+
+export type CardStatus = 'new' | 'shaky' | 'solid';
+
+/**
+ * How a card stands: its last score, else what it inherited. Cards from before
+ * cards had dates follow their topic, and so does the generic card of a topic.
+ */
+export function cardStatus(topic: Topic, q: TopicQuestion): CardStatus {
+  const last = q.stats?.recent.at(-1);
+  if (last !== undefined) return last < 4 ? 'shaky' : 'solid';
+  if (q.id !== GENERIC_CARD && !cardDue(topic, q)) return 'new';
+  return topic.status === 'solid' ? 'solid' : topic.status === 'shaky' ? 'shaky' : 'new';
 }
 
 /** All cards of a subject that may be asked: not blocked, topic not skipped. */
@@ -121,3 +134,23 @@ export function withQuizResults(subject: Subject, session: Session, on: ISODate,
     },
   );
 }
+
+/** The fields of a card that an answer changes. */
+const ANSWER_FIELDS = ['stats', 'due', 'intervalDays', 'since'] as const;
+
+/**
+ * Saves one answer of a quiz right away, so leaving the quiz loses nothing.
+ * `before`: the card as it was before an earlier rating of the same answer,
+ * so correcting a rating does not count the card twice.
+ */
+export function withQuizAnswer(subject: Subject, session: Session, item: SessionItem, score: Score, on: ISODate, settings?: PackSettings, before?: TopicQuestion): Subject {
+  const base = before
+    ? mapQuestion(subject, { topic: { id: item.topicId } as Topic, question: before }, (q) => {
+        const reset = { ...q };
+        for (const k of ANSWER_FIELDS) delete reset[k];
+        return { ...reset, ...Object.fromEntries(ANSWER_FIELDS.flatMap((k) => (before[k] === undefined ? [] : [[k, before[k]]]))) };
+      })
+    : subject;
+  return withQuizResults(base, { ...session, items: [{ ...item, score }] }, on, settings);
+}
+

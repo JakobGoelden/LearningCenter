@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { cardPriority, deckOf, drawCard, recordCard } from '../src/scheduling/cards';
+import { cardPriority, cardStatus, deckOf, drawCard, recordCard, withQuizAnswer } from '../src/scheduling/cards';
+import { overview } from '../src/model/derive';
 import { allBlocked, questionFor } from '../src/model/quiz';
-import type { Subject, Topic } from '../src/model/types';
+import type { Session, Subject, Topic } from '../src/model/types';
 
 const topic = (id: string, qs: Topic['questions'], status: Topic['status'] = 'new'): Topic => ({ id, title: id, status, questions: qs });
 const subject = (topics: Topic[]) => ({ id: 's', name: 's', exam: { format: 'unknown' }, topics }) as Subject;
@@ -67,3 +68,67 @@ describe('deck and drawing', () => {
     expect(allBlocked(topic('a', undefined))).toBe(false);
   });
 });
+
+describe('saving a quiz card by card', () => {
+  const on = '2026-11-02';
+  const t: Topic = {
+    id: 't',
+    title: 'T',
+    status: 'new',
+    questions: [
+      { id: 'a', prompt: 'A?' },
+      { id: 'b', prompt: 'B?', stats: { seen: 1, recent: [5], last: '2026-10-30' }, due: '2026-11-02', intervalDays: 3, since: '2026-10-30' },
+      { id: 'c', prompt: 'C?', blocked: true },
+    ],
+  };
+  const subj: Subject = { id: 's', name: 'S', exam: { format: 'written' }, topics: [t] };
+  const session: Session = {
+    id: 'q1',
+    type: 'quiz',
+    subject: 's',
+    startedAt: '2026-11-02T10:00:00Z',
+    items: [
+      { n: 1, topicId: 't', question: 'a', prompt: 'A?' },
+      { n: 2, topicId: 't', question: 'b', prompt: 'B?' },
+    ],
+  };
+  const card = (s: Subject, id: string) => s.topics[0].questions!.find((q) => q.id === id)!;
+
+  it('saves one card and leaves the others untouched', () => {
+    const after = withQuizAnswer(subj, session, session.items[0], 5, on);
+    expect(card(after, 'a').stats).toMatchObject({ seen: 1, recent: [5], last: on });
+    expect(card(after, 'a').due).toBeDefined();
+    expect(card(after, 'b')).toEqual(card(subj, 'b'));
+    expect(after.topics[0].history).toHaveLength(1);
+  });
+
+  it('counts a corrected rating once', () => {
+    const before = card(subj, 'b');
+    const first = withQuizAnswer(subj, session, session.items[1], 1, on);
+    const corrected = withQuizAnswer(first, session, session.items[1], 5, on, undefined, before);
+    expect(card(corrected, 'b').stats).toMatchObject({ seen: 2, recent: [5, 5] });
+    expect(card(corrected, 'b').due! > card(first, 'b').due!).toBe(true);
+  });
+
+  it('removes what a first rating of a new card wrote when it is corrected', () => {
+    const before = card(subj, 'a');
+    const first = withQuizAnswer(subj, session, session.items[0], 1, on);
+    const corrected = withQuizAnswer(first, session, session.items[0], 3, on, undefined, before);
+    expect(card(corrected, 'a').stats).toMatchObject({ seen: 1, recent: [3] });
+  });
+
+  it('gives every card a status of its own', () => {
+    expect(cardStatus(t, card(subj, 'a'))).toBe('new');
+    expect(cardStatus(t, card(subj, 'b'))).toBe('solid');
+    const legacy: Topic = { ...t, status: 'shaky', due: on, intervalDays: 1, questions: [{ id: 'x', prompt: 'X?' }] };
+    expect(cardStatus(legacy, legacy.questions![0])).toBe('shaky');
+  });
+
+  it('counts cards in the overview, without blocked ones', () => {
+    const o = overview(subj, on);
+    expect(o.cardCounts).toEqual({ new: 1, shaky: 0, solid: 1, skip: 0 });
+    expect(o.progress).toBe(0.5);
+    expect(o.dueByTopic).toEqual([{ topic: t, cards: 1, oldest: on }]);
+  });
+});
+

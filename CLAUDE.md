@@ -270,8 +270,10 @@ days).
 | 0–2 | step 1 (1 day) | `shaky` |
 
 - The ladder applies to every card on its own (`status` of a card: new, or
-  shaky if its last score was below 4, else solid). The topic gets the
-  average of the quiz as one `history` entry and is due with its earliest card.
+  shaky if its last score was below 4, else solid). A quiz run in the app saves
+  each rating right away, so leaving it keeps what was rated, and the topic gets
+  one `history` entry per rated card. It is due with its earliest card. A blocked
+  card needs no rating. Progress in the overviews counts cards, not topics.
 - `due` = date of the quiz + interval. If it falls on Sat/Sun and
   `settings.skipWeekends` is not `false`, move it to Monday.
 - `skip` ("do not quiz") is never due and never quizzed.

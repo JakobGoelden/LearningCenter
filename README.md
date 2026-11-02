@@ -8,7 +8,7 @@ the next reviews.
 
 ![Dashboard with the demo pack](docs/dashboard.png)
 
-- **Dashboard:** one banner per subject with a progress bar (share of topics
+- **Dashboard:** one banner per subject with a progress bar (share of cards
   that are solid) and, below it, flags for due reviews, open sheets and open
   tasks. Subjects with dojos get a Dojo button right next to their banner.
   Above them, a calendar: **Today** (top left) lists today's classes and

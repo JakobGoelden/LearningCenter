@@ -34,7 +34,7 @@ describe('derive', async () => {
     expect(cls?.text).toBe('Lab 12:00–13:30 · PC pool');
   });
 
-  it('measures progress as the solid share of non-skipped topics', () => {
+  it('measures progress as the solid share of the cards', () => {
     expect(progressOf({ new: 2, shaky: 1, solid: 1, skip: 5 })).toBe(0.25);
     expect(progressOf({ new: 0, shaky: 0, solid: 0, skip: 0 })).toBe(0);
     expect(overview(loaded.subjects[0], DEMO_ANCHOR).openSheets.map((s) => s.id)).toEqual(['b3']);

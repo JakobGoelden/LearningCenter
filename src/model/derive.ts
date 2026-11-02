@@ -1,6 +1,7 @@
 import { activeTopics } from './chapters';
 import { diffDays, weekday } from '../lib/dates';
-import { cardDue, dueCards, isDue, isOverdue } from '../scheduling/scheduler';
+import { cardStatus, deckOf } from '../scheduling/cards';
+import { cardDue, dueCards, isDue, isOverdue, laterCards } from '../scheduling/scheduler';
 import type { Check, ClassSlot, ISODate, LoadedPack, Sheet, Subject, Topic, TopicStatus, Weekday } from './types';
 
 /** Exams within this many days show up in the "Today" line. */
@@ -14,14 +15,20 @@ export interface SubjectOverview {
   statusCounts: Record<TopicStatus, number>;
   due: Topic[];
   overdue: Topic[];
+  /** The cards that take part, by status (`skip` stays 0: skipped topics bring no cards). */
+  cardCounts: Record<TopicStatus, number>;
   /** Cards due today or earlier, and how many of them are overdue. */
   dueCards: number;
   overdueCards: number;
+  /** The due cards per topic, oldest first. */
+  dueByTopic: { topic: Topic; cards: number; oldest: ISODate }[];
+  /** The next days with cards due. */
+  nextCards: { date: ISODate; cards: number }[];
   upcoming: Topic[];
   sheetsSoon: Sheet[];
   openItems: number;
   openSheets: Sheet[];
-  /** Share of non-skipped topics that are solid, 0–1. */
+  /** Share of the cards that are solid, 0–1. */
   progress: number;
   staleChecks: Check[];
 }
@@ -38,7 +45,29 @@ export function progressOf(c: Record<TopicStatus, number>): number {
 
 function cardCounts(subject: Subject, on: ISODate) {
   const cards = dueCards(subject, on);
-  return { dueCards: cards.length, overdueCards: cards.filter((c) => cardDue(c.topic, c.question)! < on).length };
+  const byTopic = new Map<Topic, { topic: Topic; cards: number; oldest: ISODate }>();
+  for (const c of cards) {
+    const due = cardDue(c.topic, c.question)!;
+    const e = byTopic.get(c.topic) ?? { topic: c.topic, cards: 0, oldest: due };
+    byTopic.set(c.topic, { ...e, cards: e.cards + 1, oldest: due < e.oldest ? due : e.oldest });
+  }
+  const next = new Map<ISODate, number>();
+  for (const c of laterCards(subject, on)) {
+    const due = cardDue(c.topic, c.question)!;
+    next.set(due, (next.get(due) ?? 0) + 1);
+  }
+  return {
+    dueCards: cards.length,
+    overdueCards: cards.filter((c) => cardDue(c.topic, c.question)! < on).length,
+    dueByTopic: [...byTopic.values()].sort((a, b) => a.oldest.localeCompare(b.oldest)),
+    nextCards: [...next].sort(([a], [b]) => a.localeCompare(b)).slice(0, 3).map(([date, cards]) => ({ date, cards })),
+  };
+}
+
+function countCards(subject: Subject): Record<TopicStatus, number> {
+  const counts: Record<TopicStatus, number> = { new: 0, shaky: 0, solid: 0, skip: 0 };
+  for (const c of deckOf(subject)) counts[cardStatus(c.topic, c.question)]++;
+  return counts;
 }
 
 export function overview(subject: Subject, on: ISODate): SubjectOverview {
@@ -47,10 +76,12 @@ export function overview(subject: Subject, on: ISODate): SubjectOverview {
   for (const t of topics) statusCounts[t.status]++;
   const byDue = (a: Topic, b: Topic) => (a.due ?? '').localeCompare(b.due ?? '');
   const due = topics.filter((t) => isDue(t, on)).sort(byDue);
+  const byCard = countCards(subject);
   return {
     subject,
     examInDays: subject.exam.date ? diffDays(on, subject.exam.date) : null,
     statusCounts,
+    cardCounts: byCard,
     due,
     overdue: due.filter((t) => isOverdue(t, on)),
     ...cardCounts(subject, on),
@@ -63,7 +94,7 @@ export function overview(subject: Subject, on: ISODate): SubjectOverview {
     ),
     openItems: (subject.openItems ?? []).filter((i) => !i.doneAt).length,
     openSheets: (subject.sheets ?? []).filter((s) => s.status === 'open'),
-    progress: progressOf(statusCounts),
+    progress: progressOf(byCard),
     staleChecks: (subject.checks ?? []).filter((c) => isCheckStale(c, on)),
   };
 }

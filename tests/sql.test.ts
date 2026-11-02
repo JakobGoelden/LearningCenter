@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gradeSqlDrill, sqlProblems, type SqlDrill } from '../src/dojo/sql';
+import { engineError, gradeSqlDrill, sqlProblems, type SqlDrill } from '../src/dojo/sql';
 
 const setup = `CREATE TABLE t (id int PRIMARY KEY, name text, wert numeric(8,2));
 INSERT INTO t VALUES (1, 'a', 10), (2, 'b', NULL), (3, 'c', 30);`;
@@ -54,3 +54,16 @@ describe('sql drills', { timeout: 30_000 }, () => {
     expect((await sqlProblems(drill({ solution: 'SELECT 1', check: 'SELECT * FROM t' })))[0]).toContain('without doing anything');
   });
 });
+
+describe('sql engine errors', () => {
+  it('says to reload when the page is older than the deploy', () => {
+    const stale = new TypeError('Failed to fetch dynamically imported module: https://x/assets/index-a.js');
+    expect((engineError(stale) as Error).message).toContain('Reload this page');
+  });
+
+  it('passes on other errors', () => {
+    const other = new Error('out of memory');
+    expect(engineError(other)).toBe(other);
+  });
+});
+

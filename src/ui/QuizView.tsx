@@ -1,13 +1,13 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { formatShort, nowIso, today } from '../lib/dates';
 import { averageScore, cardDue, dueCards, GENERIC_CARD, laterCards, newCards } from '../scheduling/scheduler';
 import { quizGradeRequest, quizStartRequest } from '../ai/requests';
 import { saveSession } from '../storage/repo';
-import type { Score, Session, SessionItem } from '../model/types';
+import type { Score, Session, SessionItem, TopicQuestion } from '../model/types';
 import { SELF_SCORE, type SelfRating } from '../model/quiz';
-import { cardKey, cardLine, quizScores, withCardBlocked, withQuizResults, type Card } from '../scheduling/cards';
+import { cardKey, cardLine, quizScores, withCardBlocked, withQuizAnswer, withQuizResults, type Card } from '../scheduling/cards';
 import { Markdown } from './Markdown';
 import { Cancelled, useAi } from './AiPanel';
 import { href } from './router';
@@ -105,6 +105,13 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
   const [error, setError] = useState<string | null>(null);
   /** Items whose card was blocked in this quiz. */
   const [blocked, setBlocked] = useState<Set<number>>(new Set());
+  /** The session with every rating so far, also between two renders. */
+  const live = useRef<Session | null>(null);
+  live.current = session;
+  /** Saves run one after another, so quick ratings cannot overwrite each other. */
+  const saving = useRef<Promise<void>>(Promise.resolve());
+  /** Cards as they were before their first rating here, to correct a rating without counting it twice. */
+  const unrated = useRef(new Map<number, TopicQuestion | undefined>());
 
   useEffect(() => {
     if (preset?.length && s) start();
@@ -301,7 +308,7 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
     return topic && question ? { topic, question } : null;
   };
 
-  /** Never ask this card again. In flashcard mode it also moves on to the next card unrated. */
+  /** Never ask this card again. It needs no rating; in flashcard mode it moves on to the next card. */
   const blockItem = (it: SessionItem, advance = false) =>
     guard(async () => {
       const card = cardOf(s, it);
@@ -316,14 +323,38 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
         setDir('fwd');
         setIdx(idx + 1);
         setRevealed(false);
-      } else {
-        await persist({ ...session, finishedAt: nowIso() });
-        setCheckMode('self');
-        setPhase('review');
-      }
+      } else await toReview();
     });
 
-  const rate = (n: number, r: SelfRating) => setRatings(new Map(ratings).set(n, r));
+  /** Saves a rating right away: leaving the quiz at any point keeps what was rated. */
+  const rate = (it: SessionItem, r: SelfRating) => {
+    const current = live.current;
+    if (!current || ratings.get(it.n) === r) return;
+    const score = SELF_SCORE[r] as Score;
+    const again = ratings.has(it.n);
+    const firstSave = !current.applied;
+    const next: Session = { ...current, applied: true, items: current.items.map((x) => (x.n === it.n ? { ...x, score } : x)) };
+    live.current = next;
+    setRatings(new Map(ratings).set(it.n, r));
+    setSession(next);
+    saving.current = saving.current.then(async () => {
+      try {
+        await updateSubject(
+          s.id,
+          (subj) => {
+            const before = subj.topics.find((t) => t.id === it.topicId)?.questions?.find((q) => q.id === it.question);
+            if (!again) unrated.current.set(it.n, before);
+            return withQuizAnswer(subj, next, it, score, on, settings, again ? unrated.current.get(it.n) : undefined);
+          },
+          { type: 'quiz.answer', ref: next.id, data: { n: it.n, topicId: it.topicId ?? null, card: it.question ?? null, rating: r } },
+        );
+        await saveSession(fs, live.current ?? next);
+        if (firstSave) await log({ type: 'quiz.applied', subject: s.id, ref: next.id, data: { scores: { [it.topicId ?? '']: score } } });
+      } catch (e) {
+        setNotice(`Could not save this rating: ${(e as Error).message}`);
+      }
+    });
+  };
 
   const setMode = (m: AnswerMode) => {
     setModeState(m);
@@ -334,47 +365,26 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
     }
   };
 
+  /** After the last card: finish the session and show the overview. */
+  const toReview = async () => {
+    const current = live.current;
+    if (!current) return;
+    await persist({ ...current, finishedAt: nowIso() });
+    setCheckMode('self');
+    setPhase('review');
+  };
+
   /** Flashcards: rate the card, then on to the next one (or to the overview after the last). */
   const rateCard = (r: SelfRating) =>
     guard(async () => {
       if (!session) return;
-      const it = session.items[idx];
-      setRatings(new Map(ratings).set(it.n, r));
-      await log({
-        type: 'quiz.answer',
-        subject: s.id,
-        ref: session.id,
-        data: { n: it.n, topicId: it.topicId ?? null, mode: 'flashcard', rating: r },
-      });
+      rate(session.items[idx], r);
       if (idx < session.items.length - 1) {
         setDir('fwd');
         setIdx(idx + 1);
         setRevealed(false);
-      } else {
-        await persist({ ...session, finishedAt: nowIso() });
-        setCheckMode('self');
-        setPhase('review');
-      }
+      } else await toReview();
     });
-
-  const saveSelf = () => {
-    if (!session) return;
-    const graded: Session = {
-      ...session,
-      items: session.items.map((it) => {
-        const r = ratings.get(it.n);
-        return r ? { ...it, score: SELF_SCORE[r] as Score } : it;
-      }),
-    };
-    void log({
-      type: 'quiz.graded',
-      subject: s.id,
-      ref: session.id,
-      actor: 'user',
-      data: { scores: graded.items.map((i) => i.score ?? null) },
-    });
-    return apply(graded);
-  };
 
   const chatGradePrompt = () => (session ? quizGradeChatPrompt({ fs, pack: loaded.pack, session }) : '');
   /** Copies the prompt first (needs the click), then saves the quiz as waiting for the AI. */
@@ -394,10 +404,17 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
   const canAskAi = pack.ai.adapter !== 'copy-prompt';
   const local = session?.adapter === 'app';
   const settled = !!session && !!(session.applied || session.gradeLater);
+  /** Every card of a quiz run here is rated or blocked. */
+  const allDone = !!session && local && session.items.every((it) => ratings.has(it.n) || blocked.has(it.n));
+  const openCards = session ? session.items.filter((it) => !ratings.has(it.n) && !blocked.has(it.n)).length : 0;
+
+  useEffect(() => {
+    if (allDone && ratings.size && averageScore([...ratings.values()].map((r) => SELF_SCORE[r] as Score)) >= 4) setCheer(true);
+  }, [allDone]);
 
   const doneRow = (sess: Session) => (
     <div class="panel row quiz-actions">
-      {sess.applied ? (
+      {!sess.gradeLater ? (
         <span>
           Saved. Next reviews:{' '}
           {[...new Set(sess.items.map((i) => i.topicId).filter(Boolean))]
@@ -716,16 +733,18 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
               )}
             </div>
           ) : (
-            !settled && (
+            !session.gradeLater && (
               <div class="panel small muted">
-                {session.items.every(flash) ? (
-                  'Your flashcard ratings. Change one if you like, then save.'
+                {session.items.every((it) => flash(it) || blocked.has(it.n)) ? (
+                  'Your flashcard ratings are saved. Change one if you like.'
                 ) : (
                   <>
-                    Compare your answers with the key points and rate each one.{' '}
-                    <button class="link" onClick={() => setCheckMode('choose')}>
-                      Check in chat instead
-                    </button>
+                    Compare your answers with the key points and rate each one. Every rating is saved right away.{' '}
+                    {ratings.size === 0 && (
+                      <button class="link" onClick={() => setCheckMode('choose')}>
+                        Check in chat instead
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -803,14 +822,14 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
                             )}
                           </span>
                         )}
-                        {!session.applied && !session.gradeLater && (
+                        {local && !session.gradeLater && !blocked.has(it.n) && (
                           <span class="rate" onClick={(e) => e.stopPropagation()}>
                             {(['right', 'partly', 'wrong'] as SelfRating[]).map((k) => (
                               <button
                                 type="button"
                                 class={`rate-${k}${r === k ? ' on' : ''}`}
                                 aria-pressed={r === k}
-                                onClick={() => rate(it.n, k)}
+                                onClick={() => rate(it, k)}
                               >
                                 {k === 'right' ? '✓ Right' : k === 'partly' ? '~ Partly' : '✗ Wrong'}
                               </button>
@@ -824,15 +843,15 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
               })}
             </div>
           )}
-          {settled
-            ? session.applied && doneRow(session)
-            : checkMode === 'self' && (
-                <div class="panel row quiz-actions">
-                  <button class="primary" disabled={ratings.size < N} onClick={saveSelf}>
-                    Save to progress{ratings.size < N ? ` (${ratings.size}/${N} graded)` : ''}
-                  </button>
-                </div>
-              )}
+          {!session.gradeLater &&
+            (checkMode === 'self' || settled) &&
+            (allDone ? (
+              doneRow(session)
+            ) : (
+              <div class="panel row quiz-actions small muted">
+                {openCards} of {N} {N === 1 ? 'card' : 'cards'} still to rate. What you rated is saved, so you can leave at any time.
+              </div>
+            ))}
         </div>
       )}
 

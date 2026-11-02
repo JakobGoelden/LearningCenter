@@ -20,8 +20,18 @@ let engine: Promise<Db> | null = null;
 
 /** Starts the database; call it early so the first check does not wait for the download. */
 export function sqlEngine(): Promise<Db> {
-  engine ??= import('@electric-sql/pglite').then(({ PGlite }) => PGlite.create());
+  engine ??= import('@electric-sql/pglite')
+    .then(({ PGlite }) => PGlite.create())
+    .catch((e: unknown) => {
+      engine = null; // a failed start must not stick: the next check tries again
+      throw engineError(e);
+    });
   return engine;
+}
+
+/** A page from before a deploy asks for chunks that are gone; only a reload helps. */
+export function engineError(e: unknown): unknown {
+  return e instanceof Error && /dynamically imported module|module script/i.test(e.message) ? new Error('The app was updated. Reload this page to run SQL.') : e;
 }
 
 /** Rows as lists: two columns may share a name, as in `SELECT m.name, a.name`. */

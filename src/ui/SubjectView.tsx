@@ -123,21 +123,23 @@ export function SubjectView({ subjectId }: { subjectId: string }) {
 
         <section class="panel">
           <h3>Progress</h3>
-          <StatusBar counts={o.statusCounts} legend />
-          {o.due.length > 0 ? (
+          <StatusBar counts={o.cardCounts} legend />
+          {o.dueByTopic.length > 0 ? (
             <ul class="list small">
-              {o.due.map((t) => (
+              {o.dueByTopic.map((d) => (
                 <li>
-                  <span class="grow">{t.title}</span>
-                  <span class={t.due! < on ? 'overdue' : ''}>{t.due! < on ? `overdue (${relative(t.due!, on)})` : 'today'}</span>
+                  <span class="grow">{d.topic.title}</span>
+                  <span class={d.oldest < on ? 'overdue' : ''}>
+                    {d.cards} {d.cards === 1 ? 'card' : 'cards'} {d.oldest < on ? `overdue (${relative(d.oldest, on)})` : 'today'}
+                  </span>
                 </li>
               ))}
             </ul>
           ) : (
             <div class="small muted">No cards due.</div>
           )}
-          {o.upcoming.length > 0 && (
-            <div class="small muted">Next up: {o.upcoming.map((t) => `${t.title} (${formatShort(t.due!)})`).join(' · ')}</div>
+          {o.nextCards.length > 0 && (
+            <div class="small muted">Next up: {o.nextCards.map((n) => `${n.cards} ${n.cards === 1 ? 'card' : 'cards'} (${formatShort(n.date)})`).join(' · ')}</div>
           )}
         </section>
 
