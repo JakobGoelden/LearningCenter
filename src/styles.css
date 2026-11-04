@@ -1035,6 +1035,8 @@ button.star { background: none; border: 0; box-shadow: none; padding: 2px 6px; f
 button.star:hover { color: var(--gold); }
 button.star.on { color: var(--gold); }
 .dojo-card-star { position: absolute; z-index: 2; right: 66px; top: 14px; }
+/* The title wraps before it reaches the star and the torii. */
+.dojo-card-star + h2 { padding-right: 104px; }
 .dojo-hero-star { vertical-align: middle; margin-left: 6px; }
 .mastery { display: grid; gap: 4px; }
 .mastery-head { display: flex; align-items: baseline; gap: 8px; }
