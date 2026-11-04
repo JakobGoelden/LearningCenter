@@ -171,8 +171,8 @@ export function DojoList({ subject: s, dojos, examMinutes }: { subject: Subject;
         {rows.map(({ d, m, fav, next }) => (
           <div class={`dojo-card${fav ? ' fav' : ''}`} style={{ '--c': s.color }}>
             <Torii class="dojo-card-torii" />
-            <StarButton on={fav} onToggle={() => toggle(d.id)} class="dojo-card-star" />
-            <h2>
+            <h2 class="dojo-card-title">
+              <StarButton on={fav} onToggle={() => toggle(d.id)} class="dojo-card-star" />
               <a class="dojo-card-link" href={href({ name: 'dojo', subject: s.id, dojo: d.id })}>
                 {d.title}
               </a>
