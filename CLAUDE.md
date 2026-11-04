@@ -459,6 +459,17 @@ while answering, as characters (`["σ", "⋈"]`) or group names (`automata`,
 app also adds the symbols it finds in a task and its answer key, so set
 `symbols` only when tasks need symbols they do not show.
 
+#### Mastery and favorites
+
+The dojo list shows a **mastery** per dojo (`src/dojo/mastery.ts`), from the
+drill rounds in `sessions/`: every drill counts with its last three scores
+(newer weigh more), fading after a week without practice (half-life 30 days),
+untried drills count as 0, and exam drills weigh 3, medium 2, easy 1. The
+gap to full mastery times the dojo's share of `exam.points` marks the dojos to
+practice next. Use it to see which dojos need new or easier drills. Starred
+dojos are listed first; the app keeps them in `pack.json` →
+`settings.favoriteDojos` (never edit it for the person).
+
 #### Practice exam
 
 The dojo page of every subject has a **Practice exam**: exam-level drills of

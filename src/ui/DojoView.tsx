@@ -16,6 +16,8 @@ import { roundScore } from '../dojo/drills';
 import { DEFAULT_EXAM_MINUTES, examDrills, ownerDojo, PRACTICE_EXAM, practiceExam, practiceExamDojo } from '../dojo/exam';
 import { Enso, Torii } from './Emblem';
 import { SymbolBar } from './SymbolBar';
+import { DojoList, MasteryBar, StarButton, useDrillHistory, useFavorites } from './DojoList';
+import { dojoMastery } from '../dojo/mastery';
 import { BackLink } from './BackLink';
 import { dojoChatPrompt } from '../ai/chat';
 import { taskSymbols } from '../dojo/symbols';
@@ -44,6 +46,9 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
   const [error, setError] = useState<string | null>(null);
   /** A practice round is running: show only the round. */
   const [running, setRunning] = useState(false);
+  // Read again after every round, so the mastery in the header is current.
+  const history = useDrillHistory(subjectId, all, running);
+  const { favorites, toggle } = useFavorites();
 
   if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
 
@@ -64,7 +69,10 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
       <div class="dojo-hero-body">
         {back}
         <div class="dojo-hero-eyebrow">Dojo · {s.name}</div>
-        <h1>{title}</h1>
+        <h1>
+          {title}
+          {dojo && !examMode && <StarButton on={favorites.includes(dojo.id)} onToggle={() => toggle(dojo.id)} class="dojo-hero-star" />}
+        </h1>
         <div class="dojo-hero-sub">{sub}</div>
         {extra}
       </div>
@@ -82,26 +90,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
             <code>packs/dojo-library</code>) and list its ID in <code>pack.json</code>.
           </div>
         ) : (
-          <div class="cards">
-            {dojos.some((d) => examDrills(d).length) && (
-              <a class="dojo-card exam-card" style={{ '--c': s.color }} href={href({ name: 'dojo', subject: s.id, dojo: PRACTICE_EXAM })}>
-                <Torii class="dojo-card-torii" />
-                <h2>Practice exam</h2>
-                <span class="dojo-card-count">{dojos.reduce((n, d) => n + examDrills(d).length, 0)} exam tasks</span>
-                <div class="small muted">Exam-level tasks from all dojos, mixed like the real exam, {examMinutes} minutes.</div>
-              </a>
-            )}
-            {dojos.map((d) => (
-              <a class="dojo-card" style={{ '--c': s.color }} href={href({ name: 'dojo', subject: s.id, dojo: d.id })}>
-                <Torii class="dojo-card-torii" />
-                <h2>{d.title}</h2>
-                {d.drills?.length ? <span class="dojo-card-count">{d.drills.length} exercises</span> : null}
-                <div class="small muted">{d.procedure}</div>
-                {d.description && <div class="small">{d.description}</div>}
-                {d.aids?.length ? <div class="small muted">Aids: {d.aids.join(', ')}</div> : null}
-              </a>
-            ))}
-          </div>
+          <DojoList subject={s} dojos={dojos} examMinutes={examMinutes} />
         )}
       </div>
     );
@@ -297,6 +286,11 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
         dojo.procedure,
         <>
           {dojo.description && <p class="dojo-hero-desc">{dojo.description}</p>}
+          {!examMode && history && dojo.drills?.length ? (
+            <div class="dojo-hero-mastery">
+              <MasteryBar m={dojoMastery(dojo, history, today())} on={today()} />
+            </div>
+          ) : null}
           <div class="dojo-hero-tags">
             {dojo.drills?.length ? <span>{dojo.drills.length} exercises</span> : null}
             {(dojo.levels ?? []).map((l) => (

@@ -121,6 +121,18 @@ export function StudyView() {
               </button>
             )}
           </div>
+          <div class="start-row">
+            <button
+              class="primary study-go"
+              onClick={() => {
+                setPlan(preview);
+                setStep(0);
+              }}
+            >
+              Start here · {total} {total === 1 ? 'card' : 'cards'}
+            </button>
+            <ChatStart prompt={() => quizChatPrompt({ fs, pack: loaded.pack, blocks: preview })} />
+          </div>
           {preview.map((b) => (
             <div class="study-block" style={{ '--c': b.subject.color }}>
               <h3>{b.subject.name}</h3>
@@ -141,18 +153,6 @@ export function StudyView() {
               </ul>
             </div>
           ))}
-          <div class="start-row">
-            <button
-              class="primary study-go"
-              onClick={() => {
-                setPlan(preview);
-                setStep(0);
-              }}
-            >
-              Start here · {total} {total === 1 ? 'card' : 'cards'}
-            </button>
-            <ChatStart prompt={() => quizChatPrompt({ fs, pack: loaded.pack, blocks: preview })} />
-          </div>
         </div>
       )}
     </div>

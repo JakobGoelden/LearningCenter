@@ -17,6 +17,8 @@ export interface PackSettings {
   /** New cards (never answered) each subject may bring in per day; default 10. */
   newCardsPerDay?: number;
   language?: string;
+  /** Dojo ids the learner starred; listed first. Set by the app. */
+  favoriteDojos?: string[];
 }
 
 export interface Pack {
