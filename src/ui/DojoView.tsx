@@ -16,8 +16,8 @@ import { roundScore } from '../dojo/drills';
 import { DEFAULT_EXAM_MINUTES, examDrills, ownerDojo, PRACTICE_EXAM, practiceExam, practiceExamDojo } from '../dojo/exam';
 import { Enso, Torii } from './Emblem';
 import { SymbolBar } from './SymbolBar';
-import { DojoList, MasteryBar, StarButton, useDrillHistory, useFavorites } from './DojoList';
-import { dojoMastery } from '../dojo/mastery';
+import { DojoList, SkillBar, StarButton, useDrillHistory, useFavorites } from './DojoList';
+import { dojoSkill } from '../dojo/skill';
 import { BackLink } from './BackLink';
 import { dojoChatPrompt } from '../ai/chat';
 import { taskSymbols } from '../dojo/symbols';
@@ -46,7 +46,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
   const [error, setError] = useState<string | null>(null);
   /** A practice round is running: show only the round. */
   const [running, setRunning] = useState(false);
-  // Read again after every round, so the mastery in the header is current.
+  // Read again after every round, so the skill in the header is current.
   const history = useDrillHistory(subjectId, all, running);
   const { favorites, toggle } = useFavorites();
 
@@ -288,7 +288,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
           {dojo.description && <p class="dojo-hero-desc">{dojo.description}</p>}
           {!examMode && history && dojo.drills?.length ? (
             <div class="dojo-hero-mastery">
-              <MasteryBar m={dojoMastery(dojo, history, today())} on={today()} />
+              <SkillBar m={dojoSkill(dojo, history, today())} on={today()} />
             </div>
           ) : null}
           <div class="dojo-hero-tags">

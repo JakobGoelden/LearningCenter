@@ -459,16 +459,18 @@ while answering, as characters (`["σ", "⋈"]`) or group names (`automata`,
 app also adds the symbols it finds in a task and its answer key, so set
 `symbols` only when tasks need symbols they do not show.
 
-#### Mastery and favorites
+#### Skill and favorites
 
-The dojo list shows a **mastery** per dojo (`src/dojo/mastery.ts`), from the
-drill rounds in `sessions/`: every drill counts with its last three scores
-(newer weigh more), fading after a week without practice (half-life 30 days),
-untried drills count as 0, and exam drills weigh 3, medium 2, easy 1. The
-gap to full mastery times the dojo's share of `exam.points` marks the dojos to
-practice next. Use it to see which dojos need new or easier drills. Starred
-dojos are listed first; the app keeps them in `pack.json` →
-`settings.favoriteDojos` (never edit it for the person).
+The dojo list shows a **skill** per dojo (`src/dojo/skill.ts`), from the drill
+rounds in `sessions/`: only the **first** attempt at each drill counts (a drill
+seen before tests memory of that answer, not the skill), newer first attempts
+weigh more (half-life 30 days), exam drills weigh 3, medium 2, easy 1, and a
+prior keeps the number low until enough unseen drills went well. So a dojo
+needs many drills: once few are unseen, add new ones (varied data and
+wording, not the same task with other numbers) so the skill can still be
+measured. The gap to full skill times the dojo's share of `exam.points` marks
+the dojos to practice next. Starred dojos are listed first; the app keeps them
+in `pack.json` → `settings.favoriteDojos` (never edit it for the person).
 
 #### Practice exam
 

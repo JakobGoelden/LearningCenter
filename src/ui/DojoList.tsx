@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { listSessions, loadSession } from '../storage/repo';
 import { diffDays, today } from '../lib/dates';
-import { dojoMastery, drillHistory, practiceNeed, type DrillHistory, type Mastery } from '../dojo/mastery';
+import { dojoSkill, drillHistory, practiceNeed, type DrillHistory, type Skill } from '../dojo/skill';
 import { examDrills, PRACTICE_EXAM } from '../dojo/exam';
 import { LEVEL_LABEL } from '../ai/requests';
 import type { Dojo, Level, Session, Subject } from '../model/types';
@@ -71,31 +71,32 @@ const ago = (date: string | undefined, on: string) => {
   return d === 0 ? 'practiced today' : d === 1 ? 'practiced yesterday' : `practiced ${d} days ago`;
 };
 
-/** Mastery as a bar with the numbers behind it. */
-export function MasteryBar({ m, on, compact = false }: { m: Mastery; on: string; compact?: boolean }) {
+/** Skill as a bar with the evidence behind it. */
+export function SkillBar({ m, on }: { m: Skill; on: string }) {
   const tone = m.score >= 0.8 ? 'good' : m.score >= 0.5 ? 'mid' : 'low';
   return (
-    <div class={`mastery ${tone}`} title="Mastery: recent scores of every exercise, exam level counts most, fades without practice">
+    <div class={`mastery ${tone}`} title="Skill: how well you solve exercises you have not seen before. Only first attempts count; newer ones weigh more, exam level most.">
       <div class="mastery-head">
         <strong>{pct(m.score)}</strong>
         <span class="small">
-          mastery · {m.tried}/{m.total} tried{compact ? '' : ` · ${ago(m.last, on)}`}
+          skill · {m.tried ? `from ${m.tried} first ${m.tried === 1 ? 'try' : 'tries'}` : 'not measured yet'} · {ago(m.last, on)}
         </span>
       </div>
       <div class="mastery-track">
         <div class="mastery-fill" style={{ width: pct(m.score).replace(' ', '') }} />
       </div>
-      {!compact && Object.keys(m.levels).length > 1 && (
-        <div class="mastery-levels small">
-          {(['easy', 'medium', 'exam'] as Level[])
-            .filter((l) => m.levels[l] !== undefined)
-            .map((l) => (
-              <span>
-                {LEVEL_LABEL[l]} {pct(m.levels[l]!)}
-              </span>
-            ))}
-        </div>
-      )}
+      <div class="mastery-levels small">
+        {(['easy', 'medium', 'exam'] as Level[])
+          .filter((l) => m.levels[l] !== undefined)
+          .map((l) => (
+            <span>
+              {LEVEL_LABEL[l]} {pct(m.levels[l]!)}
+            </span>
+          ))}
+        <span class={m.unseen ? '' : 'mastery-empty'}>
+          {m.unseen ? `${m.unseen} unseen left` : 'no unseen exercises left: add new ones to measure further'}
+        </span>
+      </div>
     </div>
   );
 }
@@ -129,7 +130,7 @@ export function DojoList({ subject: s, dojos, examMinutes }: { subject: Subject;
 
   const rows = useMemo(() => {
     const out = dojos.map((d, i) => {
-      const m = history ? dojoMastery(d, history, on) : null;
+      const m = history ? dojoSkill(d, history, on) : null;
       return { d, i, m, need: m ? practiceNeed(d, m, dojos) : 0, fav: favorites.includes(d.id) };
     });
     const next = new Set(
@@ -147,7 +148,7 @@ export function DojoList({ subject: s, dojos, examMinutes }: { subject: Subject;
     <>
       <div class="row dojo-list-bar">
         <span class="small muted">
-          {history ? 'Mastery = recent scores of all exercises, exam level counts most; it fades without practice.' : 'Reading your rounds…'}
+          {history ? 'Skill = how well you solve exercises you have not seen before (first attempts only, newer ones count more, exam level most).' : 'Reading your rounds…'}
         </span>
         <span class="spacer" style="flex:1" />
         <div class="segmented" role="group" aria-label="Order">
@@ -181,7 +182,7 @@ export function DojoList({ subject: s, dojos, examMinutes }: { subject: Subject;
               {d.drills?.length ? <span class="dojo-card-count">{d.drills.length} exercises</span> : null}
               {next && <span class="dojo-card-next">Practice next</span>}
             </span>
-            {m && d.drills?.length ? <MasteryBar m={m} on={on} /> : null}
+            {m && d.drills?.length ? <SkillBar m={m} on={on} /> : null}
             <div class="small muted">{d.procedure}</div>
             {d.description && <div class="small">{d.description}</div>}
             {d.aids?.length ? <div class="small muted">Aids: {d.aids.join(', ')}</div> : null}
