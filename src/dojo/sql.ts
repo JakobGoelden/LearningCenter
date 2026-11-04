@@ -36,7 +36,13 @@ export function engineError(e: unknown): unknown {
 
 /** Rows as lists: two columns may share a name, as in `SELECT m.name, a.name`. */
 const ARRAYS = { rowMode: 'array' } as const;
-const RESET = 'RESET ALL; DROP SCHEMA public CASCADE; CREATE SCHEMA public;';
+// Roles and temporary tables live outside the schema, so a GRANT or TEMPORARY TABLE drill drops them too.
+const RESET = `RESET ALL; DISCARD TEMP; DROP SCHEMA public CASCADE; CREATE SCHEMA public;
+DO $$ DECLARE r text; BEGIN
+  FOR r IN SELECT rolname FROM pg_roles WHERE rolname NOT LIKE 'pg\\_%' AND rolname <> current_user LOOP
+    EXECUTE format('DROP OWNED BY %I', r); EXECUTE format('DROP ROLE %I', r);
+  END LOOP;
+END $$;`;
 
 /** Text for one value: 3700.00 and 3700 are the same number. */
 function cell(v: unknown): string {

@@ -48,6 +48,17 @@ describe('sql drills', { timeout: 30_000 }, () => {
     expect((await gradeSqlDrill(ddl, 'ALTER TABLE t ADD ort text')).correct).toBe(false);
   });
 
+  it('starts without the roles and temporary tables of the last run', async () => {
+    const dcl = drill({ setup: setup + '\nCREATE ROLE gast;', solution: 'GRANT SELECT ON t TO gast', check: "SELECT has_table_privilege('gast', 't', 'SELECT'), has_table_privilege('gast', 't', 'UPDATE')" });
+    expect((await gradeSqlDrill(dcl, 'GRANT SELECT ON TABLE t TO gast')).correct).toBe(true);
+    expect((await gradeSqlDrill(dcl, 'GRANT ALL ON t TO gast')).correct).toBe(false);
+    expect(await sqlProblems(dcl)).toEqual([]);
+
+    const temp = drill({ setup: '', solution: 'CREATE TEMPORARY TABLE z (a int)', check: "SELECT relpersistence FROM pg_class WHERE relname = 'z'" });
+    expect((await gradeSqlDrill(temp, 'CREATE TEMP TABLE z (a int)')).correct).toBe(true);
+    expect(await sqlProblems(temp)).toEqual([]);
+  });
+
   it('finds broken and pointless drills', async () => {
     expect(await sqlProblems(drill({}))).toEqual([]);
     expect((await sqlProblems(drill({ solution: 'SELECT nope FROM t' })))[0]).toContain('solution fails');
