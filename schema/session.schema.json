@@ -27,7 +27,7 @@
         "properties": {
           "n": { "type": "integer", "minimum": 1 },
           "topicId": { "$ref": "common.schema.json#/$defs/id" },
-          "kind": { "enum": ["why", "what-if", "explain", "apply", "task", "drill"] },
+          "kind": { "enum": ["define", "why", "what-if", "explain", "apply", "task", "drill"] },
           "drill": { "$ref": "common.schema.json#/$defs/id", "description": "Id of the prepared drill, for kind drill." },
           "question": { "$ref": "common.schema.json#/$defs/id", "description": "Id of the prepared topic question, for quizzes run in the app." },
           "prompt": { "type": "string" },

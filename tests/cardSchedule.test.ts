@@ -87,6 +87,11 @@ describe('new cards', () => {
     expect(newCards([db, math], THU, { newCardsPerDay: 2 }, 'db').map((c) => c.question.id)).toEqual(['d0', 'd1']);
   });
 
+  it('brings in definitions first, from any topic of the subject', () => {
+    const s = subj('theo', [fresh('a', 2), { ...fresh('b', 0), questions: [q('b0'), q('def', { kind: 'define' })] }]);
+    expect(newCards([s], THU, { newCardsPerDay: 3 }).map((c) => c.question.id)).toEqual(['def', 'a0', 'a1']);
+  });
+
   it("counts cards started today against their own subject's budget only", () => {
     const started = subj('s', [{ ...fresh('a', 3), questions: [q('x', { since: THU, due: '2026-10-23' }), q('y'), q('z')] }]);
     const other = subj('o', [fresh('o', 3)]);

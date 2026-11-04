@@ -32,7 +32,7 @@ async function snapshot(fs: PackFs): Promise<Snapshot> {
 const subject = { type: 'string', description: 'Subject id, see get_progress.' };
 const topic = { type: 'string', description: 'Topic id, see get_subject_topics.' };
 const offChapters = { type: 'boolean', description: 'Also look at chapters the learner switched off. Default false: their lecture may not have happened yet.' };
-const kind = { enum: ['why', 'what-if', 'explain', 'apply'] };
+const kind = { enum: ['define', 'why', 'what-if', 'explain', 'apply'] };
 const schema = (properties: Record<string, unknown>, required: string[] = []): Tool['inputSchema'] => ({
   type: 'object',
   properties,

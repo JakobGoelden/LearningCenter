@@ -59,6 +59,7 @@ export interface Topic {
 export interface TopicQuestion {
   id: string;
   prompt: string;
+  /** define = an exact definition to state; these come first and more often. */
   kind?: QuestionKind;
   /** Key points of a good answer (Markdown), shown after answering. */
   answer?: string;
@@ -273,7 +274,7 @@ export interface Step {
   comment?: string;
 }
 
-export type QuestionKind = 'why' | 'what-if' | 'explain' | 'apply';
+export type QuestionKind = 'define' | 'why' | 'what-if' | 'explain' | 'apply';
 
 export interface SessionItem {
   n: number;

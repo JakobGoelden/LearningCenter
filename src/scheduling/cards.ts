@@ -2,7 +2,7 @@ import { diffDays } from '../lib/dates';
 import { activeTopics } from '../model/chapters';
 import { activeQuestions } from '../model/quiz';
 import type { CardStats, ISODate, PackSettings, Score, Session, SessionItem, Subject, Topic, TopicQuestion } from '../model/types';
-import { applyCardReviews, averageScore, cardDue, GENERIC_CARD, type CardResult } from './scheduler';
+import { applyCardReviews, averageScore, cardDue, GENERIC_CARD, isDefinition, type CardResult } from './scheduler';
 
 /**
  * Card priority for endless mode. It depends only on how the learner does with
@@ -85,6 +85,9 @@ export const cardLine = (c: Pick<Card, 'question'>) =>
     .replace(/\*\*|`|\$/g, '')
     .replace(/\*([^*]+)\*/g, '$1');
 
+/** How much more often a definition card comes up than another card of the same strength. */
+export const DEFINITION_WEIGHT = 2;
+
 /**
  * Draws the next card by priority. The last few cards shown are held back so
  * a weak card does not come twice in a row. `random` is injectable for tests.
@@ -94,7 +97,7 @@ export function drawCard(deck: Card[], on: ISODate, recent: string[] = [], rando
   const holdBack = Math.min(3, deck.length - 1);
   const skip = new Set(recent.slice(-holdBack));
   const pool = deck.filter((c) => !skip.has(cardKey(c)));
-  const weights = pool.map((c) => cardPriority(c.question.stats, on));
+  const weights = pool.map((c) => cardPriority(c.question.stats, on) * (isDefinition(c.question) ? DEFINITION_WEIGHT : 1));
   let r = random() * weights.reduce((a, b) => a + b, 0);
   for (let i = 0; i < pool.length; i++) {
     r -= weights[i];

@@ -83,7 +83,11 @@ The format is fully described in `schema/*.schema.json` (JSON Schema
    new cards (`settings.newCardsPerDay`, default 20, across all subjects),
    no AI needed. `prompt` tests understanding, not wording; `answer` lists
    the key points of a good answer (Markdown bullets, plus a typical
-   mistake). In flashcard mode the learner answers in their head, flips to
+   mistake). `kind` is `define`, `why`, `what-if`, `explain` or `apply`.
+   `define` marks a card that asks for an exact definition (inductive ones
+   included) where the exam asks for definitions: the app brings these in
+   before all other new cards of the subject and shows them twice as often
+   in endless mode. In flashcard mode the learner answers in their head, flips to
    the key points and rates right/partly/wrong, so keep `answer` short
    enough to check at a glance. Vocabulary (abbreviations, names) is one
    card per term. The topic title is shown above the card while asking, so

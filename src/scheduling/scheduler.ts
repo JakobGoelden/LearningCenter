@@ -95,6 +95,9 @@ export const DEFAULT_NEW_CARDS_PER_DAY = 10;
 /** Id of the one generic card of a topic without prepared questions. */
 export const GENERIC_CARD = '_';
 
+/** Cards that ask for an exact definition: the learner wants these above all else. */
+export const isDefinition = (q: TopicQuestion) => q.kind === 'define';
+
 export const newCardsPerDay = (settings?: PackSettings) => Math.max(0, settings?.newCardsPerDay ?? DEFAULT_NEW_CARDS_PER_DAY);
 
 /**
@@ -206,8 +209,9 @@ const startedIn = (s: Subject, on: ISODate) =>
 
 /**
  * New cards for today: every subject brings in up to its own daily budget
- * (minus the cards it started today), in the order of its topics and cards, so
- * a script is learned front to back. Subjects take turns, nearest exam first.
+ * (minus the cards it started today), definitions first, otherwise in the order
+ * of its topics and cards, so a script is learned front to back. Subjects take
+ * turns, nearest exam first.
  */
 export function newCards(subjects: Subject[], on: ISODate, settings?: PackSettings, only?: string): Card[] {
   const perSubject = newCardsPerDay(settings);
@@ -217,6 +221,7 @@ export function newCards(subjects: Subject[], on: ISODate, settings?: PackSettin
       activeTopics(s)
         .filter(quizzable)
         .flatMap((topic) => cardsOf(topic).filter((q) => !cardDue(topic, q)).map((question) => ({ subject: s.id, card: { topic, question } })))
+        .sort((a, b) => Number(isDefinition(b.card.question)) - Number(isDefinition(a.card.question)))
         .slice(0, Math.max(0, perSubject - startedIn(s, on))),
     );
   const out: { subject: string; card: Card }[] = [];

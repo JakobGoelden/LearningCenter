@@ -46,6 +46,12 @@
       ],
       "questions": [
         {
+          "id": "dfa-def",
+          "prompt": "Define a deterministic finite automaton (DFA) formally.",
+          "kind": "define",
+          "answer": "- A 5-tuple $F = \\langle Q, \\Sigma, \\delta, q_0, A \\rangle$\n- $Q$: finite set of states, $\\Sigma$: input alphabet\n- $\\delta: Q \\times \\Sigma \\to Q$: transition function\n- $q_0 \\in Q$: start state, $A \\subseteq Q$: accepting states\n- Typical mistake: $\\delta$ returning a set of states (that is an NFA)"
+        },
+        {
           "id": "difference",
           "kind": "why",
           "prompt": "Why can an NFA be easier to write down than a DFA for the same language, even though both accept exactly the regular languages?",

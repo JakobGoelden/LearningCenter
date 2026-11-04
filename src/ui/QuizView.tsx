@@ -21,7 +21,7 @@ import { PasteGrades } from './PasteGrades';
 /** review: compare with the key points and grade yourself (quizzes run in the app). */
 type Phase = 'setup' | 'answer' | 'review' | 'results';
 
-const KIND_LABEL: Record<string, string> = { why: 'Why', 'what-if': 'What if', explain: 'Explain', apply: 'Apply' };
+const KIND_LABEL: Record<string, string> = { define: 'Definition', why: 'Why', 'what-if': 'What if', explain: 'Explain', apply: 'Apply' };
 
 /** Type the answers, or flashcards: think, flip, rate. Remembered per browser. */
 type AnswerMode = 'write' | 'cards';

@@ -19,7 +19,7 @@
         "additionalProperties": false,
         "properties": {
           "topicId": { "type": "string" },
-          "kind": { "enum": ["why", "what-if", "explain", "apply"] },
+          "kind": { "enum": ["define", "why", "what-if", "explain", "apply"] },
           "prompt": { "type": "string", "minLength": 1 }
         }
       }

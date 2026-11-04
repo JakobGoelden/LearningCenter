@@ -61,6 +61,18 @@ describe('deck and drawing', () => {
     expect(w).toBeGreaterThan(300);
   });
 
+  it('draws definitions more often than other cards of the same strength', () => {
+    const on = '2026-10-18';
+    const def = { ...q('d'), kind: 'define' as const, stats: recordCard(undefined, 3, on) };
+    const other = { ...q('o'), stats: recordCard(undefined, 3, on) };
+    const deck = deckOf(subject([topic('a', [def, other])]));
+    let d = 0;
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 600; i++) if (drawCard(deck, on, [], rnd)!.question.id === 'd') d++;
+    expect(d).toBeGreaterThan(330);
+  });
+
   it('quizzes skip blocked questions and report a fully blocked topic', () => {
     const t = topic('a', [q('1', true), q('2')]);
     expect(questionFor(t).id).toBe('2');

@@ -45,7 +45,7 @@ const arr = (items: unknown) => ({ type: 'array', items });
 
 export const RESPONSE_SCHEMAS: Record<RequestKind, Record<string, unknown>> = {
   'quiz.start': obj({
-    questions: arr(obj({ topicId: str, kind: { type: 'string', enum: ['why', 'what-if', 'explain', 'apply'] }, prompt: str })),
+    questions: arr(obj({ topicId: str, kind: { type: 'string', enum: ['define', 'why', 'what-if', 'explain', 'apply'] }, prompt: str })),
   }),
   'quiz.grade': obj({
     grades: arr(obj({ n: { type: 'integer' }, score, feedback: str, gaps: arr(str) })),
