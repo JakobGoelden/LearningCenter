@@ -749,7 +749,7 @@ button.study-go { padding: 10px 20px; font-size: 1rem; }
 
 /* Quiz as a deck of cards */
 .quiz-deck { position: relative; display: grid; gap: 10px; isolation: isolate; margin-bottom: 12px; }
-.quiz-dots { display: flex; gap: 6px; justify-content: center; }
+.quiz-dots { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .quiz-dots span { width: 8px; height: 8px; border-radius: 999px; background: var(--border); transition: width 0.3s, background 0.3s; }
 .quiz-dots span.done { background: color-mix(in srgb, var(--c, var(--accent)) 55%, var(--border)); }
 .quiz-dots span.now { width: 24px; background: var(--c, var(--accent)); }
@@ -1061,3 +1061,14 @@ button.star.on { color: var(--gold); }
   .wrap { padding-left: 12px; padding-right: 12px; }
   .topbar { margin-left: -12px; margin-right: -12px; padding-left: 12px; padding-right: 12px; }
 }
+
+/* Phones: the page never pans sideways, and the top bar is never covered. */
+html, body { overflow-x: clip; }
+@media (max-width: 640px) {
+  .topbar { position: relative; z-index: 30; }
+  .quiz-dots { gap: 4px; }
+  .quiz-dots span { width: 6px; height: 6px; }
+  .quiz-dots span.now { width: 16px; }
+}
+/* Long topic titles in badges wrap instead of running off the card. */
+.badge { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
