@@ -45,6 +45,8 @@ export interface RoundSummary {
   /** Best total on this device before this round. */
   bestBefore: number;
   record: boolean;
+  /** Stopped before the last exercise: only the answered ones are in `outcomes`. */
+  stopped?: boolean;
 }
 
 const COUNTS = [5, 10, 20];
@@ -132,7 +134,7 @@ export function DrillPractice({
         drills={round}
         timed={timed}
         exam={fixed}
-        onDone={async (outcomes) => {
+        onDone={async (outcomes, stopped) => {
           const pts = roundPoints(outcomes.map((o) => ({ level: o.drill.level, result: o.result, limit: secondsFor(o.drill), seconds: o.seconds, timed })));
           const bestBefore = bestPoints(dojo.id);
           const s: RoundSummary = {
@@ -144,6 +146,7 @@ export function DrillPractice({
             bestStreak: pts.bestStreak,
             bestBefore,
             record: pts.total > 0 && recordPoints(dojo.id, pts.total),
+            ...(stopped ? { stopped: true } : {}),
           };
           setSummary(s);
           await onFinish(s);
@@ -196,7 +199,7 @@ export function DrillPractice({
             {summary.bestStreak >= 3 && <span class="small muted">Longest combo {summary.bestStreak}</span>}
           </div>
           <div class="round-result-text">
-            <div class="dojo-eyebrow">Round finished</div>
+            <div class="dojo-eyebrow">{summary.stopped ? 'Stopped early, the answered exercises count' : 'Round finished'}</div>
             <div class="round-result-big">
               {right}/{summary.outcomes.length} <span>right</span>
             </div>
@@ -212,20 +215,6 @@ export function DrillPractice({
             </div>
           </div>
         </div>
-        <ul class="steps round-list">
-          {summary.outcomes.map((o) => (
-            <li>
-              <span class="round-mark" style={{ color: o.result.correct ? 'var(--ok)' : o.result.score >= 3 ? 'var(--warn)' : 'var(--danger)' }}>
-                {o.result.correct ? '✓' : o.result.score >= 3 ? '½' : '✗'}
-              </span>
-              <span class="small">
-                {firstLine(o.drill.prompt)}
-                {o.result.feedback && <span class="muted"> · {o.result.feedback}</span>}
-              </span>
-              <span class="round-pts">+{o.points.points}</span>
-            </li>
-          ))}
-        </ul>
         <div class="row">
           {mistakes.length > 0 && (
             <button class="primary" onClick={() => start(mistakes)}>
@@ -252,6 +241,20 @@ export function DrillPractice({
               </button>
             ))}
         </div>
+        <ul class="steps round-list">
+          {summary.outcomes.map((o) => (
+            <li>
+              <span class="round-mark" style={{ color: o.result.correct ? 'var(--ok)' : o.result.score >= 3 ? 'var(--warn)' : 'var(--danger)' }}>
+                {o.result.correct ? '✓' : o.result.score >= 3 ? '½' : '✗'}
+              </span>
+              <span class="small">
+                {firstLine(o.drill.prompt)}
+                {o.result.feedback && <span class="muted"> · {o.result.feedback}</span>}
+              </span>
+              <span class="round-pts">+{o.points.points}</span>
+            </li>
+          ))}
+        </ul>
       </section>
     );
   }
@@ -263,7 +266,6 @@ export function DrillPractice({
           <div class="dojo-eyebrow">Practice exam</div>
           <h2>{fixed.title}</h2>
         </div>
-        {fixed.intro}
         <div class="row">
           <button class="primary dojo-go" disabled={!drills.length} onClick={() => start(fixed.pick())}>
             {fixed.startLabel}
@@ -273,6 +275,7 @@ export function DrillPractice({
           </label>
           {bestPoints(dojo.id) > 0 && <span class="small muted">Best {bestPoints(dojo.id)} points</span>}
         </div>
+        {fixed.intro}
       </section>
     );
   }
@@ -378,7 +381,7 @@ function DrillRun({
   timed: boolean;
   /** Practice exam: one clock for the whole round instead of one per drill, and exam points. */
   exam?: { ownerOf: (drillId: string) => string };
-  onDone: (outcomes: DrillOutcome[]) => void;
+  onDone: (outcomes: DrillOutcome[], stopped?: boolean) => void;
   onCancel: () => void;
 }) {
   const [idx, setIdx] = useState(0);
@@ -480,7 +483,11 @@ function DrillRun({
           label={timed ? fmt(clock) : fmt(done && !exam ? outcome.seconds : elapsed)}
           urgent={timed && left < 10 && (!done || !!exam)}
         />
-        <button class="ghost small" onClick={onCancel}>
+        <button
+          class="ghost small"
+          onClick={() => (outcomes.length ? onDone(outcomes, outcomes.length < drills.length) : onCancel())}
+          title={outcomes.length ? 'End the round here: the exercises you answered count' : 'End the round'}
+        >
           Stop
         </button>
       </div>

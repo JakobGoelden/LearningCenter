@@ -487,6 +487,34 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
             </div>
           ) : (
             <>
+              <div class="row mode-row">
+                <span>Answer by</span>
+                <ModeSwitch mode={mode} onChange={setMode} />
+                <span class="small muted">
+                  {mode === 'cards'
+                    ? 'Read the question, answer in your head, flip the card, rate yourself. No typing.'
+                    : 'Write each answer, then compare it with the key points.'}
+                </span>
+              </div>
+              <div class="start-row">
+                <button class="primary" disabled={chosenCards.length === 0} onClick={start}>
+                  Start here · {chosenCards.length} {chosenCards.length === 1 ? 'card' : 'cards'}
+                </button>
+                <ChatStart
+                  disabled={chosenCards.length === 0}
+                  prompt={() => quizChatPrompt({ fs, pack: loaded.pack, blocks: [{ subject: s, topics: chosen, cards: chosenCards }] })}
+                />
+                {canAskAi && (
+                  <button
+                    class="ghost"
+                    disabled={chosen.length === 0}
+                    onClick={startWithAi}
+                    title="The AI writes new questions for these topics"
+                  >
+                    or fresh questions from the AI
+                  </button>
+                )}
+              </div>
               <div class="small muted">
                 {pickOn > on
                   ? `Reviewing ahead: cards due by ${formatShort(pickOn)} come first. Untick what you want to leave out:`
@@ -519,34 +547,6 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
                   );
                 })}
               </ul>
-              <div class="row mode-row">
-                <span>Answer by</span>
-                <ModeSwitch mode={mode} onChange={setMode} />
-                <span class="small muted">
-                  {mode === 'cards'
-                    ? 'Read the question, answer in your head, flip the card, rate yourself. No typing.'
-                    : 'Write each answer, then compare it with the key points.'}
-                </span>
-              </div>
-              <div class="start-row">
-                <button class="primary" disabled={chosenCards.length === 0} onClick={start}>
-                  Start here · {chosenCards.length} {chosenCards.length === 1 ? 'card' : 'cards'}
-                </button>
-                <ChatStart
-                  disabled={chosenCards.length === 0}
-                  prompt={() => quizChatPrompt({ fs, pack: loaded.pack, blocks: [{ subject: s, topics: chosen, cards: chosenCards }] })}
-                />
-                {canAskAi && (
-                  <button
-                    class="ghost"
-                    disabled={chosen.length === 0}
-                    onClick={startWithAi}
-                    title="The AI writes new questions for these topics"
-                  >
-                    or fresh questions from the AI
-                  </button>
-                )}
-              </div>
             </>
           )}
         </div>
