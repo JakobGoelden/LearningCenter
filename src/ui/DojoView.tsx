@@ -46,8 +46,10 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
   const [error, setError] = useState<string | null>(null);
   /** A practice round is running: show only the round. */
   const [running, setRunning] = useState(false);
+  /** Counts saved rounds: the skill is read again once a round's session is on disk, not before. */
+  const [savedRounds, setSavedRounds] = useState(0);
   // Read again after every round, so the skill in the header is current.
-  const history = useDrillHistory(subjectId, all, running);
+  const history = useDrillHistory(subjectId, all, `${running}-${savedRounds}`);
   const { favorites, toggle } = useFavorites();
 
   if (!s) return <div class="error">This pack has no subject "{subjectId}".</div>;
@@ -103,6 +105,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
     setSession(next);
     try {
       await saveSession(fs, next);
+      setSavedRounds((n) => n + 1);
     } catch (e) {
       setNotice(`Could not save the session: ${(e as Error).message}`);
     }
@@ -214,6 +217,7 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
     };
     try {
       await saveSession(fs, next);
+      setSavedRounds((n) => n + 1);
     } catch (e) {
       setNotice(`Could not save the session: ${(e as Error).message}`);
     }
