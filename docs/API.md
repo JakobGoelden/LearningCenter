@@ -63,8 +63,47 @@ own configuration, never in this repo:
 }
 ```
 
+## Read-only HTTP API
+
+For an AI that cannot run this repo (a chat in another project, a web assistant): four read-only
+endpoints over HTTPS with a bearer token. They answer with learning state only: card counts,
+scores, due dates, weak topics and dojos, sessions as numbers, exam dates. No notes, no answers you
+typed, no open-task texts, no login name. Nothing can be changed through them.
+
+- Base URL: `https://learn.goelden.dev/api/v1` (on another server: its own address + `/api/v1`)
+- Header: `Authorization: Bearer <token>`. Only `GET`; anything else is refused with 405.
+- Every answer carries `generatedAt` (now; the pack is read live) and `lastSync` (last time the app
+  saved your progress), so the AI sees how current the numbers are.
+- Rate limit: 60 requests a minute per token, 20 wrong tokens per 15 minutes per address (429 with
+  `Retry-After`).
+
+| Endpoint | Parameters | What |
+| --- | --- | --- |
+| `GET /progress` | `subject` | Per subject: cards total/answered/new/shaky/solid, covered and solid share, due, overdue, average recent score, exam date and days left, switched-off chapters, dojos. Plus activity per week and streak. |
+| `GET /weak-spots` | `subject`, `limit` (default 10) | Weakest topics with reasons and weak cards, dojos ranked by what to practise next (skill, unseen drills), and chapters (or topics) never asked. |
+| `GET /recent-activity` | `subject`, `limit` (default 10) | Latest quiz and dojo sessions: when, subject, dojo, items, average score, right/partly/wrong, minutes. |
+| `GET /exam-dates` | | Exam format, date, time, duration and days left per subject. |
+
+```bash
+TOKEN=lc_ro_...   # from the admin
+curl -s -H "Authorization: Bearer $TOKEN" https://learn.goelden.dev/api/v1/progress
+curl -s -H "Authorization: Bearer $TOKEN" "https://learn.goelden.dev/api/v1/weak-spots?subject=db&limit=5"
+curl -s -H "Authorization: Bearer $TOKEN" "https://learn.goelden.dev/api/v1/recent-activity?limit=5"
+curl -s -H "Authorization: Bearer $TOKEN" https://learn.goelden.dev/api/v1/exam-dates
+```
+
+**Tokens** (on the server, see `docs/SERVER.md`): `node progress-api.mjs token add <user> <id>`
+prints a new token once and stores only its SHA-256; `token list` shows them; `token revoke <id>`
+switches one off at once. One token per AI, so each can be revoked on its own.
+
+Running it yourself: `npm run build:api` makes `dist-api/progress-api.mjs` (one file, Node 18+, no
+`node_modules`). `LC_DATA` is a folder with one pack folder per user (default `/data/users`),
+`LC_API_TOKENS` the token file (default `/data/api/tokens.json`), `PORT` default 8092. Mount the
+packs read-only. For a local test: `LC_DATA=local LC_API_TOKENS=local/api-tokens.json npm run api`.
+
 ## For developers
 
 `src/api/tools.ts` is the table of tools; `insights.ts` computes, `edit.ts` changes, `mcp.ts` speaks
-the protocol (JSON-RPC 2.0 by hand, tools only, no dependency). `scripts/mcp.ts` is the stdio
+the protocol (JSON-RPC 2.0 by hand, tools only, no dependency). The HTTP API is `readonly.ts` (views)
+and `http.ts` (tokens, rate limit, routes), served by `scripts/progress-api.ts`. `scripts/mcp.ts` is the stdio
 transport: nothing else may write to stdout, which is why `.mcp.json` uses `npm run --silent`.

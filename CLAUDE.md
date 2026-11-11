@@ -193,6 +193,9 @@ for what keeps going wrong, `get_topic` and `list_cards` for the details,
 `set_topic_notes`, `record_review`, `mark_results_processed` for changes. They
 apply the rules below. Add a tool to `src/api/tools.ts` when an AI needs
 something new; it then works in both ways.
+For an AI that cannot run the repo there is a read-only HTTP API with bearer tokens
+(`src/api/readonly.ts`, `src/api/http.ts`, docs/API.md "Read-only HTTP API"); keep it free of
+notes, typed answers and names.
 
 ### Switching topics off
 

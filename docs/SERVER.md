@@ -33,6 +33,15 @@ because the person's AI cannot reach the files. So nothing may send it to a fold
   with their login: `LC_URL`, `LC_USER`, `LC_PASSWORD`. Grades and card edits then work from the
   chat too.
 
+## Read-only progress API
+
+`/api/v1/*` (docs/API.md "Read-only HTTP API") is served by a separate container that runs
+`dist-api/progress-api.mjs` (built with `npm run build:api`) with the user packs mounted read-only and
+the token file in `learn/data/api/tokens.json` (hashes only; on the server, never in a repo). Caddy
+routes `/api/v1/*` to it before the login check: the bearer token is the login. `deploy-app.sh`
+builds and uploads the file too and restarts the container. Keep the answers free of anything
+personal beyond the learning state (`tests/httpApi.test.ts` checks for notes, answers and names).
+
 ## SQL drills
 
 `sql` drills run in the learner's browser (PGlite), so grading costs the server nothing. The engine
