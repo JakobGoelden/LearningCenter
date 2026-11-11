@@ -12,6 +12,7 @@
     "setup": "node scripts/start.mjs --setup",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:api": "vite build -c vite.api.config.ts",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -20,7 +21,8 @@
     "share": "vite-node scripts/share.ts --",
     "check-sql": "vite-node scripts/check-sql.ts --",
     "ai": "vite-node scripts/ai.ts --",
-    "mcp": "vite-node scripts/mcp.ts"
+    "mcp": "vite-node scripts/mcp.ts",
+    "api": "vite-node scripts/progress-api.ts --"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
