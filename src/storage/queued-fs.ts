@@ -49,6 +49,10 @@ export interface OutboxStatus {
   problem: 'offline' | 'login' | 'refused' | null;
   /** mtime of the log after the last successful send of events. */
   logMtime?: number | null;
+  /** mtime of the log right before that send, when the server says. */
+  logBefore?: number | null;
+  /** Counts successful sends of events, so a listener can act on each one once. */
+  sends?: number;
 }
 
 const BATCH = 200;
@@ -74,7 +78,10 @@ export class QueuedFs implements PackFs {
   private status: OutboxStatus = { pending: 0, failed: 0, problem: null };
 
   constructor(
-    private readonly inner: PackFs & { appendEvents(events: object[]): Promise<{ mtime: number | null }> },
+    private readonly inner: PackFs & {
+      appendEvents(events: object[]): Promise<{ mtime: number | null; before?: number | null }>;
+      takeCached?(): { any: boolean; reads: string[] };
+    },
     key: string,
     private readonly store: OutboxStore,
   ) {
@@ -87,6 +94,11 @@ export class QueuedFs implements PackFs {
   }
 
   fileUrl?: (path: string) => Promise<string | null>;
+
+  /** What came from the service worker's offline copy since the last call (see DevFs). */
+  takeCached(): { any: boolean; reads: string[] } {
+    return this.inner.takeCached?.() ?? { any: false, reads: [] };
+  }
 
   onStatus(cb: (s: OutboxStatus) => void): () => void {
     this.listeners.add(cb);
@@ -187,12 +199,15 @@ export class QueuedFs implements PackFs {
       this.again = true;
       return this.flushing;
     }
-    this.flushing = (async () => {
+    const run = async () => {
       do {
         this.again = false;
         await this.sendAll();
       } while (this.again);
-    })().finally(() => {
+    };
+    // One tab at a time sends, so an older write of a file can never land after a newer one.
+    const locks = typeof navigator !== 'undefined' ? (navigator as Navigator & { locks?: LockManager }).locks : undefined;
+    this.flushing = (locks ? (locks.request(`lc-outbox|${this.prefix}`, run) as unknown as Promise<void>) : run()).finally(() => {
       this.flushing = null;
     });
     return this.flushing;
@@ -220,8 +235,18 @@ export class QueuedFs implements PackFs {
         const w = items[0][1] as WriteItem;
         // Only the newest write of a path matters; older ones are dropped unsent.
         const newest = items.filter((x) => x[1].kind === 'write' && (x[1] as WriteItem).path === w.path).at(-1)!;
-        await this.inner.write(w.path, (newest[1] as WriteItem).text);
-        for (const [k, it] of items) if (it.kind === 'write' && it.path === w.path && k <= newest[0]) await this.store.del(k);
+        const older = items.filter(([k, it]) => it.kind === 'write' && it.path === w.path && k <= newest[0]);
+        try {
+          await this.inner.write(w.path, (newest[1] as WriteItem).text);
+        } catch (e) {
+          if (isNetworkError(e) || isAuthError(e)) throw e;
+          // Refused for good: keep the newest version aside, so the files after it still go.
+          await this.store.put(this.failedPrefix + newest[0].slice(this.prefix.length), { ...newest[1], error: (e as Error).message });
+          for (const [k] of older) await this.store.del(k);
+          this.setStatus({ problem: 'refused' });
+          continue;
+        }
+        for (const [k] of older) await this.store.del(k);
       }
       this.wait = MIN_WAIT;
       this.setStatus({ problem: null });
@@ -238,9 +263,9 @@ export class QueuedFs implements PackFs {
   /** One batch; a refused batch is split so one bad event cannot hold back the others. */
   private async sendEvents(batch: [string, EventItem][]): Promise<void> {
     try {
-      const { mtime } = await this.inner.appendEvents(batch.map(([, it]) => it.event));
+      const { mtime, before } = await this.inner.appendEvents(batch.map(([, it]) => it.event));
       for (const [k] of batch) await this.store.del(k);
-      this.setStatus({ logMtime: mtime });
+      this.setStatus({ logMtime: mtime, logBefore: before, sends: (this.status.sends ?? 0) + 1 });
     } catch (e) {
       if (isNetworkError(e) || isAuthError(e)) throw e;
       if (batch.length > 1) {

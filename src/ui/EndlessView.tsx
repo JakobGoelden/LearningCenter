@@ -53,10 +53,14 @@ export function EndlessView({ subjectId }: { subjectId: string }) {
     if (!s || !card) return;
     setCounts((c) => ({ ...c, blocked: c.blocked + 1 }));
     next(withCardBlocked(s, card));
-    await pack.updateSubject(s.id, (subj) => withCardBlocked(subj, card), {
+    const saved = await pack.updateSubject(s.id, (subj) => withCardBlocked(subj, card), {
       type: 'question.block',
       ref: `${card.topic.id}/${card.question.id}`,
     });
+    // In a migrated pack the replay must know from when on the card was blocked.
+    if (saved && pack.loaded.pack.progress === 'events') {
+      await pack.record(s.id, [{ op: 'block', topic: card.topic.id, card: card.question.id, blocked: true }], undefined, on);
+    }
   };
 
   // Space or Enter flips, 1 / 2 / 3 rate, B blocks, Esc turns the card back.

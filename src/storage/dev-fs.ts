@@ -21,8 +21,20 @@ async function fetchWithTimeout(url: string, init: RequestInit): Promise<Respons
  * production build talks to a hosted LearningCenter with the same API instead;
  * there the files are on the server, out of reach of the person's AI.
  */
+/** Header the service worker (public/sw.js) puts on answers it took from the offline copy. */
+export const FROM_CACHE_HEADER = 'x-lc-offline-copy';
+
 export class DevFs implements PackFs {
   readonly sharedWithAi: boolean;
+  /** Since the last `takeCached`: whether any answer came from the offline copy, and which reads did. */
+  private cached = { any: false, reads: [] as string[] };
+
+  /** What came from the offline copy since the last call; starts over. */
+  takeCached(): { any: boolean; reads: string[] } {
+    const out = this.cached;
+    this.cached = { any: false, reads: [] };
+    return out;
+  }
 
   constructor(
     readonly label: string,
@@ -54,7 +66,12 @@ export class DevFs implements PackFs {
       body,
       headers: this.remote?.headers,
     });
-    if (!res.ok && res.status !== 404) throw new FsHttpError(`${op} ${path}: ${res.status} ${await res.text()}`, res.status);
+    // A 404 means "no such file" for a read; for a change it means nothing was done.
+    if (!res.ok && (res.status !== 404 || (body !== undefined && op !== 'remove'))) throw new FsHttpError(`${op} ${path}: ${res.status} ${await res.text()}`, res.status);
+    if (res.headers.get(FROM_CACHE_HEADER)) {
+      this.cached.any = true;
+      if (op === 'read') this.cached.reads.push(path);
+    }
     return res;
   }
 
@@ -65,11 +82,15 @@ export class DevFs implements PackFs {
       headers: { 'content-type': 'application/json', ...this.remote?.headers },
     });
     if (!res.ok) throw new FsHttpError(`events: ${res.status} ${await res.text()}`, res.status);
-    const out = (await res.json()) as { accepted?: string[]; mtime?: number | null };
+    const out = (await res.json()) as { accepted?: string[]; mtime?: number | null; before?: number | null };
     const sent = events.map((e) => (e as { id: string }).id);
     const accepted = new Set(out.accepted ?? []);
     if (sent.some((id) => !accepted.has(id))) throw new FsHttpError('events: the server did not accept every event', 502);
-    return { mtime: typeof out.mtime === 'number' ? out.mtime : null };
+    return {
+      mtime: typeof out.mtime === 'number' ? out.mtime : null,
+      // The log's time before this append, if the server says (then another device's write in between can be told apart).
+      ...(out.before === null || typeof out.before === 'number' ? { before: out.before } : {}),
+    };
   }
 
   async read(path: string) {

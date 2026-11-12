@@ -27,7 +27,7 @@ export interface PackFs {
    * the same behaviour from `appendEventsTo` in repo.ts. Returns the log's
    * mtime after the write.
    */
-  appendEvents?(events: object[]): Promise<{ mtime: number | null }>;
+  appendEvents?(events: object[]): Promise<{ mtime: number | null; before?: number | null }>;
 }
 
 /** An HTTP error from a server backend; `status` tells a lost connection (0) from a refusal. */

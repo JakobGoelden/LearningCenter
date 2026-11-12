@@ -14,7 +14,8 @@ import {
   type FileTimes,
 } from '../storage/repo';
 import { QueuedFs, type OutboxStatus } from '../storage/queued-fs';
-import { applyEvent, newReplayState, progressEvent, replaySubject, type ProgressOp } from '../progress/ops';
+import { applyEvent, newReplayState, progressEvent, replaySubject, type ProgressEvent, type ProgressOp } from '../progress/ops';
+import { DevFs } from '../storage/dev-fs';
 import { today } from '../lib/dates';
 import { loadAiSettings, saveAiSettings, type AiSettings } from '../ai/settings';
 
@@ -24,9 +25,9 @@ export interface PackApi {
   fs: PackFs;
   loaded: LoadedPack;
   subject(id: string): Subject | undefined;
-  /** Applies `change` to a subject, saves it and logs `event`. */
-  updateSubject(id: string, change: (s: Subject) => Subject, event?: EventInput): Promise<void>;
-  updatePack(change: (p: Pack) => Pack, event?: EventInput): Promise<void>;
+  /** Applies `change` to a subject, saves it and logs `event`. False when saving failed (the change is undone). */
+  updateSubject(id: string, change: (s: Subject) => Subject, event?: EventInput): Promise<boolean>;
+  updatePack(change: (p: Pack) => Pack, event?: EventInput): Promise<boolean>;
   /**
    * Records progress (answers, ratings, dates set by hand) of one subject.
    * Returns the ids of the progress events, e.g. for a later `replaces`.
@@ -80,6 +81,24 @@ export function PackProvider(props: {
   const fileReplay = useRef(newReplayState());
   const eventsMode = () => loadedRef.current.pack.progress === 'events';
   const progressEvents = () => loadedRef.current.progress?.events ?? [];
+  /** Appends to the log one after another: a local folder or the browser store cannot append atomically. */
+  const chain = useRef<Promise<unknown>>(Promise.resolve());
+  const serially = <T,>(job: () => Promise<T>): Promise<T> => {
+    const run = chain.current.then(job, job);
+    chain.current = run.catch(() => undefined);
+    return run;
+  };
+  /**
+   * After our own append: take the log's new time as known only if nobody else
+   * wrote in between (its time before our write is the one we knew); otherwise
+   * leave it, so the next look reloads and shows the other device's answers.
+   */
+  const ownLogWrite = (before: number | null | undefined, after: number | null) => {
+    if (!eventsMode()) return;
+    const known = times.current[EVENTS_PATH];
+    if (before === undefined || known === undefined || before === known) times.current = { ...times.current, [EVENTS_PATH]: after };
+  };
+  const lastSend = useRef(0);
 
   // The outbox of a server pack: its count for the header, and the log's time after each send.
   useEffect(() => {
@@ -87,7 +106,11 @@ export function PackProvider(props: {
     const stopStatus = fs.onStatus((st) => {
       outboxRef.current = st;
       setOutbox(st);
-      if (st.logMtime !== undefined && st.logMtime !== null && eventsMode()) times.current = { ...times.current, [EVENTS_PATH]: st.logMtime };
+      // Each send once: a later status (count, problem) carries the same, old numbers.
+      if (st.sends && st.sends !== lastSend.current) {
+        lastSend.current = st.sends;
+        if (st.logMtime !== undefined) ownLogWrite(st.logBefore, st.logMtime);
+      }
     });
     const stopWatch = fs.watch();
     return () => {
@@ -99,14 +122,35 @@ export function PackProvider(props: {
   const sameTimes = (a: FileTimes, b: FileTimes) =>
     Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((p) => a[p] === b[p]);
 
+  /** `base` with events recorded on this device that it lacks (they may still be on the way), replayed. */
+  const withLocalEvents = (base: LoadedPack): LoadedPack => {
+    if (base.pack.progress !== 'events' || !base.progress) return base;
+    const have = new Set(base.progress.events.map((e) => e.id));
+    const missing = progressEvents().filter((e) => !have.has(e.id));
+    if (!missing.length) return base;
+    const events = [...base.progress.events, ...missing];
+    const touched = new Set(missing.map((e) => e.subject));
+    return {
+      ...base,
+      progress: { ...base.progress, events },
+      subjects: base.subjects.map((s) => (touched.has(s.id) ? replaySubject(s, events) : s)),
+    };
+  };
+
   const reload = useCallback(async () => {
     // Read the times before the files: if a file changes in between, the
     // older time makes the next save reload it again, which is safe.
     const before = await fileTimes(fs, loadedRef.current);
-    const next = await loadPack(fs);
-    if (fs instanceof QueuedFs) fs.eventsMode = next.pack.progress === 'events';
-    const after = await fileTimes(fs, next);
-    times.current = Object.fromEntries(Object.keys(after).map((p) => [p, p in before ? before[p] : after[p]]));
+    if (fs instanceof DevFs || fs instanceof QueuedFs) fs.takeCached();
+    const loadedNow = await loadPack(fs);
+    if (fs instanceof QueuedFs) fs.eventsMode = loadedNow.pack.progress === 'events';
+    const after = await fileTimes(fs, loadedNow);
+    const t: FileTimes = Object.fromEntries(Object.keys(after).map((p) => [p, p in before ? before[p] : after[p]]));
+    // Files that came from the offline copy may be old: unknown time, so the next look reloads them.
+    if (fs instanceof DevFs || fs instanceof QueuedFs) for (const p of fs.takeCached().reads) if (p in t) t[p] = null;
+    times.current = t;
+    // Answers recorded while the files were loading are not lost from view.
+    const next = withLocalEvents(loadedNow);
     loadedRef.current = next;
     setLoaded(next);
   }, [fs]);
@@ -122,9 +166,13 @@ export function PackProvider(props: {
     if (fs.kind === 'browser') return;
     const timer = setInterval(async () => {
       if (busy.current || document.hidden || (outboxRef.current?.pending ?? 0) > 0) return;
+      const cache = fs instanceof DevFs || fs instanceof QueuedFs ? fs : null;
+      cache?.takeCached();
       // A failed look is not worth a message: nothing was lost and the next one tries again.
       const now = await fileTimes(fs, loadedRef.current).catch(() => null);
-      if (!now || sameTimes(now, times.current)) return;
+      // Times from the offline copy say nothing about the server: no connection, look again later.
+      if (cache && cache.takeCached().any) return;
+      if (!now || sameTimes(now, times.current) || busy.current) return;
       try {
         await reload();
         setNotice('The pack was changed outside the app and has been reloaded.');
@@ -136,11 +184,14 @@ export function PackProvider(props: {
   }, [fs, reload]);
 
   const log = useCallback(
-    async (event: EventInput) => {
-      await appendEvent(fs, event);
-      // Our own line must not look like another device's change.
-      if (eventsMode() && !(fs instanceof QueuedFs)) times.current = { ...times.current, [EVENTS_PATH]: await fs.mtime(EVENTS_PATH) };
-    },
+    (event: EventInput) =>
+      serially(async () => {
+        const watch = eventsMode() && !(fs instanceof QueuedFs);
+        const before = watch ? await fs.mtime(EVENTS_PATH) : undefined;
+        await appendEvent(fs, event);
+        // Our own line must not look like another device's change.
+        if (watch) ownLogWrite(before, await fs.mtime(EVENTS_PATH));
+      }),
     [fs],
   );
 
@@ -164,6 +215,7 @@ export function PackProvider(props: {
       try {
         const { value: saved, reloaded } = await updateSubjectFile(fs, before, times.current[path], change, view);
         times.current = { ...times.current, [path]: await fs.mtime(path) };
+        // Replayed with the events as they are now (answers may have come in while saving).
         const value = view(saved);
         if (reloaded || eventsMode()) {
           const next = withSubject(loadedRef.current, value);
@@ -171,16 +223,20 @@ export function PackProvider(props: {
           setLoaded(next);
           if (reloaded) setNotice('This subject was changed outside the app (e.g. new cards). Your change was added to the new version.');
         }
-        if (event) await appendEvent(fs, { subject: id, ...event });
+        if (event) await log({ subject: id, ...event });
+        return true;
       } catch (e) {
         setNotice(`Saving failed: ${(e as Error).message}`);
-        loadedRef.current = current;
-        setLoaded(current);
+        // Undo only this change: answers recorded meanwhile stay.
+        const back = withSubject(loadedRef.current, view(before));
+        loadedRef.current = back;
+        setLoaded(back);
+        return false;
       } finally {
         busy.current--;
       }
     },
-    [fs],
+    [fs, log],
   );
 
   const updatePack = useCallback<PackApi['updatePack']>(
@@ -198,58 +254,71 @@ export function PackProvider(props: {
           loadedRef.current = next;
           setLoaded(next);
         }
-        if (event) await appendEvent(fs, event);
+        if (event) await log(event);
+        return true;
       } catch (e) {
         setNotice(`Saving failed: ${(e as Error).message}`);
-        loadedRef.current = current;
-        setLoaded(current);
+        const back = { ...loadedRef.current, pack: current.pack };
+        loadedRef.current = back;
+        setLoaded(back);
+        return false;
       } finally {
         busy.current--;
       }
     },
-    [fs],
+    [fs, log],
   );
 
   const record = useCallback<PackApi['record']>(
     async (subjectId, ops, event, on = today()) => {
-      // A pack migrated while this tab was open: notice it before writing the old way.
-      if (!eventsMode() && fs.kind === 'server') {
-        const known = times.current['pack.json'];
-        if (known !== undefined && (await fs.mtime('pack.json')) !== known) await reload();
-      }
-      const settings = loadedRef.current.pack.settings;
-      const actor = event?.actor;
-      const events = ops.map((op) => progressEvent(subjectId, op, on, settings, actor ? { actor } : {}));
-      if (!ops.length) {
-        if (event) await log({ subject: subjectId, ...event });
-        return [];
-      }
-      if (!eventsMode()) {
-        // Not migrated: the same code changes the subject file, as before.
-        await updateSubject(subjectId, (s) => events.reduce((acc, e) => applyEvent(acc, e, fileReplay.current), s), event);
-        return events.map((e) => e.id);
-      }
-      const current = loadedRef.current;
-      const all = [...(current.progress?.events ?? []), ...events];
-      const next: LoadedPack = {
-        ...current,
-        progress: { events: all, skipped: current.progress?.skipped ?? 0 },
-        subjects: current.subjects.map((s) => (s.id === subjectId ? replaySubject(s, all) : s)),
-      };
-      loadedRef.current = next;
-      setLoaded(next);
+      busy.current++;
       try {
-        const { mtime } = await appendEventsTo(fs, events);
-        if (!(fs instanceof QueuedFs)) times.current = { ...times.current, [EVENTS_PATH]: mtime };
+        // A pack migrated while this tab was open: notice it before writing the old way.
+        if (!eventsMode() && fs.kind === 'server') {
+          const known = times.current['pack.json'];
+          if (known !== undefined && (await fs.mtime('pack.json')) !== known) await reload();
+        }
+        const settings = loadedRef.current.pack.settings;
+        const actor = event?.actor;
+        const events = ops.map((op) => progressEvent(subjectId, op, on, settings, actor ? { actor } : {}));
+        if (!ops.length) {
+          if (event) await log({ subject: subjectId, ...event });
+          return [];
+        }
+        if (!eventsMode()) {
+          // Not migrated: the same code changes the subject file, as before.
+          await updateSubject(subjectId, (s) => events.reduce((acc, e) => applyEvent(acc, e, fileReplay.current), s), event);
+          return events.map((e) => e.id);
+        }
+        const mine = new Set(events.map((e) => e.id));
+        const show = (base: LoadedPack, list: ProgressEvent[]): LoadedPack => ({
+          ...base,
+          progress: { events: list, skipped: base.progress?.skipped ?? 0 },
+          subjects: base.subjects.map((s) => (s.id === subjectId ? replaySubject(s, list) : s)),
+        });
+        const next = show(loadedRef.current, [...progressEvents(), ...events]);
+        loadedRef.current = next;
+        setLoaded(next);
+        try {
+          await serially(async () => {
+            const watch = !(fs instanceof QueuedFs);
+            const before = watch ? await fs.mtime(EVENTS_PATH) : undefined;
+            const { mtime } = await appendEventsTo(fs, events);
+            if (watch) ownLogWrite(before, mtime);
+          });
+        } catch (e) {
+          // Only backends without an outbox get here (a local folder that went away).
+          setNotice(`Saving failed: ${(e as Error).message}`);
+          const back = show(loadedRef.current, progressEvents().filter((x) => !mine.has(x.id)));
+          loadedRef.current = back;
+          setLoaded(back);
+          return [];
+        }
         if (event) await log({ subject: subjectId, ...event });
-      } catch (e) {
-        // Only backends without an outbox get here (a local folder that went away).
-        setNotice(`Saving failed: ${(e as Error).message}`);
-        const back = { ...loadedRef.current, progress: current.progress, subjects: loadedRef.current.subjects.map((s) => (s.id === subjectId ? replaySubject(s, current.progress?.events ?? []) : s)) };
-        loadedRef.current = back;
-        setLoaded(back);
+        return events.map((e) => e.id);
+      } finally {
+        busy.current--;
       }
-      return events.map((e) => e.id);
     },
     [fs, reload, updateSubject, log],
   );

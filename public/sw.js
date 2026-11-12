@@ -22,7 +22,7 @@
 /* global LcSwPolicy */
 // Change this line whenever sw-policy.js changes, so every browser notices the
 // update (not all compare imported scripts).
-var VERSION = '2026-11-12.2';
+var VERSION = '2026-11-12.3';
 importScripts('sw-policy.js?v=' + VERSION);
 
 var P = self.LcSwPolicy;
@@ -83,6 +83,17 @@ function info(res) {
 function textResponse(text, status, type) {
   return new Response(text, { status: status || 200, headers: { 'content-type': type || 'text/plain; charset=utf-8' } });
 }
+/**
+ * The answer from the offline copy, marked as such (FROM_CACHE_HEADER in
+ * src/storage/dev-fs.ts), so the app treats its content as possibly old and
+ * does not take the times it read as the server's.
+ */
+function fromCopy(res) {
+  var headers = new Headers(res.headers);
+  headers.set('x-lc-offline-copy', '1');
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: headers });
+}
+
 function isRedirect(res) {
   return res.redirected || res.type === 'opaqueredirect';
 }
@@ -368,7 +379,7 @@ function handleData(event, cls) {
       function (r) {
         if (!isRead) {
           done(stored);
-          return r.res;
+          return r.fromCache ? fromCopy(r.res) : r.res;
         }
         if (!r.fromCache) {
           // The app now has the server's version of the file.
@@ -379,6 +390,7 @@ function handleData(event, cls) {
         // Served from the offline copy: remember what the app got. If the
         // network answers later with the same content, the mark goes again.
         var served = r.res.clone();
+        var answer = fromCopy(r.res);
         var marked = served.text().then(function (text) {
           return setMark(cls.path, r.res.status, r.res.status === 404 ? null : text, startGen).then(function () {
             return { status: r.res.status, text: r.res.status === 404 ? null : text };
@@ -395,7 +407,7 @@ function handleData(event, cls) {
             })
             .catch(function () {}),
         );
-        return r.res;
+        return answer;
       },
       function (err) {
         done();

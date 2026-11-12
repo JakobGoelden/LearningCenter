@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { activeDojos } from '../model/chapters';
 import { overview } from '../model/derive';
 import { usePack } from '../state/context';
-import { appendEvent, readEvents } from '../storage/repo';
+import { readEvents } from '../storage/repo';
 import { formatShort, today } from '../lib/dates';
 import { Calendar } from './Calendar';
 import { SubjectBanner } from './SubjectBanner';
@@ -72,7 +72,7 @@ function CardTotals() {
  * the grades back by pasting them and closes the banner themselves.
  */
 function PendingResults() {
-  const { fs, loaded } = usePack();
+  const { fs, loaded, log } = usePack();
   const [p, setP] = useState<PendingResultsData | null>(null);
   const check = useRef(() => {});
   useEffect(() => {
@@ -95,7 +95,7 @@ function PendingResults() {
   if (!p?.total) return null;
   const reviewed = p.quizzes + p.dojo + p.sheets;
   const markSeen = async () => {
-    await appendEvent(fs, { type: 'ai.sync', actor: 'user', data: { quizzes: p.quizzes, dojo: p.dojo, sheets: p.sheets } });
+    await log({ type: 'ai.sync', actor: 'user', data: { quizzes: p.quizzes, dojo: p.dojo, sheets: p.sheets } });
     check.current();
   };
   const parts = [

@@ -47,13 +47,13 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
 
   const remove = async (t: Topic) => {
     if (!confirm(`Delete topic "${t.title}" and its history?`)) return;
-    // A later topic with the same id starts from scratch.
-    if (loaded.pack.progress === 'events') await record(s.id, [{ op: 'reset', topic: t.id }], undefined, on);
-    await updateSubject(s.id, (subj) => ({ ...subj, topics: subj.topics.filter((x) => x.id !== t.id) }), {
+    const removed = await updateSubject(s.id, (subj) => ({ ...subj, topics: subj.topics.filter((x) => x.id !== t.id) }), {
       type: 'topic.remove',
       ref: t.id,
       data: { title: t.title },
     });
+    // Only once it is gone: a later topic with the same id starts from scratch.
+    if (removed && loaded.pack.progress === 'events') await record(s.id, [{ op: 'reset', topic: t.id }], undefined, on);
   };
 
   const add = (e: Event) => {

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { MemFs } from './memfs';
 import { demoBundle } from '../src/storage/builtin';
-import { appendEventsTo, EVENTS_PATH, importBundle, loadPack, readPackJson, saveSubject } from '../src/storage/repo';
-import { withCardAnswer, withQuizAnswer, withQuizResults } from '../src/scheduling/cards';
+import { appendEventsTo, EVENTS_PATH, importBundle, loadPack, readPackJson, saveSubject, subjectPath } from '../src/storage/repo';
+import { withCardAnswer, withCardBlocked, withQuizAnswer, withQuizResults } from '../src/scheduling/cards';
 import { applyCardReviews, applyReview, withTopicDue } from '../src/scheduling/scheduler';
 import {
   applyEvent,
@@ -267,5 +267,77 @@ describe('pack.json switch', () => {
     const { fs } = await demo();
     const p = await readPackJson(fs);
     expect(p.progress).toBeUndefined();
+  });
+});
+
+describe('blocking a card', () => {
+  it('keeps what was answered before, and later answers count as in the old app', async () => {
+    const { theo } = await demo();
+    // A topic with two cards: rate both, block the weak one, then rate the other again.
+    const topic = theo.topics.find((t) => (t.questions?.length ?? 0) >= 2)!;
+    const [qa, qb] = topic.questions!;
+    const start = { ...theo, topics: theo.topics.map(stripTopic) };
+    const quiz = session('q1', [
+      { n: 1, topicId: topic.id, question: qa.id } as Session['items'][number],
+      { n: 2, topicId: topic.id, question: qb.id } as Session['items'][number],
+    ]);
+    // Old app, call for call.
+    let old = withQuizAnswer(start, quiz, quiz.items[0], 2, '2026-11-10', undefined, undefined);
+    old = withQuizAnswer(old, quiz, quiz.items[1], 5, '2026-11-10', undefined, undefined);
+    old = withCardBlocked(old, { topic: { id: topic.id } as Topic, question: { id: qa.id } as TopicQuestion });
+    old = withQuizAnswer(old, session('q2', quiz.items), quiz.items[1], 4, '2026-11-12', undefined, undefined);
+    // New app: the file says blocked, the events say when.
+    const file = withCardBlocked(start, { topic: { id: topic.id } as Topic, question: { id: qa.id } as TopicQuestion });
+    const events = asEvents('theo', [
+      [{ op: 'quiz', topic: topic.id, card: qa.id, score: 2, session: 'q1', n: 1 }, '2026-11-10'],
+      [{ op: 'quiz', topic: topic.id, card: qb.id, score: 5, session: 'q1', n: 2 }, '2026-11-10'],
+      [{ op: 'block', topic: topic.id, card: qa.id, blocked: true }, '2026-11-10'],
+      [{ op: 'quiz', topic: topic.id, card: qb.id, score: 4, session: 'q2', n: 2 }, '2026-11-12'],
+    ]);
+    const replayed = replaySubject(file, events);
+    expect(subjectDiff(old, replayed)).toEqual([]);
+    const a = replayed.topics.find((t) => t.id === topic.id)!.questions!.find((q) => q.id === qa.id)!;
+    expect(a.blocked).toBe(true);
+    expect(a.stats?.seen).toBe(1);
+    expect(a.due).toBeDefined();
+  });
+
+  it('a migrated pack keeps blocked cards blocked, with their progress', async () => {
+    const { fs, theo } = await demo();
+    const topic = theo.topics.find((t) => (t.questions?.length ?? 0) >= 2)!;
+    const q = topic.questions![0];
+    let s = withCardAnswer(theo, { topic, question: q }, 3, '2026-11-01');
+    s = withCardBlocked(s, { topic, question: q });
+    await saveSubject(fs, s);
+    const report = await migratePack(fs, { write: true, on: '2026-11-12' });
+    expect(report.diffs).toEqual([]);
+    const after = (await loadPack(fs)).subjects.find((x) => x.id === 'theo')!.topics.find((t) => t.id === topic.id)!.questions![0];
+    expect(after.blocked).toBe(true);
+    expect(after.stats?.seen).toBe(1);
+  });
+});
+
+describe('migration safety', () => {
+  it('does not switch when a subject file changes while it runs', async () => {
+    const { theo } = await demo();
+    class Busy extends MemFs {
+      async append(p: string, t: string) {
+        await super.append(p, t);
+        // An answer saved the old way, right between the baselines and the switch.
+        if (p === EVENTS_PATH) await super.write(subjectPath('theo'), JSON.stringify({ ...theo, notes: 'answer came in' }));
+      }
+    }
+    const fs = new Busy();
+    await importBundle(fs, demoBundle());
+    const report = await migratePack(fs, { write: true, on: '2026-11-12' });
+    expect(report.migrated).toBe(false);
+    expect(report.diffs.join('\n')).toMatch(/changed during the migration/);
+    expect((await readPackJson(fs)).progress).toBeUndefined();
+    // A second run (nothing changes now) works, despite the baselines of the first one in the log.
+    const plain = new MemFs();
+    plain.files = new Map(fs.files);
+    const again = await migratePack(plain, { write: true, on: '2026-11-12' });
+    expect(again.diffs).toEqual([]);
+    expect(again.migrated).toBe(true);
   });
 });

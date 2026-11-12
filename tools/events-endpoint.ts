@@ -30,7 +30,9 @@ export async function acceptEvents(logPath: string, raw: string): Promise<{ stat
     if (typeof ev.ts !== 'string' || typeof ev.type !== 'string') return { status: 400, body: `event ${i}: ts and type must be strings` };
   }
   let text = '';
+  let before: number | null = null;
   try {
+    before = (await stat(logPath)).mtimeMs;
     text = await readFile(logPath, 'utf8');
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
@@ -58,5 +60,5 @@ export async function acceptEvents(logPath: string, raw: string): Promise<{ stat
     await appendFile(logPath, (text && !text.endsWith('\n') ? '\n' : '') + out, 'utf8');
   }
   const mtime = out || text ? (await stat(logPath)).mtimeMs : null;
-  return { status: 200, body: JSON.stringify({ accepted, added: out.split('\n').length - 1, mtime }) };
+  return { status: 200, body: JSON.stringify({ accepted, added: out.split('\n').length - 1, mtime, before }) };
 }

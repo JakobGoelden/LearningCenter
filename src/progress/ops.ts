@@ -9,7 +9,7 @@
 // the scheduling code changes in a way that changes results, keep the old code
 // reachable from `applyOp` for the old version and raise RULES.
 
-import { withQuizAnswer, withQuizResults, withCardAnswer } from '../scheduling/cards';
+import { withCardBlocked, withQuizAnswer, withQuizResults, withCardAnswer } from '../scheduling/cards';
 import { applyCardReviews, applyReview, withTopicDue } from '../scheduling/scheduler';
 import type { CardStats, ISODate, LogEvent, PackSettings, Review, Score, Session, Subject, Topic, TopicQuestion, TopicStatus } from '../model/types';
 
@@ -21,6 +21,8 @@ export const TOPIC_PROGRESS = ['status', 'due', 'intervalDays', 'history'] as co
 export const CARD_PROGRESS = ['due', 'intervalDays', 'since', 'stats'] as const;
 
 export interface CardProgress {
+  /** Blocked at that moment (blocking changes how later answers count, so the replay needs to know when). */
+  blocked?: boolean;
   due?: ISODate;
   intervalDays?: number;
   since?: ISODate;
@@ -52,6 +54,8 @@ export type ProgressOp =
   | { op: 'status'; topic: string; status: TopicStatus }
   /** Date set by hand for a topic and all its cards; null clears it. */
   | { op: 'due'; topic: string; due: ISODate | null }
+  /** A card was blocked or unblocked (the file says so too; the event says when). */
+  | { op: 'block'; topic: string; card: string; blocked: boolean }
   /** The topic starts from scratch (it was deleted; a new topic with the same id must not inherit its past). */
   | { op: 'reset'; topic: string }
   /** The topic's whole progress as it was when the pack was migrated. */
@@ -99,6 +103,8 @@ export function isProgressEvent(e: unknown): e is ProgressEvent {
       return isStr(d.topic) && (d.due === null || isDate(d.due));
     case 'reset':
       return isStr(d.topic);
+    case 'block':
+      return isStr(d.topic) && isStr(d.card) && typeof d.blocked === 'boolean';
     case 'baseline':
       return isStr(d.topic) && !!d.progress && STATUSES.has(d.progress.status);
     default:
@@ -184,6 +190,13 @@ export function stripTopic(t: Topic): Topic {
   return out;
 }
 
+/** The topic as the replay starts it: no progress, and no card blocked yet (blocks come from baseline and block events). */
+function replayStart(t: Topic): Topic {
+  const out = stripTopic(t);
+  if (out.questions) out.questions = out.questions.map(({ blocked: _b, ...q }) => q);
+  return out;
+}
+
 /** The progress of a topic, for a baseline event. */
 export function progressOf(t: Topic): TopicProgress {
   const p: TopicProgress = { status: t.status };
@@ -194,6 +207,7 @@ export function progressOf(t: Topic): TopicProgress {
   for (const q of t.questions ?? []) {
     const c: CardProgress = {};
     for (const k of CARD_PROGRESS) if (q[k] !== undefined) (c as Record<string, unknown>)[k] = q[k];
+    if (q.blocked) c.blocked = true;
     if (Object.keys(c).length) cards[q.id] = c;
   }
   if (Object.keys(cards).length) p.cards = cards;
@@ -201,7 +215,7 @@ export function progressOf(t: Topic): TopicProgress {
 }
 
 function withProgress(t: Topic, p: TopicProgress): Topic {
-  const out = stripTopic(t);
+  const out = replayStart(t);
   out.status = p.status;
   if (p.due !== undefined) out.due = p.due;
   if (p.intervalDays !== undefined) out.intervalDays = p.intervalDays;
@@ -275,6 +289,8 @@ function applyV1(s: Subject, e: ProgressEvent, state: ReplayState): Subject {
       return mapTopic(s, d.topic, (t) => withTopicDue(t, d.due ?? undefined));
     case 'reset':
       return mapTopic(s, d.topic, stripTopic);
+    case 'block':
+      return withCardBlocked(s, { topic: { id: d.topic } as Topic, question: { id: d.card } as TopicQuestion }, d.blocked);
     case 'baseline':
       return mapTopic(s, d.topic, (t) => withProgress(t, d.progress));
   }
@@ -300,13 +316,29 @@ export function compareEvents(a: ProgressEvent, b: ProgressEvent): number {
   return ba - bb || (a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 }
 
-/** The subject's progress from scratch: its content, stripped, plus every event of this subject, in replay order. */
+/**
+ * The subject's progress from scratch: its content, stripped, plus every event
+ * of this subject, in replay order. Blocked cards: the replay follows when each
+ * card was blocked (baseline and block events), so earlier answers keep
+ * counting; at the end every card is blocked exactly as its file says.
+ */
 export function replaySubject(subject: Subject, events: ProgressEvent[]): Subject {
   const mine = events.filter((e) => e.subject === subject.id).sort(compareEvents);
   const state = newReplayState();
-  let s: Subject = { ...subject, topics: subject.topics.map(stripTopic) };
+  let s: Subject = { ...subject, topics: subject.topics.map(replayStart) };
   for (const e of mine) s = applyEvent(s, e, state);
-  return s;
+  const blocked = new Set(subject.topics.flatMap((t) => (t.questions ?? []).filter((q) => q.blocked).map((q) => `${t.id}/${q.id}`)));
+  return {
+    ...s,
+    topics: s.topics.map((t) =>
+      t.questions
+        ? {
+            ...t,
+            questions: t.questions.map(({ blocked: _b, ...q }) => (blocked.has(`${t.id}/${q.id}`) ? { ...q, blocked: true } : q)),
+          }
+        : t,
+    ),
+  };
 }
 
 /** Events of rules versions this app does not know (written by a newer app). */

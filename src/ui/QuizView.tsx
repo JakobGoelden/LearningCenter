@@ -316,10 +316,14 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
       const card = cardOf(s, it);
       if (!card || !session) return;
       setBlocked(new Set(blocked).add(it.n));
-      await updateSubject(s.id, (subj) => withCardBlocked(subj, cardOf(subj, it) ?? card), {
+      const saved = await updateSubject(s.id, (subj) => withCardBlocked(subj, cardOf(subj, it) ?? card), {
         type: 'question.block',
         ref: `${card.topic.id}/${card.question.id}`,
       });
+      // In a migrated pack the replay must know from when on the card was blocked.
+      if (saved && loaded.pack.progress === 'events') {
+        await record(s.id, [{ op: 'block', topic: card.topic.id, card: card.question.id, blocked: true }], undefined, on);
+      }
       if (!advance) return;
       if (idx < session.items.length - 1) {
         setDir('fwd');

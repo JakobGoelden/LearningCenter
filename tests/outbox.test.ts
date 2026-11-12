@@ -11,6 +11,7 @@ import { acceptEvents } from '../tools/events-endpoint';
 class FakeServer extends MemFs {
   mode: 'ok' | 'offline' | 'login' = 'ok';
   refuse = new Set<string>();
+  refusePaths = new Set<string>();
   calls = 0;
   private check() {
     if (this.mode === 'offline') throw new TypeError('Failed to fetch');
@@ -18,6 +19,7 @@ class FakeServer extends MemFs {
   }
   async write(p: string, t: string) {
     this.check();
+    if (this.refusePaths.has(p)) throw new FsHttpError('413 too big', 413);
     return super.write(p, t);
   }
   async read(p: string) {
@@ -105,6 +107,30 @@ describe('QueuedFs outbox', () => {
     expect(seen.at(-1)).toBe('0/1/refused');
   });
 
+  it('a refused file is set aside and does not hold back later files', async () => {
+    const { q, server, store } = make();
+    server.refusePaths.add('sessions/big.json');
+    server.mode = 'offline';
+    await q.write('sessions/big.json', 'x');
+    await q.write('sessions/next.json', 'y');
+    server.mode = 'ok';
+    await settle(q);
+    expect(server.files.get('sessions/next.json')).toBe('y');
+    expect([...store.data.keys()].filter((k) => k.startsWith('outbox|'))).toHaveLength(0);
+    expect([...store.data.keys()].filter((k) => k.startsWith('outbox-failed|'))).toHaveLength(1);
+  });
+
+  it('counts each send once and passes on the time before it', async () => {
+    const { q } = make();
+    const sends: (number | undefined)[] = [];
+    q.onStatus((s) => sends.push(s.sends));
+    await q.appendEvents([ev('a')]);
+    await settle(q);
+    await q.appendEvents([ev('b')]);
+    await settle(q);
+    expect(new Set(sends.filter(Boolean))).toEqual(new Set([1, 2]));
+  });
+
   it('an expired login keeps everything and says so', async () => {
     const { q, server, store } = make();
     server.mode = 'login';
@@ -167,7 +193,7 @@ describe('dev server POST /__lc/events', () => {
     expect(r1.status).toBe(200);
     expect(JSON.parse(r1.body)).toMatchObject({ accepted: ['a', 'b'], added: 2 });
     const r2 = await post([ev('b'), ev('c')]);
-    expect(JSON.parse(r2.body)).toMatchObject({ accepted: ['b', 'c'], added: 1 });
+    expect(JSON.parse(r2.body)).toMatchObject({ accepted: ['b', 'c'], added: 1, before: JSON.parse(r1.body).mtime });
     expect(ids(await readFile(log, 'utf8'))).toEqual(['a', 'b', 'c']);
   });
 

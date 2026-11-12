@@ -6,7 +6,7 @@
 
 import type { LoadedPack, Pack, Subject } from '../model/types';
 import type { PackFs } from '../storage/fs';
-import { appendEventsTo, loadPack, readPackJson, savePack } from '../storage/repo';
+import { appendEventsTo, loadPack, loadProgress, readPackJson, savePack, subjectPath } from '../storage/repo';
 import { progressEvent, progressOf, replaySubject, type ProgressEvent } from './ops';
 
 /** JSON with sorted keys, so two objects compare equal whatever their key order. */
@@ -74,20 +74,34 @@ const countCards = (subjects: Subject[]) => subjects.reduce((n, s) => n + s.topi
 export async function migratePack(fs: PackFs, opts: { write: boolean; on: string; now?: string }): Promise<MigrationReport> {
   const loaded = await loadPack(fs);
   if (loaded.pack.progress === 'events') throw new Error(`${loaded.pack.id} is already migrated.`);
+  // Times of the subject files as read: an answer saved the old way before the switch must stop it.
+  const paths = loaded.pack.subjects.map(subjectPath);
+  const timesAtLoad = await Promise.all(paths.map((p) => fs.mtime(p)));
+  const changedSinceLoad = async () => {
+    const now = await Promise.all(paths.map((p) => fs.mtime(p)));
+    return paths.filter((_, i) => now[i] !== timesAtLoad[i]);
+  };
   const events = baselineEvents(loaded, opts.on, opts.now ?? new Date().toISOString());
+  // Progress events already in the log (e.g. baselines of an attempt that was stopped) count too.
+  const replayWith = [...(await loadProgress(fs)).events, ...events];
   const report: MigrationReport = {
     pack: loaded.pack.id,
     subjects: loaded.subjects.length,
     topics: loaded.subjects.reduce((n, s) => n + s.topics.length, 0),
     cards: countCards(loaded.subjects),
     events: events.length,
-    diffs: loaded.subjects.flatMap((s) => subjectDiff(s, replaySubject(s, events))),
+    diffs: loaded.subjects.flatMap((s) => subjectDiff(s, replaySubject(s, replayWith))),
     migrated: false,
   };
   if (report.diffs.length || !opts.write) return report;
 
   const packJson = await readPackJson(fs);
   await appendEventsTo(fs, events);
+  const early = await changedSinceLoad();
+  if (early.length) {
+    report.diffs = early.map((p) => `${p} changed during the migration (an answer came in); run it again`);
+    return report;
+  }
   await savePack(fs, { ...packJson, progress: 'events' });
   // Load it like the app does and compare once more; undo the switch on any difference.
   const after = await loadPack(fs);
@@ -95,6 +109,7 @@ export async function migratePack(fs: PackFs, opts: { write: boolean; on: string
     const got = after.subjects.find((x) => x.id === s.id);
     return got ? subjectDiff(s, got) : [`${s.id}: missing after the switch`];
   });
+  diffs.push(...(await changedSinceLoad()).map((p) => `${p} changed during the migration (an answer came in); run it again`));
   if (diffs.length || after.pack.progress !== 'events') {
     await savePack(fs, packJson);
     report.diffs = diffs.length ? diffs : ['pack.json did not take the switch'];
