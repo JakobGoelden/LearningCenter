@@ -190,10 +190,46 @@ export function stripTopic(t: Topic): Topic {
   return out;
 }
 
-/** The topic as the replay starts it: no progress, and no card blocked yet (blocks come from baseline and block events). */
-function replayStart(t: Topic): Topic {
+/**
+ * Which cards are blocked during the replay. The file has the last word: a
+ * card the file does not block is never blocked (it was unblocked by hand), and
+ * a card the file blocks is blocked from its block event or baseline on, so
+ * the answers before count. A card the file blocks without any such event is
+ * blocked for the whole replay (the old app would have skipped it as well).
+ */
+interface BlockRule {
+  inFile: Set<string>;
+  always: Set<string>;
+}
+
+const cardKey = (topic: string, card: string) => `${topic}/${card}`;
+
+function blockRule(subject: Subject, events: ProgressEvent[]): BlockRule {
+  const inFile = new Set(subject.topics.flatMap((t) => (t.questions ?? []).filter((q) => q.blocked).map((q) => cardKey(t.id, q.id))));
+  const known = new Set<string>();
+  for (const e of events) {
+    const d = e.data;
+    if (d.op === 'block') known.add(cardKey(d.topic, d.card));
+    if (d.op === 'baseline') for (const [id, c] of Object.entries(d.progress.cards ?? {})) if (c.blocked) known.add(cardKey(d.topic, id));
+  }
+  return { inFile, always: new Set([...inFile].filter((k) => !known.has(k))) };
+}
+
+const blockedNow = (rule: BlockRule | undefined, topic: string, card: string, byEvent: boolean) => {
+  if (!rule) return byEvent;
+  const k = cardKey(topic, card);
+  return rule.always.has(k) || (rule.inFile.has(k) && byEvent);
+};
+
+const setBlocked = (q: TopicQuestion, blocked: boolean): TopicQuestion => {
+  const { blocked: _b, ...rest } = q;
+  return blocked ? { ...rest, blocked: true } : rest;
+};
+
+/** The topic as the replay starts it: no progress; only cards blocked for the whole replay are blocked. */
+function replayStart(t: Topic, rule?: BlockRule): Topic {
   const out = stripTopic(t);
-  if (out.questions) out.questions = out.questions.map(({ blocked: _b, ...q }) => q);
+  if (out.questions) out.questions = out.questions.map((q) => setBlocked(q, blockedNow(rule, t.id, q.id, false)));
   return out;
 }
 
@@ -214,19 +250,25 @@ export function progressOf(t: Topic): TopicProgress {
   return p;
 }
 
-function withProgress(t: Topic, p: TopicProgress): Topic {
-  const out = replayStart(t);
+function withProgress(t: Topic, p: TopicProgress, rule?: BlockRule): Topic {
+  const out = replayStart(t, rule);
   out.status = p.status;
   if (p.due !== undefined) out.due = p.due;
   if (p.intervalDays !== undefined) out.intervalDays = p.intervalDays;
   if (p.history !== undefined) out.history = p.history;
-  if (out.questions && p.cards) out.questions = out.questions.map((q) => (p.cards![q.id] ? { ...q, ...p.cards![q.id] } : q));
+  if (out.questions) {
+    out.questions = out.questions.map((q) => {
+      const { blocked, ...c } = p.cards?.[q.id] ?? {};
+      return setBlocked({ ...q, ...c }, blockedNow(rule, t.id, q.id, !!blocked));
+    });
+  }
   return out;
 }
 
-/** State the replay keeps between events: each quiz answer's card before its first rating. */
+/** State the replay keeps between events: each quiz answer's card before its first rating, and the block rule. */
 export interface ReplayState {
   before: Map<string, TopicQuestion | undefined>;
+  blocks?: BlockRule;
 }
 
 const quizSession = (id: string, items: Session['items']): Session => ({ id, type: 'quiz', subject: '', startedAt: '', items });
@@ -290,9 +332,9 @@ function applyV1(s: Subject, e: ProgressEvent, state: ReplayState): Subject {
     case 'reset':
       return mapTopic(s, d.topic, stripTopic);
     case 'block':
-      return withCardBlocked(s, { topic: { id: d.topic } as Topic, question: { id: d.card } as TopicQuestion }, d.blocked);
+      return withCardBlocked(s, { topic: { id: d.topic } as Topic, question: { id: d.card } as TopicQuestion }, blockedNow(state.blocks, d.topic, d.card, d.blocked));
     case 'baseline':
-      return mapTopic(s, d.topic, (t) => withProgress(t, d.progress));
+      return mapTopic(s, d.topic, (t) => withProgress(t, d.progress, state.blocks));
   }
 }
 
@@ -324,17 +366,22 @@ export function compareEvents(a: ProgressEvent, b: ProgressEvent): number {
  */
 export function replaySubject(subject: Subject, events: ProgressEvent[]): Subject {
   const mine = events.filter((e) => e.subject === subject.id).sort(compareEvents);
-  const state = newReplayState();
-  let s: Subject = { ...subject, topics: subject.topics.map(replayStart) };
+  const state: ReplayState = { ...newReplayState(), blocks: blockRule(subject, mine) };
+  let s: Subject = { ...subject, topics: subject.topics.map((t) => replayStart(t, state.blocks)) };
   for (const e of mine) s = applyEvent(s, e, state);
-  const blocked = new Set(subject.topics.flatMap((t) => (t.questions ?? []).filter((q) => q.blocked).map((q) => `${t.id}/${q.id}`)));
+  // At the end every card is blocked exactly as its file says (key included).
+  const fileCards = new Map(subject.topics.flatMap((t) => (t.questions ?? []).map((q) => [cardKey(t.id, q.id), q] as const)));
   return {
     ...s,
     topics: s.topics.map((t) =>
       t.questions
         ? {
             ...t,
-            questions: t.questions.map(({ blocked: _b, ...q }) => (blocked.has(`${t.id}/${q.id}`) ? { ...q, blocked: true } : q)),
+            questions: t.questions.map((q) => {
+              const { blocked: _b, ...rest } = q;
+              const f = fileCards.get(cardKey(t.id, q.id));
+              return f && f.blocked !== undefined ? { ...rest, blocked: f.blocked } : rest;
+            }),
           }
         : t,
     ),

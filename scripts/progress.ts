@@ -27,7 +27,7 @@ if (cmd === 'status') {
   const r = await migratePack(fs, { write: cmd === 'migrate', on: today() });
   console.log(`${r.pack}: ${r.subjects} subjects, ${r.topics} topics, ${r.cards} cards, ${r.events} baseline events`);
   if (r.diffs.length) {
-    console.log(`NOT switched, ${r.diffs.length} differences:`);
+    console.log(r.migrated ? `SWITCHED WITH WARNINGS:` : `NOT switched, ${r.diffs.length} differences:`);
     for (const d of r.diffs.slice(0, 20)) console.log('  ' + d);
     process.exit(1);
   }

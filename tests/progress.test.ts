@@ -317,6 +317,53 @@ describe('blocking a card', () => {
   });
 });
 
+describe('the file has the last word on blocked cards', () => {
+  const twoCards = async () => {
+    const { theo } = await demo();
+    const topic = theo.topics.find((t) => (t.questions?.length ?? 0) >= 2)!;
+    const [qa, qb] = topic.questions!;
+    const start = { ...theo, topics: theo.topics.map(stripTopic) };
+    const block = (s: Subject, blocked = true) => withCardBlocked(s, { topic: { id: topic.id } as Topic, question: { id: qa.id } as TopicQuestion }, blocked);
+    return { topic, qa, qb, start, block };
+  };
+
+  it('a card blocked in the file without any block event stays blocked for the whole replay (A)', async () => {
+    const { topic, qa, qb, start, block } = await twoCards();
+    // Old app: the card was blocked before all of this.
+    let old = block(start);
+    old = { ...old, topics: old.topics.map((t) => (t.id === topic.id ? withTopicDue(t, '2026-11-20') : t)) };
+    const quiz = session('q1', [{ n: 1, topicId: topic.id, question: qb.id } as Session['items'][number]]);
+    old = withQuizAnswer(old, quiz, quiz.items[0], 4, '2026-11-12', undefined, undefined);
+    const events = asEvents('theo', [
+      [{ op: 'due', topic: topic.id, due: '2026-11-20' }, '2026-11-11'],
+      [{ op: 'quiz', topic: topic.id, card: qb.id, score: 4, session: 'q1', n: 1 }, '2026-11-12'],
+    ]);
+    const replayed = replaySubject(block(start), events);
+    expect(subjectDiff(old, replayed)).toEqual([]);
+    expect(replayed.topics.find((t) => t.id === topic.id)!.questions!.find((q) => q.id === qa.id)!.due).toBeUndefined();
+  });
+
+  it('a card unblocked in the file counts again, whatever earlier events said (B)', async () => {
+    const { topic, qa, start } = await twoCards();
+    const events = asEvents('theo', [
+      [{ op: 'block', topic: topic.id, card: qa.id, blocked: true }, '2026-11-10'],
+      [{ op: 'endless', topic: topic.id, card: qa.id, score: 5 }, '2026-11-12'],
+    ]);
+    const q = replaySubject(start, events).topics.find((t) => t.id === topic.id)!.questions!.find((x) => x.id === qa.id)!;
+    expect(q.blocked).toBeUndefined();
+    expect(q.stats?.seen).toBe(1);
+    expect(q.due).toBeDefined();
+  });
+
+  it('keeps an explicit "blocked": false, so such a pack can still be migrated (F)', async () => {
+    const { fs, theo } = await demo();
+    const topic = theo.topics.find((t) => (t.questions?.length ?? 0) >= 1)!;
+    await saveSubject(fs, { ...theo, topics: theo.topics.map((t) => (t.id === topic.id ? { ...t, questions: t.questions!.map((q, i) => (i === 0 ? { ...q, blocked: false } : q)) } : t)) });
+    const report = await migratePack(fs, { write: false, on: '2026-11-12' });
+    expect(report.diffs).toEqual([]);
+  });
+});
+
 describe('migration safety', () => {
   it('does not switch when a subject file changes while it runs', async () => {
     const { theo } = await demo();

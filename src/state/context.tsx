@@ -99,6 +99,7 @@ export function PackProvider(props: {
     if (before === undefined || known === undefined || before === known) times.current = { ...times.current, [EVENTS_PATH]: after };
   };
   const lastSend = useRef(0);
+  const looking = useRef(false);
 
   // The outbox of a server pack: its count for the header, and the log's time after each send.
   useEffect(() => {
@@ -137,7 +138,17 @@ export function PackProvider(props: {
     };
   };
 
-  const reload = useCallback(async () => {
+  /** The reload in flight: a second call joins it instead of starting another. */
+  const reloading = useRef<Promise<void> | null>(null);
+
+  const reload = useCallback((): Promise<void> => {
+    reloading.current ??= loadAgain().finally(() => {
+      reloading.current = null;
+    });
+    return reloading.current;
+  }, [fs]);
+
+  const loadAgain = async () => {
     // Read the times before the files: if a file changes in between, the
     // older time makes the next save reload it again, which is safe.
     const before = await fileTimes(fs, loadedRef.current);
@@ -153,7 +164,7 @@ export function PackProvider(props: {
     const next = withLocalEvents(loadedNow);
     loadedRef.current = next;
     setLoaded(next);
-  }, [fs]);
+  };
 
   useEffect(() => {
     // `initial` was read before the times could be taken; load again so
@@ -165,7 +176,16 @@ export function PackProvider(props: {
   useEffect(() => {
     if (fs.kind === 'browser') return;
     const timer = setInterval(async () => {
-      if (busy.current || document.hidden || (outboxRef.current?.pending ?? 0) > 0) return;
+      // One look at a time; a reload on a slow line can take longer than the interval.
+      if (looking.current || reloading.current || busy.current || document.hidden || (outboxRef.current?.pending ?? 0) > 0) return;
+      looking.current = true;
+      try {
+        await look();
+      } finally {
+        looking.current = false;
+      }
+    }, fs.kind === 'server' ? SERVER_POLL_MS : POLL_MS);
+    const look = async () => {
       const cache = fs instanceof DevFs || fs instanceof QueuedFs ? fs : null;
       cache?.takeCached();
       // A failed look is not worth a message: nothing was lost and the next one tries again.
@@ -179,7 +199,7 @@ export function PackProvider(props: {
       } catch (e) {
         setNotice(`Reload failed: ${(e as Error).message}`);
       }
-    }, fs.kind === 'server' ? SERVER_POLL_MS : POLL_MS);
+    };
     return () => clearInterval(timer);
   }, [fs, reload]);
 
