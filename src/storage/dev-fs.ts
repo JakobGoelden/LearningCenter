@@ -1,6 +1,19 @@
-import type { PackFs } from './fs';
+import { FsHttpError, type PackFs } from './fs';
 
 const API = '/__lc/fs';
+
+/** A request that hangs (a train in a tunnel) gives up after this long, so the outbox can try again. */
+const TIMEOUT_MS = 60000;
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: ctl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /**
  * Pack folder served by the Vite dev server (see tools/vite-pack-fs.ts).
@@ -36,13 +49,27 @@ export class DevFs implements PackFs {
   }
 
   private async call(op: string, path: string, body?: string): Promise<Response> {
-    const res = await fetch(`${this.remote?.origin ?? ''}${API}/${op}?path=${encodeURIComponent(path)}`, {
+    const res = await fetchWithTimeout(`${this.remote?.origin ?? ''}${API}/${op}?path=${encodeURIComponent(path)}`, {
       method: body === undefined ? 'GET' : 'POST',
       body,
       headers: this.remote?.headers,
     });
-    if (!res.ok && res.status !== 404) throw new Error(`${op} ${path}: ${res.status} ${await res.text()}`);
+    if (!res.ok && res.status !== 404) throw new FsHttpError(`${op} ${path}: ${res.status} ${await res.text()}`, res.status);
     return res;
+  }
+
+  async appendEvents(events: object[]) {
+    const res = await fetchWithTimeout(`${this.remote?.origin ?? ''}/__lc/events`, {
+      method: 'POST',
+      body: JSON.stringify({ events }),
+      headers: { 'content-type': 'application/json', ...this.remote?.headers },
+    });
+    if (!res.ok) throw new FsHttpError(`events: ${res.status} ${await res.text()}`, res.status);
+    const out = (await res.json()) as { accepted?: string[]; mtime?: number | null };
+    const sent = events.map((e) => (e as { id: string }).id);
+    const accepted = new Set(out.accepted ?? []);
+    if (sent.some((id) => !accepted.has(id))) throw new FsHttpError('events: the server did not accept every event', 502);
+    return { mtime: typeof out.mtime === 'number' ? out.mtime : null };
   }
 
   async read(path: string) {

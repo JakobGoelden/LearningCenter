@@ -43,6 +43,10 @@
         }
       }
     },
+    "progress": {
+      "enum": ["events"],
+      "description": "\"events\": progress (status, due dates, intervals, history, card stats) is replayed from the progress events in log/events.jsonl, starting from one baseline event per topic; the progress fields in the subject files are then ignored. Set by the migration (npm run progress -- migrate). Missing: progress lives in the subject files."
+    },
     "subjects": {
       "type": "array",
       "items": { "$ref": "common.schema.json#/$defs/id" },

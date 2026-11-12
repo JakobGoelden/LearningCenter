@@ -3,7 +3,8 @@ import { usePack } from '../state/context';
 import { parseGrades, withGrades } from '../ai/results';
 import { today } from '../lib/dates';
 import type { Session } from '../model/types';
-import { quizScores, withQuizResults } from '../scheduling/cards';
+import { quizScores } from '../scheduling/cards';
+import { quizApplyOp } from '../progress/ops';
 import { loadSession, saveSession } from '../storage/repo';
 
 /**
@@ -11,7 +12,7 @@ import { loadSession, saveSession } from '../storage/repo';
  * paste belongs to, when the block does not name one.
  */
 export function PasteGrades({ session, onDone }: { session?: string; onDone(saved: Session[]): void }) {
-  const { fs, loaded, log, updateSubject } = usePack();
+  const { fs, loaded, log, record } = usePack();
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -34,12 +35,7 @@ export function PasteGrades({ session, onDone }: { session?: string; onDone(save
       for (const s of graded.filter((g) => !g.applied)) {
         await saveSession(fs, s);
         await log({ type: 'quiz.graded', subject: s.subject, ref: s.id, actor: 'ai', data: { scores: s.items.map((i) => i.score ?? null) } });
-        await updateSubject(s.subject, (subj) => withQuizResults(subj, s, today(), loaded.pack.settings), {
-          type: 'quiz.applied',
-          ref: s.id,
-          actor: 'ai',
-          data: { scores: quizScores(s) },
-        });
+        await record(s.subject, [quizApplyOp(s)], { type: 'quiz.applied', ref: s.id, actor: 'ai', data: { scores: quizScores(s) } }, today());
         const applied = { ...s, applied: true };
         await saveSession(fs, applied);
         saved.push(applied);

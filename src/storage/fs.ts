@@ -21,6 +21,23 @@ export interface PackFs {
    * or null when the file is missing. Absent on backends without real files.
    */
   fileUrl?(path: string): Promise<string | null>;
+  /**
+   * Appends events to log/events.jsonl, skipping ids the log already has, in
+   * one atomic write (the server's POST /__lc/events). Backends without it get
+   * the same behaviour from `appendEventsTo` in repo.ts. Returns the log's
+   * mtime after the write.
+   */
+  appendEvents?(events: object[]): Promise<{ mtime: number | null }>;
+}
+
+/** An HTTP error from a server backend; `status` tells a lost connection (0) from a refusal. */
+export class FsHttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
 }
 
 export function splitPath(path: string): { dirs: string[]; name: string } {

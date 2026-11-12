@@ -68,11 +68,46 @@ new format reach Semester3.
    the file's mtime with the one stored when it was loaded or last saved (`context.tsx`) and, if it
    changed, apply the change to the version on disk instead (`tests/freshsave.test.ts`). A small
    window remains between the mtime check and the write.
-3. **PWA + offline** (the admin learns on the train). Installable app, service worker for the app
-   shell, cards, dojos and progress cached on the device, per-subject "available offline" for PDFs,
-   answers queued while offline and written when back online.
-4. **Progress as an event log** so offline answers from several devices merge without conflicts
-   (append-only events, schedule recomputed from them). Needed for 3.
-5. **Invite codes** (server side, with the admin): a single-use code that renews after each sign-up,
-   expires after 7 days, plus a small admin page (users, codes, block/delete). Today the admin adds
-   users by hand with `adduser.sh`.
+3. ~~**Answers as events + PWA/offline.**~~ Done 2026-11-12 (app side), see below.
+4. (merged into 3)
+5. **Admin page** (server side, the T480 builds it in `learn/server.py`): instead of invite
+   codes, the current one-time join code (no expiry; once used, a new one is made) and all users who
+   signed up, with block/delete. Replaces the fixed `LC_JOIN_CODE`.
+
+## Answers as events, offline (2026-11-12)
+
+Why: on 2026-11-12 a dropped phone upload cut jakob's `itr.json` in half, because the app uploaded the
+whole ~1 MB subject file for every answer. The server now refuses incomplete uploads (c51e81c).
+
+- **What is sent:** one `progress` event per answer (`src/progress/ops.ts`): `id` (made on the
+  device), `ts`, `subject`, `ref`, `data: {op, rules, on, cfg?, …}`. Other log events get an `id` too.
+- **Server:** `POST /__lc/events` with `{"events": [...]}` (max 500 events, 1 MB): validates each
+  (`id`, `ts`, `type`), all-or-nothing; appends the new ones in one locked write, skipping ids it
+  already has (resending is safe); answers `{accepted, added, mtime}`. The dev server has the same
+  endpoint (`tools/events-endpoint.ts`). Hardening that came with it: 411 without Content-Length,
+  atomic writes (mkstemp + fsync + replace), `.json` writes must parse, `.jsonl` appends must be whole
+  lines, `ifMtime` conditional writes, Caddy `request_buffers`.
+- **Progress:** lives only in the log once a pack is migrated (`pack.json` `"progress": "events"`).
+  Subject files hold content; the app replays the events on load (`loadPack`), so the progress API,
+  the AI tools and `share` see the same state. Content writers can no longer touch progress.
+- **Rule changes are not retroactive** (admin's decision): every event carries its rules version;
+  the replay uses the event's version.
+- **Several devices:** events merge by `ts`, ids deduplicate, no conflicts.
+- **Migration:** `npm run progress -- check|migrate <pack>`: one `baseline` event per topic with the
+  file's progress, then the switch, only if the replay reproduces every subject file exactly (checked
+  again after writing; undone otherwise). All 7 hosted packs passed `check` on 2026-11-12. Progress
+  fields stay in the subject files for now; strip them only later, if ever.
+- **Device:** answers go into an outbox in IndexedDB (one key per item, so tabs never overwrite each
+  other) and show as done at once; they are sent on start, on `online`, when the app becomes visible,
+  and with backoff (2 s … 60 s). Only `sessions/` and `work/` files may wait offline; subject and pack
+  edits need a connection. The header says when answers could not be sent (offline, login expired,
+  refused by the server; refused items are kept aside, never dropped).
+- **PWA:** manifest + service worker (`public/sw.js`, rules in `public/sw-policy.js`). App shell and
+  build files cached; pack reads network-first (4 s) with an offline copy; writes keep that copy
+  current; a write based on an offline copy that is outdated on the server is refused (409). PDFs per
+  subject "available offline" = later. Bump `VERSION` in `sw.js` when `sw-policy.js` changes.
+- **iPhone:** no Background Sync, so sending happens while the app is open. Install via Share → "Add
+  to Home Screen" (the app shows that hint), otherwise iOS deletes stored data after 7 days without a
+  visit. The installed app has its own login.
+- **Order of a rollout:** server endpoint live → app deployed (unmigrated packs behave exactly as
+  before) → T480 app copy updated (format change: event `id`, pack `progress`) → migrate each pack.

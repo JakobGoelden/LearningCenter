@@ -2,7 +2,6 @@ import { useRef, useState } from 'preact/hooks';
 import { activeDojos } from '../model/chapters';
 import { usePack } from '../state/context';
 import { nowIso, today } from '../lib/dates';
-import { applyReview } from '../scheduling/scheduler';
 import { dojoCheckRequest, dojoDrillsRequest, dojoHintRequest, dojoSolutionRequest, dojoTaskRequest, LEVEL_LABEL } from '../ai/requests';
 import { saveDojo, saveSession } from '../storage/repo';
 import type { Dojo, Level, Score, Session, SessionItem } from '../model/types';
@@ -27,7 +26,7 @@ const ALL_LEVELS: Level[] = ['easy', 'medium', 'exam'];
 
 export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: string }) {
   const pack = usePack();
-  const { fs, loaded, log, updateSubject, setNotice, reload } = pack;
+  const { fs, loaded, log, record, setNotice, reload } = pack;
   const s = pack.subject(subjectId);
   const all = loaded.dojos.filter((d) => d.subject === subjectId);
   // Dojos of switched-off chapters are not listed (a direct link still works).
@@ -180,14 +179,9 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
       if (!session || item?.score === undefined || !dojo.topics?.length) return;
       const score = item.score;
       const ids = new Set(dojo.topics);
-      await updateSubject(
+      await record(
         s.id,
-        (subj) => ({
-          ...subj,
-          topics: subj.topics.map((t) =>
-            ids.has(t.id) ? applyReview(t, { date: today(), score, source: 'dojo', sessionId: session.id }, loaded.pack.settings) : t,
-          ),
-        }),
+        [{ op: 'review', scores: Object.fromEntries([...ids].map((t) => [t, score])), source: 'dojo', session: session.id }],
         { type: 'dojo.applied', ref: session.id, data: { topics: dojo.topics, score } },
       );
       await persist({ ...session, applied: true });
@@ -250,16 +244,9 @@ export function DojoView({ subjectId, dojoId }: { subjectId: string; dojoId?: st
     const scores = Object.fromEntries(
       [...byTopic].map(([t, list]) => [t, roundScore(list.map((score) => ({ correct: score === 5, score: score as Score, feedback: '' })))]),
     );
-    await updateSubject(
+    await record(
       s.id,
-      (subj) => ({
-        ...subj,
-        topics: subj.topics.map((t) =>
-          t.id in scores
-            ? applyReview(t, { date: today(), score: scores[t.id], source: 'dojo', ...(drillSessionId.current ? { sessionId: drillSessionId.current } : {}) }, loaded.pack.settings)
-            : t,
-        ),
-      }),
+      [{ op: 'review', scores, source: 'dojo', ...(drillSessionId.current ? { session: drillSessionId.current } : {}) }],
       { type: 'dojo.applied', ref: drillSessionId.current || dojo.id, data: { scores } },
     );
   };

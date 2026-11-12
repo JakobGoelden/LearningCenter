@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { usePack } from '../state/context';
 import { today } from '../lib/dates';
 import { cardKey, deckOf, drawCard, withCardAnswer, withCardBlocked, type Card } from '../scheduling/cards';
-import { applyCardReviews } from '../scheduling/scheduler';
-import type { Subject } from '../model/types';
 import { SELF_SCORE, type SelfRating } from '../model/quiz';
 import type { Score } from '../model/types';
 import { Markdown } from './Markdown';
@@ -43,22 +41,12 @@ export function EndlessView({ subjectId }: { subjectId: string }) {
     const score = SELF_SCORE[r] as Score;
     setCounts((c) => ({ ...c, [r]: c[r] + 1 }));
     next(withCardAnswer(s, card, score, on));
-    const settings = pack.loaded.pack.settings;
-    const review = (subj: Subject): Subject => {
-      const q = subj.topics.find((t) => t.id === card.topic.id)?.questions?.find((x) => x.id === card.question.id);
-      if (!q || q.stats?.last === on) return subj;
-      return {
-        ...subj,
-        topics: subj.topics.map((t) =>
-          t.id === card.topic.id ? applyCardReviews(t, [{ question: card.question.id, score }], { date: on, source: 'quiz' }, settings) : t,
-        ),
-      };
-    };
-    await pack.updateSubject(s.id, (subj) => withCardAnswer(review(subj), card, score, on), {
-      type: 'card.answer',
-      ref: `${card.topic.id}/${card.question.id}`,
-      data: { mode: 'endless', score },
-    });
+    await pack.record(
+      s.id,
+      [{ op: 'endless', topic: card.topic.id, card: card.question.id, score }],
+      { type: 'card.answer', ref: `${card.topic.id}/${card.question.id}`, data: { mode: 'endless', score } },
+      on,
+    );
   };
 
   const block = async () => {

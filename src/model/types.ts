@@ -30,6 +30,8 @@ export interface Pack {
   owner?: string;
   semester?: { label?: string; start?: ISODate; end?: ISODate };
   settings?: PackSettings;
+  /** 'events': progress is replayed from the event log (src/progress), the subject files' progress fields are ignored. */
+  progress?: 'events';
   subjects: string[];
   dojos?: string[];
 }
@@ -314,6 +316,8 @@ export interface Session {
 }
 
 export interface LogEvent {
+  /** Unique id made on the device; progress events always have one. */
+  id?: string;
   ts: ISODateTime;
   type: string;
   actor?: 'user' | 'ai' | 'app';
@@ -370,6 +374,9 @@ export interface Bundle {
 /** A pack as held in memory by the app. */
 export interface LoadedPack {
   pack: Pack;
+  /** With pack.progress 'events': the subjects carry the replayed progress, not their files'. */
   subjects: Subject[];
   dojos: Dojo[];
+  /** Progress events of the log (pack.progress 'events' only), and how many log lines could not be used. */
+  progress?: { events: import('../progress/ops').ProgressEvent[]; skipped: number };
 }

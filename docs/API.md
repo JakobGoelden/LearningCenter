@@ -28,7 +28,7 @@ npm run --silent ai -- get_weak_spots --subject db --limit 5
 | `add_card`, `edit_card` | Add a card, or change its prompt, answer or kind. Schedule and statistics stay. Blocked cards stay as they are. |
 | `set_topic_notes` | Replace a topic's notes. Notes are never pushed. |
 | `set_topics_enabled` | Switch topics on or off, see below. |
-| `record_review` | Grade an answer given in the chat, with the app's scheduling rules. |
+| `record_review` | Grade an answer given in the chat, with the app's scheduling rules. In a migrated pack (`"progress": "events"`) this appends one progress event instead of changing the subject file. |
 | `mark_results_processed` | Clears the "New results" banner. |
 
 Scheduling stays with the app: there is no tool to set due dates or statistics, and arguments for

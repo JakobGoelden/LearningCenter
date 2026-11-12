@@ -3,14 +3,14 @@ import { usePack } from '../state/context';
 import { formatShort, today } from '../lib/dates';
 import { uniqueId } from '../lib/download';
 import { withTopicsEnabled } from '../model/chapters';
-import { applyReview, ladderIndex, ladderOf, withTopicDue } from '../scheduling/scheduler';
+import { ladderIndex, ladderOf } from '../scheduling/scheduler';
 import type { Score, Topic, TopicStatus } from '../model/types';
 import { SCORE_LABEL, TOPIC_STATUS } from './labels';
 import { href } from './router';
 import { BackLink } from './BackLink';
 
 export function TopicsView({ subjectId }: { subjectId: string }) {
-  const { subject, updateSubject, loaded } = usePack();
+  const { subject, updateSubject, record, loaded } = usePack();
   const s = subject(subjectId);
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
@@ -36,29 +36,20 @@ export function TopicsView({ subjectId }: { subjectId: string }) {
     );
 
   const setStatus = (t: Topic, status: TopicStatus) =>
-    patch(t.id, status === 'skip' ? { status, due: undefined, intervalDays: undefined } : { status }, 'topic.status', { from: t.status, to: status });
+    record(s.id, [{ op: 'status', topic: t.id, status }], { type: 'topic.status', ref: t.id, data: { from: t.status, to: status } }, on);
 
   // A date set by hand applies to the topic and all its cards ("not before Thursday").
   const setDue = (t: Topic, due: string) =>
-    updateSubject(
-      s.id,
-      (subj) => ({ ...subj, topics: subj.topics.map((x) => (x.id === t.id ? withTopicDue(x, due || undefined) : x)) }),
-      { type: 'topic.due', ref: t.id, data: { from: t.due ?? null, to: due || null } },
-    );
+    record(s.id, [{ op: 'due', topic: t.id, due: due || null }], { type: 'topic.due', ref: t.id, data: { from: t.due ?? null, to: due || null } }, on);
 
   const rate = (t: Topic, score: Score) =>
-    updateSubject(
-      s.id,
-      (subj) => ({
-        ...subj,
-        topics: subj.topics.map((x) => (x.id === t.id ? applyReview(x, { date: on, score, source: 'manual' }, settings) : x)),
-      }),
-      { type: 'topic.review', ref: t.id, data: { score, source: 'manual' } },
-    );
+    record(s.id, [{ op: 'review', scores: { [t.id]: score }, source: 'manual' }], { type: 'topic.review', ref: t.id, data: { score, source: 'manual' } }, on);
 
-  const remove = (t: Topic) => {
+  const remove = async (t: Topic) => {
     if (!confirm(`Delete topic "${t.title}" and its history?`)) return;
-    void updateSubject(s.id, (subj) => ({ ...subj, topics: subj.topics.filter((x) => x.id !== t.id) }), {
+    // A later topic with the same id starts from scratch.
+    if (loaded.pack.progress === 'events') await record(s.id, [{ op: 'reset', topic: t.id }], undefined, on);
+    await updateSubject(s.id, (subj) => ({ ...subj, topics: subj.topics.filter((x) => x.id !== t.id) }), {
       type: 'topic.remove',
       ref: t.id,
       data: { title: t.title },

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import type { LoadedPack } from '../model/types';
 import type { PackFs } from '../storage/fs';
-import { loadPack } from '../storage/repo';
+import { loadPack, readPackJson } from '../storage/repo';
+import { DevFs } from '../storage/dev-fs';
+import { idbOutbox, QueuedFs } from '../storage/queued-fs';
 import { PackProvider, usePack } from '../state/context';
 import { detectStartup, rememberSource, type StartupOptions } from '../state/source';
 import { useRoute } from './router';
@@ -17,6 +19,7 @@ import { SettingsView } from './SettingsView';
 import { LogView } from './LogView';
 import { EndlessView } from './EndlessView';
 import { StudyView } from './StudyView';
+import { InstallHint } from '../pwa/InstallHint';
 
 type Open = { fs: PackFs; loaded: LoadedPack };
 
@@ -25,14 +28,17 @@ export function App() {
   const [open, setOpen] = useState<Open | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const openFs = useCallback(async (fs: PackFs) => {
+  const openFs = useCallback(async (given: PackFs) => {
     setError(null);
     try {
+      // A server pack gets an outbox, so answers survive a lost connection.
+      const fs = given instanceof DevFs ? new QueuedFs(given, `${location.origin}|${given.label}`, await idbOutbox()) : given;
+      if (fs instanceof QueuedFs) fs.eventsMode = (await readPackJson(fs)).progress === 'events';
       const loaded = await loadPack(fs);
       rememberSource(fs.kind);
       setOpen({ fs, loaded });
     } catch (e) {
-      setError(`Could not load the pack from "${fs.label}":\n${(e as Error).message}`);
+      setError(`Could not load the pack from "${given.label}":\n${(e as Error).message}`);
     }
   }, []);
 
@@ -62,10 +68,11 @@ const routeKey = (r: ReturnType<typeof useRoute>) => Object.values(r).join('/');
 
 function Shell() {
   const route = useRoute();
-  const { notice, setNotice } = usePack();
+  const { notice, setNotice, fs } = usePack();
   return (
     <div class="wrap">
       <Header />
+      {fs.kind === 'server' && <InstallHint />}
       {notice && (
         <div class="notice" role="status">
           <span style="flex:1">{notice}</span>

@@ -53,3 +53,12 @@ export async function idbClear(store: string): Promise<void> {
   const db = await open();
   await wrap(db.transaction(store, 'readwrite').objectStore(store).clear());
 }
+
+/** All entries whose key starts with `prefix`. */
+export async function idbEntries(store: string, prefix: string): Promise<[string, unknown][]> {
+  const db = await open();
+  const range = IDBKeyRange.bound(prefix, prefix + '￿');
+  const tx = db.transaction(store).objectStore(store);
+  const [keys, values] = await Promise.all([wrap(tx.getAllKeys(range)), wrap(tx.getAll(range))]);
+  return (keys as string[]).map((k, i) => [k, values[i]]);
+}

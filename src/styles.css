@@ -1072,3 +1072,15 @@ html, body { overflow-x: clip; }
 }
 /* Long topic titles in badges wrap instead of running off the card. */
 .badge { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+
+/* PWA */
+.notice.pwa-hint { background: var(--panel); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow); }
+.pwa-hint-text { flex: 1; min-width: 0; }
+
+/* Outbox: answers waiting on this device */
+.outbox-badge {
+  font-size: 12px; padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+  background: var(--warn-bg); color: var(--warn);
+}
+.outbox-badge.bad { background: var(--danger-bg); color: var(--danger); }
+.outbox-badge a { color: inherit; }

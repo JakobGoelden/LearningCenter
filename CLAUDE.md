@@ -132,6 +132,15 @@ The format is fully described in `schema/*.schema.json` (JSON Schema
 
 - Indent JSON with 2 spaces, keep the `$schema` line.
 - Never delete or rewrite a topic's `history`, only append.
+- **Migrated packs** (`pack.json` → `"progress": "events"`): progress (topic
+  `status`, `due`, `intervalDays`, `history`; card `due`, `intervalDays`,
+  `since`, `stats`) comes from the `progress` events in `log/events.jsonl`,
+  replayed with the app's own code (`src/progress/ops.ts`), starting from one
+  `baseline` event per topic. The progress fields in the subject files are
+  ignored there (the app may still write them, as a copy). So never edit them
+  by hand in such a pack: grades go through `npm run review` /
+  `record_review`, which write events. Content (cards, notes, chapters,
+  `enabled`, `blocked`) stays in the subject files as before.
 - Append every content change as an event, e.g.
   `{"ts":"2026-10-16T09:00:00Z","type":"topic.add","actor":"ai","subject":"db","ref":"normal-forms","data":{"title":"Normal forms"}}`.
   Content additions use `topic.add`, `question.add`, `sheet.add`,
@@ -263,6 +272,22 @@ with `origin`/`source`, `exam.points` from old exams (see Dojos). The repo's
 README repeats them for people who only read the repo. When the person says "sync with the
 repo": status, pull, review what came in (sanity-check, tell them about
 conflicts), then push what they added.
+
+### Progress as events
+
+Every answer in the app is one small `progress` event (`id`, `ts`, `subject`,
+`data.op`, `data.rules`, `data.on`), never a rewrite of a subject file. Ops:
+`quiz`, `quiz-apply`, `endless`, `review`, `card-review`, `status`, `due`,
+`reset`, `baseline`. The replay sorts baselines first, then by `ts` and `id`.
+Rule changes are not retroactive: each event names the rules version it was
+made with; when the scheduling code changes results, keep the old code
+reachable for the old version in `applyEvent` and raise `RULES`. `cfg` in an
+event keeps the ladder and weekend setting it was made with. A pack is moved
+over once with `npm run progress -- check|migrate <pack>`: it writes the
+baselines and switches only if the replay reproduces every subject file
+exactly. On the hosted app answers wait in an outbox on the device
+(`src/storage/queued-fs.ts`) and go to `POST /__lc/events` (ids make resending
+harmless); the service worker (`public/sw.js`) keeps the app usable offline.
 
 ### Due dates and spaced repetition
 

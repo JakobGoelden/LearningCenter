@@ -5,9 +5,10 @@ import { formatShort, nowIso, today } from '../lib/dates';
 import { averageScore, cardDue, dueCards, GENERIC_CARD, laterCards, newCards } from '../scheduling/scheduler';
 import { quizGradeRequest, quizStartRequest } from '../ai/requests';
 import { saveSession } from '../storage/repo';
-import type { Score, Session, SessionItem, TopicQuestion } from '../model/types';
+import type { Score, Session, SessionItem } from '../model/types';
+import { quizApplyOp } from '../progress/ops';
 import { SELF_SCORE, type SelfRating } from '../model/quiz';
-import { cardKey, cardLine, quizScores, withCardBlocked, withQuizAnswer, withQuizResults, type Card } from '../scheduling/cards';
+import { cardKey, cardLine, quizScores, withCardBlocked, type Card } from '../scheduling/cards';
 import { Markdown } from './Markdown';
 import { Cancelled, useAi } from './AiPanel';
 import { href } from './router';
@@ -71,7 +72,7 @@ export interface QuizViewProps {
 
 export function QuizView({ subjectId, ahead, cards: preset, head, next: after }: QuizViewProps) {
   const pack = usePack();
-  const { fs, loaded, log, updateSubject, setNotice } = pack;
+  const { fs, loaded, log, updateSubject, record, setNotice } = pack;
   const s = pack.subject(subjectId);
   const { run, busy, panel } = useAi();
   const on = today();
@@ -111,7 +112,8 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
   /** Saves run one after another, so quick ratings cannot overwrite each other. */
   const saving = useRef<Promise<void>>(Promise.resolve());
   /** Cards as they were before their first rating here, to correct a rating without counting it twice. */
-  const unrated = useRef(new Map<number, TopicQuestion | undefined>());
+  /** Per answer: the progress event of its first rating, which every later rating of it replaces. */
+  const firstRating = useRef(new Map<number, string>());
 
   useEffect(() => {
     if (preset?.length && s) start();
@@ -289,7 +291,7 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
       const session = graded;
       if (!session) return;
       const scores = quizScores(session);
-      await updateSubject(s.id, (subj) => withQuizResults(subj, session, on, loaded.pack.settings), { type: 'quiz.applied', ref: session.id, data: { scores } });
+      await record(s.id, [quizApplyOp(session)], { type: 'quiz.applied', ref: session.id, data: { scores } }, on);
       await persist({ ...session, applied: true });
       if (averageScore(Object.values(scores) as Score[]) >= 4) setCheer(true);
     });
@@ -339,15 +341,16 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
     setSession(next);
     saving.current = saving.current.then(async () => {
       try {
-        await updateSubject(
+        const first = again ? firstRating.current.get(it.n) : undefined;
+        const [id] = await record(
           s.id,
-          (subj) => {
-            const before = subj.topics.find((t) => t.id === it.topicId)?.questions?.find((q) => q.id === it.question);
-            if (!again) unrated.current.set(it.n, before);
-            return withQuizAnswer(subj, next, it, score, on, settings, again ? unrated.current.get(it.n) : undefined);
-          },
+          it.topicId
+            ? [{ op: 'quiz', topic: it.topicId, ...(it.question ? { card: it.question } : {}), score, session: next.id, n: it.n, ...(first ? { replaces: first } : {}) }]
+            : [],
           { type: 'quiz.answer', ref: next.id, data: { n: it.n, topicId: it.topicId ?? null, card: it.question ?? null, rating: r } },
+          on,
         );
+        if (!first && id) firstRating.current.set(it.n, id);
         await saveSession(fs, live.current ?? next);
         if (firstSave) await log({ type: 'quiz.applied', subject: s.id, ref: next.id, data: { scores: { [it.topicId ?? '']: score } } });
       } catch (e) {

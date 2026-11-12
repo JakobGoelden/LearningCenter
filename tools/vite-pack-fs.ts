@@ -1,4 +1,5 @@
 import { appendFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { acceptEvents } from './events-endpoint';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import type { Plugin } from 'vite';
 
@@ -44,6 +45,28 @@ export function packFs(): Plugin {
           req.on('end', () => ok(data));
           req.on('error', fail);
         });
+
+      // Same as the hosted server's POST /__lc/events: append events once each, in one write.
+      let queue: Promise<unknown> = Promise.resolve();
+      server.middlewares.use('/__lc/events', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('POST only');
+          return;
+        }
+        const raw = await body(req);
+        const run = queue.then(() => acceptEvents(resolve(root, 'log', 'events.jsonl'), raw));
+        queue = run.catch(() => undefined);
+        try {
+          const out = await run;
+          res.statusCode = out.status;
+          res.setHeader('content-type', out.status === 200 ? 'application/json' : 'text/plain; charset=utf-8');
+          res.end(out.body);
+        } catch (e) {
+          res.statusCode = 500;
+          res.end((e as Error).message);
+        }
+      });
 
       server.middlewares.use('/__lc/fs', async (req, res) => {
         try {

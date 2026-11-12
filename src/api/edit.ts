@@ -4,7 +4,8 @@
 import { today } from '../lib/dates';
 import { activeTopics, withTopicsEnabled } from '../model/chapters';
 import { applyCardReviews, applyReview } from '../scheduling/scheduler';
-import { appendEvent, loadPack, readEvents, saveSubject } from '../storage/repo';
+import { appendEvent, appendEventsTo, loadPack, readEvents, saveSubject } from '../storage/repo';
+import { progressEvent, replaySubject, type ProgressOp } from '../progress/ops';
 import type { PackFs } from '../storage/fs';
 import type { LogEvent, QuestionKind, Review, Score, Subject, Topic, TopicQuestion } from '../model/types';
 import { pendingResults } from '../model/sync';
@@ -102,6 +103,23 @@ export async function recordReview(fs: PackFs, r: ReviewInput) {
   const loaded = await loadPack(fs);
   const source = r.source ?? 'quiz';
   const date = today();
+  if (loaded.pack.progress === 'events') {
+    // Migrated pack: the grade is one progress event; the subject file stays as it is.
+    const subject = findSubject(loaded, r.subject);
+    const topic = findTopic(subject, r.topic);
+    if (r.card && !topic.questions?.some((q) => q.id === r.card)) {
+      throw new Error(`Unknown card "${r.card}". Known: ${(topic.questions ?? []).map((q) => q.id).join(', ')}`);
+    }
+    const note = r.note ? { note: r.note } : {};
+    const op: ProgressOp = r.card
+      ? { op: 'card-review', topic: r.topic, card: r.card, score: r.score, source, ...note }
+      : { op: 'review', scores: { [r.topic]: r.score }, source, ...note };
+    const event = progressEvent(r.subject, op, date, loaded.pack.settings, { actor: 'ai' });
+    await appendEventsTo(fs, [event]);
+    await appendEvent(fs, { actor: 'ai', subject: r.subject, ref: r.topic, type: 'topic.review', data: { score: r.score, source, ...(r.card ? { card: r.card } : {}) } });
+    const after = findTopic(replaySubject(subject, [...(loaded.progress?.events ?? []), event]), r.topic);
+    return reviewResult(after, r.card);
+  }
   const updated = await changeTopic(
     fs,
     r.subject,
@@ -116,7 +134,11 @@ export async function recordReview(fs: PackFs, r: ReviewInput) {
     },
     { type: 'topic.review', data: { score: r.score, source, ...(r.card ? { card: r.card } : {}) } },
   );
-  const card = r.card ? updated.questions?.find((q) => q.id === r.card) : undefined;
+  return reviewResult(updated, r.card);
+}
+
+function reviewResult(updated: Topic, cardId?: string) {
+  const card = cardId ? updated.questions?.find((q) => q.id === cardId) : undefined;
   return {
     status: updated.status,
     topicDue: updated.due ?? null,

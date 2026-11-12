@@ -2,6 +2,7 @@ import { nowIso } from '../lib/dates';
 import { assertValid } from '../model/validate';
 import type { Bundle, Dojo, LoadedPack, LogEvent, Pack, Session, SheetWork, Subject } from '../model/types';
 import type { PackFs } from './fs';
+import { parseProgress, replaySubject, type ProgressEvent } from '../progress/ops';
 
 const SCHEMA_ROOT = '../../schema/';
 
@@ -20,6 +21,20 @@ async function readJson(fs: PackFs, path: string): Promise<unknown> {
   }
 }
 
+/** pack.json exactly as stored (validated), e.g. to change one field. */
+export async function readPackJson(fs: PackFs): Promise<Pack> {
+  const { $schema: _s, ...pack } = assertValid('pack', await readJson(fs, 'pack.json'), 'pack.json');
+  return pack;
+}
+
+/** The progress events of the log (empty without a log). */
+export async function loadProgress(fs: PackFs): Promise<{ events: ProgressEvent[]; skipped: number }> {
+  return parseProgress((await fs.read(EVENTS_PATH)) ?? '');
+}
+
+/** The subjects with their progress replayed from `events`. */
+export const withReplay = (subjects: Subject[], events: ProgressEvent[]) => subjects.map((s) => replaySubject(s, events));
+
 export async function loadPack(fs: PackFs): Promise<LoadedPack> {
   const pack = assertValid('pack', await readJson(fs, 'pack.json'), 'pack.json');
   const subjects: Subject[] = [];
@@ -32,7 +47,9 @@ export async function loadPack(fs: PackFs): Promise<LoadedPack> {
     const path = `dojos/${id}.json`;
     dojos.push(assertValid('dojo', await readJson(fs, path), path));
   }
-  return { pack, subjects, dojos };
+  if (pack.progress !== 'events') return { pack, subjects, dojos };
+  const progress = await loadProgress(fs);
+  return { pack, subjects: withReplay(subjects, progress.events), dojos, progress };
 }
 
 export type FileTimes = Record<string, number | null>;
@@ -48,6 +65,8 @@ export async function fileTimes(fs: PackFs, loaded: LoadedPack): Promise<FileTim
     'pack.json',
     ...loaded.pack.subjects.map(subjectPath),
     ...(loaded.pack.dojos ?? []).map((id) => `dojos/${id}.json`),
+    // Progress lives in the log: another device's answers show up there.
+    ...(loaded.pack.progress === 'events' ? [EVENTS_PATH] : []),
   ];
   const times = new Array<number | null>(paths.length);
   let next = 0;
@@ -93,14 +112,16 @@ async function updateFile<T>(
   return { value, reloaded };
 }
 
+/** `view`: turns the subject as read from its file into what the app shows (e.g. replays progress). */
 export function updateSubjectFile(
   fs: PackFs,
   current: Subject,
   known: number | null | undefined,
   change: (s: Subject) => Subject,
+  view: (s: Subject) => Subject = (s) => s,
 ): Promise<{ value: Subject; reloaded: boolean }> {
   const path = subjectPath(current.id);
-  return updateFile(fs, path, current, known, change, (d) => assertValid('subject', d, path), (s) =>
+  return updateFile(fs, path, current, known, change, (d) => view(assertValid('subject', d, path)), (s) =>
     saveSubject(fs, s),
   );
 }
@@ -173,6 +194,66 @@ export async function appendEvent(fs: PackFs, event: Omit<LogEvent, 'ts'> & { ts
   const full: LogEvent = { ts: event.ts ?? nowIso(), actor: 'user', ...event };
   assertValid('event', full);
   await fs.append(EVENTS_PATH, JSON.stringify(full) + '\n');
+}
+
+const CHUNK_EVENTS = 200;
+const CHUNK_BYTES = 512 * 1024;
+
+/** Events in requests of at most 200 events and about 512 KB. */
+export function chunkEvents<T>(events: T[]): T[][] {
+  const out: T[][] = [];
+  let cur: T[] = [];
+  let bytes = 0;
+  for (const e of events) {
+    const size = JSON.stringify(e).length + 1;
+    if (cur.length && (cur.length >= CHUNK_EVENTS || bytes + size > CHUNK_BYTES)) {
+      out.push(cur);
+      cur = [];
+      bytes = 0;
+    }
+    cur.push(e);
+    bytes += size;
+  }
+  if (cur.length) out.push(cur);
+  return out;
+}
+
+/**
+ * Appends events to the log, each once: ids the log already has are skipped,
+ * and all new lines go in one append. Uses the backend's own atomic version
+ * (the server's POST /__lc/events) when it has one.
+ */
+export async function appendEventsTo(fs: PackFs, events: LogEvent[]): Promise<{ mtime: number | null }> {
+  for (const e of events) {
+    if (!e.id) throw new Error('appendEventsTo: every event needs an id.');
+    assertValid('event', e);
+  }
+  if (fs.appendEvents) {
+    // The server takes at most 500 events and 1 MB per request.
+    let mtime: number | null = null;
+    for (const chunk of chunkEvents(events)) ({ mtime } = await fs.appendEvents(chunk));
+    return { mtime };
+  }
+  const text = (await fs.read(EVENTS_PATH)) ?? '';
+  const known = new Set<string>();
+  for (const line of text.split('\n')) {
+    const m = /"id":"([A-Za-z0-9_-]+)"/.exec(line);
+    if (!m) continue;
+    try {
+      const id = (JSON.parse(line) as LogEvent).id;
+      if (id) known.add(id);
+    } catch {
+      /* a broken line has no usable id */
+    }
+  }
+  const lines: string[] = [];
+  for (const e of events) {
+    if (known.has(e.id!)) continue;
+    known.add(e.id!);
+    lines.push(JSON.stringify(e) + '\n');
+  }
+  if (lines.length) await fs.append(EVENTS_PATH, (text && !text.endsWith('\n') ? '\n' : '') + lines.join(''));
+  return { mtime: await fs.mtime(EVENTS_PATH) };
 }
 
 export async function readEvents(fs: PackFs, limit = 200): Promise<LogEvent[]> {
