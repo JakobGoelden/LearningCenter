@@ -19,6 +19,7 @@
     "validate": "vite-node scripts/validate-packs.mjs --",
     "review": "vite-node scripts/review.ts --",
     "progress": "vite-node scripts/progress.ts --",
+    "build:progress": "vite build -c vite.progress.config.ts",
     "share": "vite-node scripts/share.ts --",
     "check-sql": "vite-node scripts/check-sql.ts --",
     "ai": "vite-node scripts/ai.ts --",

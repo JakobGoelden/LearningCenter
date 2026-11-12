@@ -1,4 +1,4 @@
-import { appendFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { splitPath, type PackFs } from '../src/storage/fs';
 
@@ -27,10 +27,13 @@ export class NodeFs implements PackFs {
       throw e;
     }
   }
+  /** Atomic: a crash or a reader in between never sees half a file. */
   async write(path: string, text: string) {
     const p = this.abs(path);
     await mkdir(dirname(p), { recursive: true });
-    await writeFile(p, text, 'utf8');
+    const tmp = `${p}.${process.pid}.${Date.now()}.tmp`;
+    await writeFile(tmp, text, 'utf8');
+    await rename(tmp, p);
   }
   async append(path: string, text: string) {
     const p = this.abs(path);
