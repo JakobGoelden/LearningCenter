@@ -70,9 +70,9 @@ new format reach Semester3.
    window remains between the mtime check and the write.
 3. ~~**Answers as events + PWA/offline.**~~ Done 2026-11-12 (app side), see below.
 4. (merged into 3)
-5. **Admin page** (server side, the T480 builds it in `learn/server.py`): instead of invite
-   codes, the current one-time join code (no expiry; once used, a new one is made) and all users who
-   signed up, with block/delete. Replaces the fixed `LC_JOIN_CODE`.
+5. ~~**Admin page.**~~ Done 2026-11-12 at `/admin` (goelden-server 2df0cab): the current one-time
+   join code (no expiry; once used, a new one is made), all users, block/delete (to a trash folder),
+   action log. Replaces the fixed `LC_JOIN_CODE`.
 
 ## Answers as events, offline (2026-11-12)
 
@@ -95,7 +95,7 @@ whole ~1 MB subject file for every answer. The server now refuses incomplete upl
 - **Several devices:** events merge by `ts`, ids deduplicate, no conflicts.
 - **Migration:** `npm run progress -- check|migrate <pack>`: one `baseline` event per topic with the
   file's progress, then the switch, only if the replay reproduces every subject file exactly (checked
-  again after writing; undone otherwise). All 7 hosted packs passed `check` on 2026-11-12. Progress
+  again after writing; undone otherwise). All 7 hosted packs were migrated on 2026-11-12 (server goelden-server 2df0cab, app 715f9fc); each matched its pre-migration backup (`data/state/migration-backup-20261112-193101/`) with 0 differences. On the server the tool runs as one file: `npm run build:progress`, copy `dist-progress/progress.mjs` to `/opt/goelden/learn/tools/`, then per user `docker run --rm -u 1000:1000 -v <pack>:/pack -v /opt/goelden/learn/tools:/tools:ro node:22-alpine sh -c 'flock /pack/log/events.jsonl node /tools/progress.mjs migrate /pack'`. Progress
   fields stay in the subject files for now; strip them only later, if ever.
 - **Device:** answers go into an outbox in IndexedDB (one key per item, so tabs never overwrite each
   other) and show as done at once; they are sent on start, on `online`, when the app becomes visible,
