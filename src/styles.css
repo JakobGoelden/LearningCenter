@@ -631,8 +631,9 @@ button.dojo-go {
 .btn.dojo-btn svg { color: var(--vermilion); }
 .btn.dojo-btn:hover { box-shadow: 0 6px 16px -6px var(--vermilion); }
 
-/* Frosted panels so the background glow shows through a little. */
-.panel:not(.dojo-tile):not(.banner) {
+/* Frosted panels so the background glow shows through a little.
+   Not the faces of a flip card: a see-through back face lets the mirrored front show through. */
+.panel:not(.dojo-tile):not(.banner):not(.flip-face) {
   background: color-mix(in srgb, var(--panel) 70%, transparent);
   backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
 }
