@@ -12,7 +12,7 @@ import { cardKey, cardLine, quizScores, withCardBlocked, type Card } from '../sc
 import { Markdown } from './Markdown';
 import { Cancelled, useAi } from './AiPanel';
 import { href } from './router';
-import { SCORE_LABEL } from './labels';
+import { SCORE_LABEL, cardStatsLine, ratingTally } from './labels';
 import { Stepper } from './Stepper';
 import { ChatStart, copyText } from './ChatStart';
 import { quizChatPrompt, quizGradeChatPrompt } from '../ai/chat';
@@ -114,6 +114,8 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
   /** Cards as they were before their first rating here, to correct a rating without counting it twice. */
   /** Per answer: the progress event of its first rating, which every later rating of it replaces. */
   const firstRating = useRef(new Map<number, string>());
+  /** Per item: the card's stats line as it was when first shown, so this round's own rating does not show up in it. */
+  const statsSeen = useRef(new Map<number, string>());
 
   useEffect(() => {
     if (preset?.length && s) start();
@@ -461,6 +463,18 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
   const cards = mode === 'cards' && local;
   /** Rated as a flashcard, nothing typed. */
   const flash = (it: SessionItem) => !it.answer?.trim() && ratings.has(it.n);
+  /** "seen 4× · last: 5 3 5" for a prepared card, like in endless mode. */
+  const statsOf = (it: SessionItem): string | null => {
+    if (!it.question) return null;
+    if (!statsSeen.current.has(it.n)) {
+      const q = topicById.get(it.topicId ?? '')?.questions?.find((x) => x.id === it.question);
+      if (!q) return null;
+      statsSeen.current.set(it.n, cardStatsLine(q.stats));
+    }
+    return statsSeen.current.get(it.n) ?? null;
+  };
+  const tally = { right: 0, partly: 0, wrong: 0, blocked: blocked.size };
+  for (const r of ratings.values()) tally[r]++;
 
   return (
     <div class="stack">
@@ -570,6 +584,7 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
       {phase === 'answer' && item && session && !busy && local && (
         <div class="row mode-row in-quiz">
           <ModeSwitch mode={mode} onChange={setMode} />
+          <span class="small muted quiz-tally">{ratingTally(tally)}</span>
         </div>
       )}
 
@@ -594,6 +609,7 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
                   </span>
                   {item.topicId && <span class="badge">{topicById.get(item.topicId)?.title}</span>}
                   {item.kind && <span class="badge">{KIND_LABEL[item.kind] ?? item.kind}</span>}
+                  {statsOf(item) && <span class="muted">{statsOf(item)}</span>}
                 </span>
                 <span class="prompt flash-prompt">
                   <Markdown text={item.prompt} />
@@ -684,6 +700,7 @@ export function QuizView({ subjectId, ahead, cards: preset, head, next: after }:
               </span>
               {item.topicId && <span class="badge">{topicById.get(item.topicId)?.title}</span>}
               {item.kind && <span class="badge">{KIND_LABEL[item.kind] ?? item.kind}</span>}
+              {statsOf(item) && <span class="muted">{statsOf(item)}</span>}
             </div>
             <div class="prompt">
               <Markdown text={item.prompt} />

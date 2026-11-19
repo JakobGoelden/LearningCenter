@@ -4,6 +4,7 @@ import { today } from '../lib/dates';
 import { cardKey, deckOf, drawCard, withCardAnswer, withCardBlocked, type Card } from '../scheduling/cards';
 import { SELF_SCORE, type SelfRating } from '../model/quiz';
 import type { Score } from '../model/types';
+import { cardStatsLine, ratingTally } from './labels';
 import { Markdown } from './Markdown';
 import { BackLink } from './BackLink';
 import { href } from './router';
@@ -25,7 +26,6 @@ export function EndlessView({ subjectId }: { subjectId: string }) {
   const [card, setCard] = useState<Card | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [counts, setCounts] = useState({ right: 0, partly: 0, wrong: 0, blocked: 0 });
-  const total = counts.right + counts.partly + counts.wrong;
 
   const next = (subject = s) => {
     const c = subject ? drawCard(deckOf(subject), on, shown.current) : null;
@@ -93,7 +93,7 @@ export function EndlessView({ subjectId }: { subjectId: string }) {
         <h1>Endless · {s.name}</h1>
         <span class="spacer" />
         <span class="small muted">
-          {total} answered · {counts.right} knew it{counts.blocked ? ` · ${counts.blocked} blocked` : ''}
+          {ratingTally(counts)}
         </span>
       </div>
 
@@ -111,7 +111,7 @@ export function EndlessView({ subjectId }: { subjectId: string }) {
             <span class="badge">{card.topic.title}</span>
             {card.question.kind && <span class="badge">{card.question.kind}</span>}
             <span class="muted">
-              {card.question.stats ? `seen ${card.question.stats.seen}× · last: ${card.question.stats.recent.join(' ')}` : 'new card'}
+              {cardStatsLine(card.question.stats)}
             </span>
           </span>
           <div class="prompt flash-prompt">
